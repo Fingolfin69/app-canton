@@ -112,3 +112,11 @@ ENABLE_NBGL_QRCODE = 1
 #DISABLE_DEBUG_THROW = 1
 
 include $(BOLOS_SDK)/Makefile.standard_app
+
+########################################
+#      Protobuf files regeneration     #
+########################################
+.PHONY: proto
+proto:
+	@echo "Regenerating protobuf files..."
+	./proto_gen.sh

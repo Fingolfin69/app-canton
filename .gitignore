@@ -35,3 +35,11 @@ doc/latex
 
 # Virtual env for sideload (macOS and Windows)
 ledger/
+!src/com/daml/ledger/
+
+# Proto sources
+canton/
+daml/
+!src/com/daml/
+google/
+value.options
