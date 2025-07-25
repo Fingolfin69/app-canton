@@ -27,6 +27,7 @@
 #include "io.h"
 #include "sw.h"
 #include "menu.h"
+#include "mem.h"
 #include "dispatcher.h"
 
 global_ctx_t G_context;
@@ -43,6 +44,8 @@ void app_main() {
     command_t cmd;
 
     io_init();
+
+    app_mem_init();
 
 #ifdef HAVE_SWAP
     // When called in swap context as a library, we don't want to show the menu

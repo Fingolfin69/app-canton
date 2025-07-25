@@ -100,6 +100,7 @@ class BoilerplateCommandSender:
 
     @contextmanager
     def sign_tx(self, path: str, transaction: bytes) -> Generator[None, None, None]:
+        print(f"Signing transaction with path: {path} and transaction length: {len(transaction)} bytes")
         self.backend.exchange(cla=CLA,
                               ins=InsType.SIGN_TX,
                               p1=P1.P1_START,
@@ -107,8 +108,11 @@ class BoilerplateCommandSender:
                               data=pack_derivation_path(path))
         messages = split_message(transaction, MAX_APDU_LEN)
         idx: int = P1.P1_START + 1
+        
+        print(f"Sending {len(messages)} chunks of transaction data")
 
         for msg in messages[:-1]:
+            print(f"Sending chunk {idx} of {len(messages)}")
             self.backend.exchange(cla=CLA,
                                   ins=InsType.SIGN_TX,
                                   p1=idx,

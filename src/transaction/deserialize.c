@@ -19,6 +19,9 @@
 #include "deserialize.h"
 #include "utils.h"
 #include "types.h"
+#include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
+
+#include "pb_decode.h"
 
 #if defined(TEST) || defined(FUZZ)
 #include "assert.h"
@@ -30,46 +33,29 @@
 parser_status_e transaction_deserialize(buffer_t *buf, transaction_t *tx) {
     LEDGER_ASSERT(buf != NULL, "NULL buf");
     LEDGER_ASSERT(tx != NULL, "NULL tx");
+    const char memo[] = "memo";  // Placeholder for memo, can be replaced with actual memo parsing logic
 
     if (buf->size > MAX_TX_LEN) {
         return WRONG_LENGTH_ERROR;
     }
 
-    // nonce
-    if (!buffer_read_u64(buf, &tx->nonce, BE)) {
-        return NONCE_PARSING_ERROR;
-    }
+    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
-    tx->to = (uint8_t *) (buf->ptr + buf->offset);
+    PRINTF("Decoding transaction from buffer of size %d bytes\n", buf->size);
 
-    // TO address
-    if (!buffer_seek_cur(buf, ADDRESS_LEN)) {
-        return TO_PARSING_ERROR;
-    }
-
-    // amount value
-    if (!buffer_read_u64(buf, &tx->value, BE)) {
+    if (!pb_decode(&stream, com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_fields, &tx->prepared_tx)) {
+        // PRINTF("Failed to decode transaction: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
     }
 
-    // fee value
-    tx->fee = 0;  // default fee value
+    tx->memo_len = strlen(memo);
+    tx->memo = (uint8_t *)memo;  // Assigning a static memo for demonstration purposes
 
-    // length of memo
-    if (!buffer_read_varint(buf, &tx->memo_len) && tx->memo_len > MAX_MEMO_LEN) {
-        return MEMO_LENGTH_ERROR;
-    }
+    PRINTF("Decoded transaction successfully.\n");
+    PRINTF("Transaction fields : \n");
+    PRINTF("  Has prepared transaction: %d\n", tx->prepared_tx.has_prepared_transaction);
+    PRINTF("  Has hashing details: %d\n", tx->prepared_tx.has_hashing_details);
 
-    // memo
-    tx->memo = (uint8_t *) (buf->ptr + buf->offset);
+    return PARSING_OK;
 
-    if (!buffer_seek_cur(buf, tx->memo_len)) {
-        return MEMO_PARSING_ERROR;
-    }
-
-    if (!transaction_utils_check_encoding(tx->memo, tx->memo_len)) {
-        return MEMO_ENCODING_ERROR;
-    }
-
-    return (buf->offset == buf->size) ? PARSING_OK : WRONG_LENGTH_ERROR;
 }

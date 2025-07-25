@@ -1,8 +1,12 @@
+import json
 from io import BytesIO
 from typing import Union
 
 from .boilerplate_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
+from google.protobuf.json_format import Parse
+from com.daml.ledger.api.v2.interactive import interactive_submission_service_pb2
 
+# from proto.message_pb2 import SimpleInt
 
 class TransactionError(Exception):
     pass
@@ -48,3 +52,14 @@ class Transaction:
         memo: str = read(buf, memo_len).decode("ascii")
 
         return cls(nonce=nonce, to=to, value=value, memo=memo)
+
+    @classmethod
+    def serialize_from_json(self, json_file: str) -> bytes:
+        with open(json_file, "r") as file:
+            data = json.load(file)
+            
+        prepared_tx = interactive_submission_service_pb2.PrepareSubmissionResponse()
+        Parse(json.dumps(data), prepared_tx)
+    
+        return prepared_tx.SerializeToString()
+

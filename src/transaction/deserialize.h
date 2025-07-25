@@ -4,6 +4,8 @@
 
 #include "types.h"
 
+// Include for uint32
+
 /**
  * Deserialize raw transaction in structure.
  *

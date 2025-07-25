@@ -3,7 +3,9 @@
 #include <stddef.h>  // size_t
 #include <stdint.h>  // uint*_t
 
-#define MAX_TX_LEN   510
+#include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
+
+#define MAX_TX_LEN   2048
 #define ADDRESS_LEN  20
 #define MAX_MEMO_LEN 465  // 510 - ADDRESS_LEN - 2*SIZE(U64) - SIZE(MAX_VARINT)
 
@@ -25,4 +27,5 @@ typedef struct {
     uint8_t *to;        /// pointer to address (20 bytes)
     uint8_t *memo;      /// memo (variable length)
     uint64_t memo_len;  /// length of memo (8 bytes)
+    com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse prepared_tx;  /// prepared transaction
 } transaction_t;
