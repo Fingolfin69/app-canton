@@ -19,6 +19,8 @@ ifeq ($(BOLOS_SDK),)
 $(error Environment variable BOLOS_SDK is not set)
 endif
 
+include $(BOLOS_SDK)/Makefile.defines
+
 ########################################
 #        Mandatory configuration       #
 ########################################
@@ -48,26 +50,12 @@ ICON_FLEX = icons/app_boilerplate_40px.gif
 ICON_HOME_NANO = glyphs/home_boilerplate_14px.gif
 
 # Application allowed derivation curves.
-# Possibles curves are: secp256k1, secp256r1, ed25519 and bls12381g1
-# If your app needs it, you can specify multiple curves by using:
-# `CURVE_APP_LOAD_PARAMS = <curve1> <curve2>`
-CURVE_APP_LOAD_PARAMS = secp256k1
+CURVE_APP_LOAD_PARAMS = secp256r1
 
 # Application allowed derivation paths.
-# You should request a specific path for your app.
-# This serve as an isolation mechanism.
-# Most application will have to request a path according to the BIP-0044
-# and SLIP-0044 standards.
-# If your app needs it, you can specify multiple path by using:
-# `PATH_APP_LOAD_PARAMS = "44'/1'" "45'/1'"`
-PATH_APP_LOAD_PARAMS = "44'/1'"   # purpose=coin(44) / coin_type=Testnet(1)
+PATH_APP_LOAD_PARAMS = "44'/20047'"
 
-# Setting to allow building variant applications
-# - <VARIANT_PARAM> is the name of the parameter which should be set
-#   to specify the variant that should be build.
-# - <VARIANT_VALUES> a list of variant that can be build using this app code.
-#   * It must at least contains one value.
-#   * Values can be the app ticker or anything else but should be unique.
+# Variants list
 VARIANT_PARAM = COIN
 VARIANT_VALUES = CANTON
 
@@ -111,12 +99,20 @@ ENABLE_NBGL_QRCODE = 1
 #DISABLE_DEBUG_LEDGER_ASSERT = 1
 #DISABLE_DEBUG_THROW = 1
 
+ENABLE_DYNAMIC_ALLOC = 1
+ifneq ($(DEBUG), 0)
+    MEMORY_PROFILING ?= 0
+    ifneq ($(MEMORY_PROFILING),0)
+        DEFINES += HAVE_MEMORY_PROFILING
+    endif
+endif
+
+include vendor/nanopb/extra/nanopb.mk
+
+INCLUDES_PATH += $(NANOPB_DIR) .
+
+DEFINES   += PB_NO_ERRMSG=1
+SOURCE_FILES += $(NANOPB_CORE)
+
 include $(BOLOS_SDK)/Makefile.standard_app
 
-########################################
-#      Protobuf files regeneration     #
-########################################
-.PHONY: proto
-proto:
-	@echo "Regenerating protobuf files..."
-	./proto_gen.sh

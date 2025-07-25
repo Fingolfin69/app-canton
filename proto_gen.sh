@@ -8,22 +8,13 @@ red() { echo -e "\e[31m$*\e[0m"; }
 green() { echo -e "\e[32m$*\e[0m"; }
 yellow() { echo -e "\e[33m$*\e[0m"; }
 
-# Setup paths - same as your original script
-if git rev-parse --is-inside-work-tree &>/dev/null || false; then
-    green "Running inside a git repository, using absolute paths."
-    ROOT_PATH=$(git rev-parse --show-toplevel)
-    LEDGER_API_PROTO_PATH=$ROOT_PATH/canton/community/ledger-api/src/main/protobuf
-    LAPI_VALUE_PROTO_PATH=$ROOT_PATH/daml/sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2/value.proto
-else
-    green "Running outside a git repository, using relative paths."
-    ROOT_PATH=../../protobuf
-    LEDGER_API_PROTO_PATH=$ROOT_PATH/ledger-api
-    LAPI_VALUE_PROTO_PATH=$LEDGER_API_PROTO_PATH/com/daml/ledger/api/v2/value.proto
-fi
-
+ROOT_PATH=$(git rev-parse --show-toplevel)
+LEDGER_API_PROTO_PATH=$ROOT_PATH/canton/community/ledger-api/src/main/protobuf
+LAPI_VALUE_PROTO_PATH=$ROOT_PATH/daml/sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2/value.proto
 LEDGER_API_V2_PATH=$LEDGER_API_PROTO_PATH/com/daml/ledger/api/v2
 OUTPUT_DIR="./src/"
-NANOPB_GENERATOR="nanopb/generator/protoc-gen-nanopb"
+NANOPB_GENERATOR="vendor/nanopb/generator/protoc-gen-nanopb"
+PROTOC="vendor/nanopb/generator/protoc"
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -63,7 +54,6 @@ download_if_not_exists "https://raw.githubusercontent.com/googleapis/googleapis/
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/any.proto" "google/protobuf/any.proto"
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/duration.proto" "google/protobuf/duration.proto"
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto" "google/protobuf/timestamp.proto"
-
 clone_if_not_exists "https://github.com/digital-asset/daml.git" "sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2"
 clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive"
 mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledger/api/v2/value.proto"
@@ -93,6 +83,32 @@ com.daml.ledger.api.v2.Enum.constructor type:FT_STATIC max_size:128
 com.daml.ledger.api.v2.RecordField.label type:FT_STATIC max_size:128
 com.daml.ledger.api.v2.TextMap.Entry.key type:FT_STATIC max_size:256
 EOF
+# com.daml.ledger.api.v2.TextMap.entries type:FT_STATIC max_count:16
+
+echo "Creating interactive_submission_data.options file..."
+cat > interactive_submission_data.options << 'EOF'
+# Handle recursive fields in interactive submission data
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.signatories type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.signatories type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.stakeholders type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.stakeholders type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.acting_parties type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.acting_parties type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.choice_observers type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.choice_observers type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.signatories type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.signatories type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.stakeholders type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.stakeholders type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.acting_parties type:FT_STATIC max_count: 10
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.acting_parties type:FT_STATIC max_size: 128
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.interface_id type:FT_STATIC max_size: 256
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.interface_id type:FT_STATIC max_size: 256
+EOF
 
 # Generate nanopb C/H code for protobuf messages
 generate_nanopb_code() {
@@ -112,7 +128,7 @@ generate_nanopb_code() {
   fi
 
   # Build the protoc command
-  local protoc_cmd="protoc --nanopb_out=$OUTPUT_DIR"
+  local protoc_cmd="$PROTOC --nanopb_out=$OUTPUT_DIR"
   
   # Add options file if it exists
   if [ -f "$options_file" ]; then
@@ -130,10 +146,12 @@ generate_nanopb_code() {
   
   # Add include paths
   protoc_cmd="$protoc_cmd -I$include_paths -I. --plugin=protoc-gen-nanopb=$NANOPB_GENERATOR $proto_file"
-  
+  py_protoc_cmd="$PROTOC -I$include_paths -I. --python_out=tests --pyi_out=tests $proto_file"
+
   # Execute the command
   yellow "Running: $protoc_cmd"
   eval $protoc_cmd
+  eval $py_protoc_cmd
 }
 
 # Generate nanopb C/H code
