@@ -34,3 +34,18 @@
  * Exponent used to convert mBOL to BOL unit (N BOL = N * 10^3 mBOL).
  */
 #define EXPONENT_SMALLEST_UNIT 3
+
+/**
+ * Maximum length of a encoded TX (without metadata and list of nodes) (bytes).
+ */
+#define MAX_ENCODED_TX_LEN 2048
+
+/**
+ * Maximum length of a encoded Node (bytes).
+ */
+#define MAX_ENCODED_NODE_LEN 2048
+
+/**
+ * Maximum length of a encoded TX metadata (bytes).
+ */
+#define MAX_ENCODED_METADATA_LEN 1024

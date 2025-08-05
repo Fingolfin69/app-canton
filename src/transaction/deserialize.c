@@ -44,7 +44,7 @@ parser_status_e transaction_deserialize(buffer_t *buf, transaction_t *tx) {
     PRINTF("Decoding transaction from buffer of size %d bytes\n", buf->size);
 
     if (!pb_decode(&stream, com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_fields, &tx->prepared_tx)) {
-        // PRINTF("Failed to decode transaction: %s\n", PB_GET_ERROR(&stream));
+        PRINTF("Failed to decode transaction: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
     }
 
@@ -53,9 +53,9 @@ parser_status_e transaction_deserialize(buffer_t *buf, transaction_t *tx) {
 
     PRINTF("Decoded transaction successfully.\n");
     PRINTF("Transaction fields : \n");
+    PRINTF("Prepared TX hash: %.*H\n", tx->prepared_tx.prepared_transaction_hash.size, tx->prepared_tx.prepared_transaction_hash.bytes);
     PRINTF("  Has prepared transaction: %d\n", tx->prepared_tx.has_prepared_transaction);
-    PRINTF("  Has hashing details: %d\n", tx->prepared_tx.has_hashing_details);
+    PRINTF("  Has hashing details: %d\n", tx->prepared_tx.hashing_details != NULL);
 
     return PARSING_OK;
-
 }
