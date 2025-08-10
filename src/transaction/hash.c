@@ -171,6 +171,27 @@ static inline void bw_put_u64_be(ByteWriter *bw, uint64_t v) {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Helper functions                                                          */
+/* -------------------------------------------------------------------------- */
+
+static bool is_digit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+static int atoint(const char* str) {
+    int res = 0;
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!is_digit(str[i])) {
+            return 0;
+        }
+        res = res * 10 + str[i] - '0';
+    }
+
+    return res;
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Encoders                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -201,6 +222,7 @@ static uint8_t hex_val(char c) {
                       : (c >= 'a' && c <= 'f') ? 10 + c - 'a'
                                                : 10 + c - 'A');
 }
+
 static void encode_hex_string(ByteWriter *bw, const char *hex) {
     size_t len = strlen(hex);
     if (len % 2 != 0) {
@@ -392,10 +414,16 @@ static void encode_identifier(ByteWriter *bw, const Identifier *id) {
 }
 
 static const uint8_t *find_seed(const char *node_id, const NodeSeed *seeds, size_t n) {
-    for (size_t i = 0; i < n; ++i)
-        // ATTENTION, FIXME
-        // if (strcmp(seeds[i].node_id, node_id) == 0) return seeds[i].seed->bytes;
-        if (true) return seeds[i].seed->bytes;
+    if (node_id == NULL) {
+        return NULL;  // No node_id provided, no seed to find
+    }
+
+    int node_id_num = atoint(node_id);
+
+    for (size_t i = 0; i < n; ++i) {
+        if (seeds[i].node_id == node_id_num) return seeds[i].seed->bytes;
+    }
+
     return NULL;
 }
 
@@ -542,6 +570,7 @@ static void encode_transaction(ByteWriter *bw, const DamlTransaction *tx) {
                              tx->node_seeds,
                              tx->node_seeds_count);
 }
+
 static void hash_transaction(const DamlTransaction *tx, uint8_t out[32]) {
     uint8_t *scratch = app_mem_alloc(MAX_ENCODED_TX_LEN);
     LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for transaction");

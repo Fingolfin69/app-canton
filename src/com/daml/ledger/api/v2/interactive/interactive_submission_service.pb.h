@@ -67,16 +67,6 @@ typedef struct _com_daml_ledger_api_v2_interactive_DamlTransaction {
     struct _com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed *node_seeds; 
 } com_daml_ledger_api_v2_interactive_DamlTransaction;
 
-/* Defines a package-name for which the commonly vetted package with the highest version must be found. */
-typedef struct _com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed { 
-    /* The parties whose participants' vetting state should be considered when resolving the preferred package.
- Required */
-    int32_t *node_id; 
-    /* The package-name for which the preferred package should be resolved.
- Required */
-    pb_bytes_array_t *seed; 
-} com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed;
-
 typedef struct _com_daml_ledger_api_v2_interactive_ExecuteSubmissionResponse { 
     char dummy_field;
 } com_daml_ledger_api_v2_interactive_ExecuteSubmissionResponse;
@@ -114,6 +104,16 @@ typedef struct _com_daml_ledger_api_v2_interactive_DamlTransaction_Node {
         com_daml_ledger_api_v2_interactive_transaction_v1_Node v1;
     }; 
 } com_daml_ledger_api_v2_interactive_DamlTransaction_Node;
+
+/* Defines a package-name for which the commonly vetted package with the highest version must be found. */
+typedef struct _com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed { 
+    /* The parties whose participants' vetting state should be considered when resolving the preferred package.
+ Required */
+    int32_t node_id; 
+    /* The package-name for which the preferred package should be resolved.
+ Required */
+    pb_bytes_array_t *seed; 
+} com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed;
 
 typedef struct _com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest { 
     /* The package references of the preferred packages.
@@ -402,7 +402,7 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry_init_default {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_default, false, com_daml_ledger_api_v2_Value_init_default}
 #define com_daml_ledger_api_v2_interactive_Metadata_InputContract_init_default {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}, 0, {0, {0}}}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_init_default {NULL, 0, NULL, 0, NULL, 0, NULL}
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_init_default {NULL, NULL}
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_init_default {0, NULL}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_init_default {NULL, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default}}
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest_init_default {{{NULL}, NULL}, "", "", false, google_protobuf_Timestamp_init_default}
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionResponse_init_default {false, com_daml_ledger_api_v2_interactive_PackagePreference_init_default}
@@ -424,7 +424,7 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry_init_zero {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_zero, false, com_daml_ledger_api_v2_Value_init_zero}
 #define com_daml_ledger_api_v2_interactive_Metadata_InputContract_init_zero {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero}, 0, {0, {0}}}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_init_zero {NULL, 0, NULL, 0, NULL, 0, NULL}
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_init_zero {NULL, NULL}
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_init_zero {0, NULL}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_init_zero {NULL, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest_init_zero {{{NULL}, NULL}, "", "", false, google_protobuf_Timestamp_init_zero}
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionResponse_init_zero {false, com_daml_ledger_api_v2_interactive_PackagePreference_init_zero}
@@ -438,13 +438,13 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_roots_tag 2
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_nodes_tag 3
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_node_seeds_tag 4
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_node_id_tag 1
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_seed_tag 2
 #define com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_act_as_tag 1
 #define com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_command_id_tag 2
 #define com_daml_ledger_api_v2_interactive_PartySignatures_signatures_tag 1
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_node_id_tag 1
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_v1_tag 1000
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_node_id_tag 1
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_seed_tag 2
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest_parties_tag 1
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest_package_name_tag 2
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest_synchronizer_id_tag 3
@@ -643,7 +643,7 @@ X(a, POINTER,  REPEATED, MESSAGE,  node_seeds,        4)
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_node_seeds_MSGTYPE com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed
 
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_FIELDLIST(X, a) \
-X(a, POINTER,  SINGULAR, INT32,    node_id,           1) \
+X(a, STATIC,   SINGULAR, INT32,    node_id,           1) \
 X(a, POINTER,  SINGULAR, BYTES,    seed,              2)
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_CALLBACK NULL
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_DEFAULT NULL

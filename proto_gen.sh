@@ -111,6 +111,7 @@ cat > interactive_submission_service.options << 'EOF'
 * anonymous_oneof:true
 com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.prepared_transaction_hash max_size: 32
 com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.hashing_details type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DamlTransaction.NodeSeed.node_id type:FT_STATIC 
 com.daml.ledger.api.v2.interactive.DamlTransaction.version type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
