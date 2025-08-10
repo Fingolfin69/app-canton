@@ -461,6 +461,9 @@ static void encode_node_id_hashed(ByteWriter *bw,
     uint8_t h[32];
     cx_sha256_hash(scratch, bw_size(&n_bw), h);
     bw_put(bw, h, 32);
+
+    app_mem_free(scratch);
+
     PRINTF("Node id hash: %.*H\n", 32, h);
 }
 
@@ -647,6 +650,8 @@ static void hash_metadata(const Metadata *md, uint8_t out[32]) {
     encode_metadata(&bw, md);
 
     cx_sha256_hash(scratch, bw_size(&bw), out);
+
+    app_mem_free(scratch);
 
     PRINTF("Metadata hash: %.*H\n", 32, out);
 }
