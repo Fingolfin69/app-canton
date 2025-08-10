@@ -582,14 +582,30 @@ static void hash_transaction(const DamlTransaction *tx, uint8_t out[32]) {
 
     cx_sha256_hash(scratch, bw_size(&bw), out);
 
+    app_mem_free(scratch);
+
     PRINTF("TX hash: %.*H\n", 32, out);
 }
 
 static void encode_input_contract(ByteWriter *bw, const InputContract *c) {
     encode_int64(bw, c->created_at);
-    // FIXME:
-    // encode_hash(bw, c->v1_hash);
+
+    // Encode contract create node in seprate buffer and calculate its hash 
+    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
+    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
+
+    ByteWriter n_bw;
+    bw_init(&n_bw, scratch, MAX_ENCODED_NODE_LEN);
+    encode_create(&n_bw, &c->v1, NULL, NULL, 0);
+
+    uint8_t hash[32];
+    cx_sha256_hash(scratch, bw_size(&n_bw), hash);
+
+    app_mem_free(scratch);
+
+    encode_hash(bw, hash);
 }
+
 static void wrap_encode_input_contract(ByteWriter *bw, const void *ctx) {
     encode_input_contract(bw, (const InputContract *) ctx);
 }
