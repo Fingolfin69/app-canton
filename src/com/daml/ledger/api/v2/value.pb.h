@@ -12,32 +12,14 @@
 
 /* Struct definitions */
 typedef struct _com_daml_ledger_api_v2_GenMap { 
-    pb_callback_t entries; 
+    pb_size_t entries_count;
+    struct _com_daml_ledger_api_v2_GenMap_Entry *entries; 
 } com_daml_ledger_api_v2_GenMap;
 
 typedef struct _com_daml_ledger_api_v2_GenMap_Entry { 
     struct _com_daml_ledger_api_v2_Value *key; 
     struct _com_daml_ledger_api_v2_Value *value; 
 } com_daml_ledger_api_v2_GenMap_Entry;
-
-/* A homogenous collection of values. */
-typedef struct _com_daml_ledger_api_v2_List { 
-    /* The elements must all be of the same concrete value type.
- Optional */
-    pb_size_t elements_count;
-    struct _com_daml_ledger_api_v2_Value *elements; 
-} com_daml_ledger_api_v2_List;
-
-/* Corresponds to Java's Optional type, Scala's Option, and Haskell's Maybe.
- The reason why we need to wrap this in an additional ``message`` is that we
- need to be able to encode the ``None`` case in the ``Value`` oneof. */
-typedef struct _com_daml_ledger_api_v2_Optional { 
-    struct _com_daml_ledger_api_v2_Value *value; /* optional */
-} com_daml_ledger_api_v2_Optional;
-
-typedef struct _com_daml_ledger_api_v2_TextMap { 
-    pb_callback_t entries; 
-} com_daml_ledger_api_v2_TextMap;
 
 /* Unique identifier of an entity.
  Throughout this API, the following terminology is being used:
@@ -55,14 +37,29 @@ typedef struct _com_daml_ledger_api_v2_Identifier {
  is used as a discriminator for signalling a package-name encoding.
 
  Required */
-    char package_id[256]; 
+    char *package_id; 
     /* The dot-separated module name of the identifier.
  Required */
-    char module_name[256]; 
+    char *module_name; 
     /* The dot-separated name of the entity (e.g. record, template, ...) within the module.
  Required */
-    char entity_name[256]; 
+    char *entity_name; 
 } com_daml_ledger_api_v2_Identifier;
+
+/* A homogenous collection of values. */
+typedef struct _com_daml_ledger_api_v2_List { 
+    /* The elements must all be of the same concrete value type.
+ Optional */
+    pb_size_t elements_count;
+    struct _com_daml_ledger_api_v2_Value *elements; 
+} com_daml_ledger_api_v2_List;
+
+/* Corresponds to Java's Optional type, Scala's Option, and Haskell's Maybe.
+ The reason why we need to wrap this in an additional ``message`` is that we
+ need to be able to encode the ``None`` case in the ``Value`` oneof. */
+typedef struct _com_daml_ledger_api_v2_Optional { 
+    struct _com_daml_ledger_api_v2_Value *value; /* optional */
+} com_daml_ledger_api_v2_Optional;
 
 /* A named nested value within a record. */
 typedef struct _com_daml_ledger_api_v2_RecordField { 
@@ -73,14 +70,19 @@ typedef struct _com_daml_ledger_api_v2_RecordField {
  - if any of the keys within a single record are omitted, the order of fields MUST match the order of declaration in the Daml template.
 
  Must be a valid NameString */
-    char label[128]; 
+    char *label; 
     /* A nested value of a record.
  Required */
     struct _com_daml_ledger_api_v2_Value *value; 
 } com_daml_ledger_api_v2_RecordField;
 
+typedef struct _com_daml_ledger_api_v2_TextMap { 
+    pb_size_t entries_count;
+    struct _com_daml_ledger_api_v2_TextMap_Entry *entries; 
+} com_daml_ledger_api_v2_TextMap;
+
 typedef struct _com_daml_ledger_api_v2_TextMap_Entry { 
-    char key[256]; 
+    char *key; 
     struct _com_daml_ledger_api_v2_Value *value; 
 } com_daml_ledger_api_v2_TextMap_Entry;
 
@@ -93,7 +95,7 @@ typedef struct _com_daml_ledger_api_v2_Enum {
     /* Determines which of the Variant's alternatives is encoded in this message.
  Must be a valid NameString.
  Required */
-    char constructor[128]; 
+    char *constructor; 
 } com_daml_ledger_api_v2_Enum;
 
 /* Contains nested values. */
@@ -104,7 +106,8 @@ typedef struct _com_daml_ledger_api_v2_Record {
     com_daml_ledger_api_v2_Identifier record_id; 
     /* The nested values of the record.
  Required */
-    pb_callback_t fields; 
+    pb_size_t fields_count;
+    struct _com_daml_ledger_api_v2_RecordField *fields; 
 } com_daml_ledger_api_v2_Record;
 
 /* A value with alternative representations. */
@@ -116,7 +119,7 @@ typedef struct _com_daml_ledger_api_v2_Variant {
     /* Determines which of the Variant's alternatives is encoded in this message.
  Must be a valid NameString.
  Required */
-    char constructor[128]; 
+    char *constructor; 
     /* The value encoded within the Variant.
  Required */
     struct _com_daml_ledger_api_v2_Value *value; 
@@ -141,10 +144,10 @@ typedef struct _com_daml_ledger_api_v2_Value {
         int64_t int64;
         int32_t date;
         int64_t timestamp;
-        char numeric[64];
-        char party[256];
-        char text[1024];
-        char contract_id[256];
+        char *numeric;
+        char *party;
+        char *text;
+        char *contract_id;
         com_daml_ledger_api_v2_Optional optional;
         com_daml_ledger_api_v2_List list;
         com_daml_ledger_api_v2_TextMap text_map;
@@ -152,7 +155,7 @@ typedef struct _com_daml_ledger_api_v2_Value {
         com_daml_ledger_api_v2_Record record;
         com_daml_ledger_api_v2_Variant variant;
         com_daml_ledger_api_v2_Enum enum_;
-    } sum; 
+    }; 
 } com_daml_ledger_api_v2_Value;
 
 
@@ -162,42 +165,42 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define com_daml_ledger_api_v2_Value_init_default {0, {google_protobuf_Empty_init_default}}
-#define com_daml_ledger_api_v2_Record_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_RecordField_init_default {"", NULL}
-#define com_daml_ledger_api_v2_Identifier_init_default {"", "", ""}
-#define com_daml_ledger_api_v2_Variant_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, "", NULL}
-#define com_daml_ledger_api_v2_Enum_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, ""}
+#define com_daml_ledger_api_v2_Record_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, 0, NULL}
+#define com_daml_ledger_api_v2_RecordField_init_default {NULL, NULL}
+#define com_daml_ledger_api_v2_Identifier_init_default {NULL, NULL, NULL}
+#define com_daml_ledger_api_v2_Variant_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, NULL, NULL}
+#define com_daml_ledger_api_v2_Enum_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, NULL}
 #define com_daml_ledger_api_v2_List_init_default {0, NULL}
 #define com_daml_ledger_api_v2_Optional_init_default {NULL}
-#define com_daml_ledger_api_v2_TextMap_init_default {{{NULL}, NULL}}
-#define com_daml_ledger_api_v2_TextMap_Entry_init_default {"", NULL}
-#define com_daml_ledger_api_v2_GenMap_init_default {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_TextMap_init_default {0, NULL}
+#define com_daml_ledger_api_v2_TextMap_Entry_init_default {NULL, NULL}
+#define com_daml_ledger_api_v2_GenMap_init_default {0, NULL}
 #define com_daml_ledger_api_v2_GenMap_Entry_init_default {NULL, NULL}
 #define com_daml_ledger_api_v2_Value_init_zero   {0, {google_protobuf_Empty_init_zero}}
-#define com_daml_ledger_api_v2_Record_init_zero  {false, com_daml_ledger_api_v2_Identifier_init_zero, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_RecordField_init_zero {"", NULL}
-#define com_daml_ledger_api_v2_Identifier_init_zero {"", "", ""}
-#define com_daml_ledger_api_v2_Variant_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, "", NULL}
-#define com_daml_ledger_api_v2_Enum_init_zero    {false, com_daml_ledger_api_v2_Identifier_init_zero, ""}
+#define com_daml_ledger_api_v2_Record_init_zero  {false, com_daml_ledger_api_v2_Identifier_init_zero, 0, NULL}
+#define com_daml_ledger_api_v2_RecordField_init_zero {NULL, NULL}
+#define com_daml_ledger_api_v2_Identifier_init_zero {NULL, NULL, NULL}
+#define com_daml_ledger_api_v2_Variant_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, NULL, NULL}
+#define com_daml_ledger_api_v2_Enum_init_zero    {false, com_daml_ledger_api_v2_Identifier_init_zero, NULL}
 #define com_daml_ledger_api_v2_List_init_zero    {0, NULL}
 #define com_daml_ledger_api_v2_Optional_init_zero {NULL}
-#define com_daml_ledger_api_v2_TextMap_init_zero {{{NULL}, NULL}}
-#define com_daml_ledger_api_v2_TextMap_Entry_init_zero {"", NULL}
-#define com_daml_ledger_api_v2_GenMap_init_zero  {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_TextMap_init_zero {0, NULL}
+#define com_daml_ledger_api_v2_TextMap_Entry_init_zero {NULL, NULL}
+#define com_daml_ledger_api_v2_GenMap_init_zero  {0, NULL}
 #define com_daml_ledger_api_v2_GenMap_Entry_init_zero {NULL, NULL}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_daml_ledger_api_v2_GenMap_entries_tag 1
 #define com_daml_ledger_api_v2_GenMap_Entry_key_tag 1
 #define com_daml_ledger_api_v2_GenMap_Entry_value_tag 2
-#define com_daml_ledger_api_v2_List_elements_tag 1
-#define com_daml_ledger_api_v2_Optional_value_tag 1
-#define com_daml_ledger_api_v2_TextMap_entries_tag 1
 #define com_daml_ledger_api_v2_Identifier_package_id_tag 1
 #define com_daml_ledger_api_v2_Identifier_module_name_tag 2
 #define com_daml_ledger_api_v2_Identifier_entity_name_tag 3
+#define com_daml_ledger_api_v2_List_elements_tag 1
+#define com_daml_ledger_api_v2_Optional_value_tag 1
 #define com_daml_ledger_api_v2_RecordField_label_tag 1
 #define com_daml_ledger_api_v2_RecordField_value_tag 2
+#define com_daml_ledger_api_v2_TextMap_entries_tag 1
 #define com_daml_ledger_api_v2_TextMap_Entry_key_tag 1
 #define com_daml_ledger_api_v2_TextMap_Entry_value_tag 2
 #define com_daml_ledger_api_v2_Enum_enum_id_tag  1
@@ -226,22 +229,22 @@ extern "C" {
 
 /* Struct field encoding specification for nanopb */
 #define com_daml_ledger_api_v2_Value_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,unit,sum.unit),   1) \
-X(a, STATIC,   ONEOF,    BOOL,     (sum,bool_,sum.bool_),   2) \
-X(a, STATIC,   ONEOF,    SINT64,   (sum,int64,sum.int64),   3) \
-X(a, STATIC,   ONEOF,    INT32,    (sum,date,sum.date),   4) \
-X(a, STATIC,   ONEOF,    SFIXED64, (sum,timestamp,sum.timestamp),   5) \
-X(a, STATIC,   ONEOF,    STRING,   (sum,numeric,sum.numeric),   6) \
-X(a, STATIC,   ONEOF,    STRING,   (sum,party,sum.party),   7) \
-X(a, STATIC,   ONEOF,    STRING,   (sum,text,sum.text),   8) \
-X(a, STATIC,   ONEOF,    STRING,   (sum,contract_id,sum.contract_id),   9) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,optional,sum.optional),  10) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,list,sum.list),  11) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,text_map,sum.text_map),  12) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,gen_map,sum.gen_map),  13) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,record,sum.record),  14) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,variant,sum.variant),  15) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (sum,enum_,sum.enum_),  16)
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,unit,unit),   1) \
+X(a, STATIC,   ONEOF,    BOOL,     (sum,bool_,bool_),   2) \
+X(a, STATIC,   ONEOF,    SINT64,   (sum,int64,int64),   3) \
+X(a, STATIC,   ONEOF,    INT32,    (sum,date,date),   4) \
+X(a, STATIC,   ONEOF,    SFIXED64, (sum,timestamp,timestamp),   5) \
+X(a, POINTER,  ONEOF,    STRING,   (sum,numeric,numeric),   6) \
+X(a, POINTER,  ONEOF,    STRING,   (sum,party,party),   7) \
+X(a, POINTER,  ONEOF,    STRING,   (sum,text,text),   8) \
+X(a, POINTER,  ONEOF,    STRING,   (sum,contract_id,contract_id),   9) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,optional,optional),  10) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,list,list),  11) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,text_map,text_map),  12) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,gen_map,gen_map),  13) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,record,record),  14) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,variant,variant),  15) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (sum,enum_,enum_),  16)
 #define com_daml_ledger_api_v2_Value_CALLBACK NULL
 #define com_daml_ledger_api_v2_Value_DEFAULT NULL
 #define com_daml_ledger_api_v2_Value_sum_unit_MSGTYPE google_protobuf_Empty
@@ -255,29 +258,29 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (sum,enum_,sum.enum_),  16)
 
 #define com_daml_ledger_api_v2_Record_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  record_id,         1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  fields,            2)
-#define com_daml_ledger_api_v2_Record_CALLBACK pb_default_field_callback
+X(a, POINTER,  REPEATED, MESSAGE,  fields,            2)
+#define com_daml_ledger_api_v2_Record_CALLBACK NULL
 #define com_daml_ledger_api_v2_Record_DEFAULT NULL
 #define com_daml_ledger_api_v2_Record_record_id_MSGTYPE com_daml_ledger_api_v2_Identifier
 #define com_daml_ledger_api_v2_Record_fields_MSGTYPE com_daml_ledger_api_v2_RecordField
 
 #define com_daml_ledger_api_v2_RecordField_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   label,             1) \
+X(a, POINTER,  SINGULAR, STRING,   label,             1) \
 X(a, POINTER,  OPTIONAL, MESSAGE,  value,             2)
 #define com_daml_ledger_api_v2_RecordField_CALLBACK NULL
 #define com_daml_ledger_api_v2_RecordField_DEFAULT NULL
 #define com_daml_ledger_api_v2_RecordField_value_MSGTYPE com_daml_ledger_api_v2_Value
 
 #define com_daml_ledger_api_v2_Identifier_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   package_id,        1) \
-X(a, STATIC,   SINGULAR, STRING,   module_name,       2) \
-X(a, STATIC,   SINGULAR, STRING,   entity_name,       3)
+X(a, POINTER,  SINGULAR, STRING,   package_id,        1) \
+X(a, POINTER,  SINGULAR, STRING,   module_name,       2) \
+X(a, POINTER,  SINGULAR, STRING,   entity_name,       3)
 #define com_daml_ledger_api_v2_Identifier_CALLBACK NULL
 #define com_daml_ledger_api_v2_Identifier_DEFAULT NULL
 
 #define com_daml_ledger_api_v2_Variant_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  variant_id,        1) \
-X(a, STATIC,   SINGULAR, STRING,   constructor,       2) \
+X(a, POINTER,  SINGULAR, STRING,   constructor,       2) \
 X(a, POINTER,  OPTIONAL, MESSAGE,  value,             3)
 #define com_daml_ledger_api_v2_Variant_CALLBACK NULL
 #define com_daml_ledger_api_v2_Variant_DEFAULT NULL
@@ -286,7 +289,7 @@ X(a, POINTER,  OPTIONAL, MESSAGE,  value,             3)
 
 #define com_daml_ledger_api_v2_Enum_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  enum_id,           1) \
-X(a, STATIC,   SINGULAR, STRING,   constructor,       2)
+X(a, POINTER,  SINGULAR, STRING,   constructor,       2)
 #define com_daml_ledger_api_v2_Enum_CALLBACK NULL
 #define com_daml_ledger_api_v2_Enum_DEFAULT NULL
 #define com_daml_ledger_api_v2_Enum_enum_id_MSGTYPE com_daml_ledger_api_v2_Identifier
@@ -304,21 +307,21 @@ X(a, POINTER,  OPTIONAL, MESSAGE,  value,             1)
 #define com_daml_ledger_api_v2_Optional_value_MSGTYPE com_daml_ledger_api_v2_Value
 
 #define com_daml_ledger_api_v2_TextMap_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  entries,           1)
-#define com_daml_ledger_api_v2_TextMap_CALLBACK pb_default_field_callback
+X(a, POINTER,  REPEATED, MESSAGE,  entries,           1)
+#define com_daml_ledger_api_v2_TextMap_CALLBACK NULL
 #define com_daml_ledger_api_v2_TextMap_DEFAULT NULL
 #define com_daml_ledger_api_v2_TextMap_entries_MSGTYPE com_daml_ledger_api_v2_TextMap_Entry
 
 #define com_daml_ledger_api_v2_TextMap_Entry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   key,               1) \
+X(a, POINTER,  SINGULAR, STRING,   key,               1) \
 X(a, POINTER,  OPTIONAL, MESSAGE,  value,             2)
 #define com_daml_ledger_api_v2_TextMap_Entry_CALLBACK NULL
 #define com_daml_ledger_api_v2_TextMap_Entry_DEFAULT NULL
 #define com_daml_ledger_api_v2_TextMap_Entry_value_MSGTYPE com_daml_ledger_api_v2_Value
 
 #define com_daml_ledger_api_v2_GenMap_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  entries,           1)
-#define com_daml_ledger_api_v2_GenMap_CALLBACK pb_default_field_callback
+X(a, POINTER,  REPEATED, MESSAGE,  entries,           1)
+#define com_daml_ledger_api_v2_GenMap_CALLBACK NULL
 #define com_daml_ledger_api_v2_GenMap_DEFAULT NULL
 #define com_daml_ledger_api_v2_GenMap_entries_MSGTYPE com_daml_ledger_api_v2_GenMap_Entry
 
@@ -361,15 +364,15 @@ extern const pb_msgdesc_t com_daml_ledger_api_v2_GenMap_Entry_msg;
 /* com_daml_ledger_api_v2_Value_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_Record_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_RecordField_size depends on runtime parameters */
+/* com_daml_ledger_api_v2_Identifier_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_Variant_size depends on runtime parameters */
+/* com_daml_ledger_api_v2_Enum_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_List_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_Optional_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_TextMap_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_TextMap_Entry_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_GenMap_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_GenMap_Entry_size depends on runtime parameters */
-#define com_daml_ledger_api_v2_Enum_size         907
-#define com_daml_ledger_api_v2_Identifier_size   774
 
 #ifdef __cplusplus
 } /* extern "C" */

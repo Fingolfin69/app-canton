@@ -6,22 +6,22 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(com_daml_ledger_api_v2_Value, com_daml_ledger_api_v2_Value, 2)
+PB_BIND(com_daml_ledger_api_v2_Value, com_daml_ledger_api_v2_Value, AUTO)
 
 
-PB_BIND(com_daml_ledger_api_v2_Record, com_daml_ledger_api_v2_Record, 2)
+PB_BIND(com_daml_ledger_api_v2_Record, com_daml_ledger_api_v2_Record, AUTO)
 
 
 PB_BIND(com_daml_ledger_api_v2_RecordField, com_daml_ledger_api_v2_RecordField, AUTO)
 
 
-PB_BIND(com_daml_ledger_api_v2_Identifier, com_daml_ledger_api_v2_Identifier, 2)
+PB_BIND(com_daml_ledger_api_v2_Identifier, com_daml_ledger_api_v2_Identifier, AUTO)
 
 
-PB_BIND(com_daml_ledger_api_v2_Variant, com_daml_ledger_api_v2_Variant, 2)
+PB_BIND(com_daml_ledger_api_v2_Variant, com_daml_ledger_api_v2_Variant, AUTO)
 
 
-PB_BIND(com_daml_ledger_api_v2_Enum, com_daml_ledger_api_v2_Enum, 2)
+PB_BIND(com_daml_ledger_api_v2_Enum, com_daml_ledger_api_v2_Enum, AUTO)
 
 
 PB_BIND(com_daml_ledger_api_v2_List, com_daml_ledger_api_v2_List, AUTO)
@@ -33,7 +33,7 @@ PB_BIND(com_daml_ledger_api_v2_Optional, com_daml_ledger_api_v2_Optional, AUTO)
 PB_BIND(com_daml_ledger_api_v2_TextMap, com_daml_ledger_api_v2_TextMap, AUTO)
 
 
-PB_BIND(com_daml_ledger_api_v2_TextMap_Entry, com_daml_ledger_api_v2_TextMap_Entry, 2)
+PB_BIND(com_daml_ledger_api_v2_TextMap_Entry, com_daml_ledger_api_v2_TextMap_Entry, AUTO)
 
 
 PB_BIND(com_daml_ledger_api_v2_GenMap, com_daml_ledger_api_v2_GenMap, AUTO)
