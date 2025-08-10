@@ -124,10 +124,11 @@ int handler_sign_tx(buffer_t *cdata, uint8_t chunk, bool more) {
             if (memcmp(G_context.tx_info.m_hash,
                        G_context.tx_info.transaction.prepared_tx.prepared_transaction_hash.bytes,
                        sizeof(G_context.tx_info.m_hash)) != 0) {
-
                 PRINTF("Transaction hash mismatch: compute %.*H, expected %.*H\n",
-                          32, G_context.tx_info.m_hash,
-                          32, G_context.tx_info.transaction.prepared_tx.prepared_transaction_hash.bytes);
+                       32,
+                       G_context.tx_info.m_hash,
+                       32,
+                       G_context.tx_info.transaction.prepared_tx.prepared_transaction_hash.bytes);
 
                 return io_send_sw(SW_TX_HASH_FAIL);
             }

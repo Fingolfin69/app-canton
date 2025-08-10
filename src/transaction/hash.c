@@ -178,7 +178,7 @@ static bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
-static int atoint(const char* str) {
+static int atoint(const char *str) {
     int res = 0;
 
     for (int i = 0; str[i] != '\0'; i++) {
@@ -593,7 +593,7 @@ static void hash_transaction(const DamlTransaction *tx, uint8_t out[32]) {
 static void encode_input_contract(ByteWriter *bw, const InputContract *c) {
     encode_int64(bw, c->created_at);
 
-    // Encode contract create node in seprate buffer and calculate its hash 
+    // Encode contract create node in seprate buffer and calculate its hash
     uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
     LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
 
