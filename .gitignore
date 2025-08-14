@@ -41,5 +41,6 @@ ledger/
 canton/
 daml/
 !src/com/daml/
+!src/google/
 google/
 value.options

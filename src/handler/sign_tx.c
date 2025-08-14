@@ -33,6 +33,7 @@
 #include "deserialize.h"
 #include "handle_swap.h"
 #include "validate.h"
+#include "hash.h"
 
 #ifdef HAVE_SWAP
 static int check_and_sign_swap_tx(transaction_t *tx) {
@@ -102,6 +103,7 @@ int handler_sign_tx(buffer_t *cdata, uint8_t chunk, bool more) {
                             .offset = 0};
 
             parser_status_e status = transaction_deserialize(&buf, &G_context.tx_info.transaction);
+
             PRINTF("Parsing status: %d.\n", status);
             if (status != PARSING_OK) {
                 return io_send_sw(SW_TX_PARSING_FAIL);
@@ -109,9 +111,25 @@ int handler_sign_tx(buffer_t *cdata, uint8_t chunk, bool more) {
 
             G_context.state = STATE_PARSED;
 
-            if (cx_keccak_256_hash(G_context.tx_info.raw_tx,
-                                   G_context.tx_info.raw_tx_len,
-                                   G_context.tx_info.m_hash) != CX_OK) {
+            // Calculate the transaction hash
+            int res = prepared_transaction_hash(
+                &G_context.tx_info.transaction.prepared_tx.prepared_transaction,
+                G_context.tx_info.m_hash);
+
+            if (res != 0) {
+                PRINTF("Failed to compute transaction hash: %d\n", res);
+                return io_send_sw(SW_TX_HASH_FAIL);
+            }
+
+            if (memcmp(G_context.tx_info.m_hash,
+                       G_context.tx_info.transaction.prepared_tx.prepared_transaction_hash.bytes,
+                       sizeof(G_context.tx_info.m_hash)) != 0) {
+                PRINTF("Transaction hash mismatch: compute %.*H, expected %.*H\n",
+                       32,
+                       G_context.tx_info.m_hash,
+                       32,
+                       G_context.tx_info.transaction.prepared_tx.prepared_transaction_hash.bytes);
+
                 return io_send_sw(SW_TX_HASH_FAIL);
             }
 

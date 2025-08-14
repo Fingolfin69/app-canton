@@ -107,6 +107,8 @@ ifneq ($(DEBUG), 0)
     endif
 endif
 
+DEFINES += PB_ENABLE_MALLOC=1
+
 include vendor/nanopb/extra/nanopb.mk
 
 INCLUDES_PATH += $(NANOPB_DIR) .

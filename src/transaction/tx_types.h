@@ -27,5 +27,6 @@ typedef struct {
     uint8_t *to;        /// pointer to address (20 bytes)
     uint8_t *memo;      /// memo (variable length)
     uint64_t memo_len;  /// length of memo (8 bytes)
-    com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse prepared_tx;  /// prepared transaction
+    com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse
+        prepared_tx;  /// prepared transaction
 } transaction_t;

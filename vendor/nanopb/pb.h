@@ -435,12 +435,7 @@ struct pb_extension_s {
 /* Memory allocation functions to use. You can define pb_realloc and
  * pb_free to custom functions if you want. */
 #ifdef PB_ENABLE_MALLOC
-#   ifndef pb_realloc
-#       define pb_realloc(ptr, size) realloc(ptr, size)
-#   endif
-#   ifndef pb_free
-#       define pb_free(ptr) free(ptr)
-#   endif
+#include "../../src/mem.h"
 #endif
 
 /* This is used to inform about need to regenerate .pb.h/.pb.c files. */

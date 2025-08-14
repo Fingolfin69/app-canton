@@ -61,53 +61,72 @@ mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledge
 # Create the options file for value.proto
 echo "Creating value.options file..."
 cat > value.options << 'EOF'
+* anonymous_oneof:true
 # Handle recursive Value fields with pointers to break cycles
 com.daml.ledger.api.v2.RecordField.value type:FT_POINTER
 com.daml.ledger.api.v2.List.elements type:FT_POINTER  
 com.daml.ledger.api.v2.Optional.value type:FT_POINTER
 com.daml.ledger.api.v2.Variant.value type:FT_POINTER
 com.daml.ledger.api.v2.TextMap.Entry.value type:FT_POINTER
+com.daml.ledger.api.v2.TextMap.entries type:FT_POINTER
 com.daml.ledger.api.v2.GenMap.Entry.value type:FT_POINTER
 com.daml.ledger.api.v2.GenMap.Entry.key type:FT_POINTER
-
-# Static allocation for string fields to avoid callback issues in oneof
-com.daml.ledger.api.v2.Value.numeric type:FT_STATIC max_size:64
-com.daml.ledger.api.v2.Value.party type:FT_STATIC max_size:256
-com.daml.ledger.api.v2.Value.text type:FT_STATIC max_size:1024
-com.daml.ledger.api.v2.Value.contract_id type:FT_STATIC max_size:256
-com.daml.ledger.api.v2.Identifier.package_id type:FT_STATIC max_size:256
-com.daml.ledger.api.v2.Identifier.module_name type:FT_STATIC max_size:256
-com.daml.ledger.api.v2.Identifier.entity_name type:FT_STATIC max_size:256
-com.daml.ledger.api.v2.Variant.constructor type:FT_STATIC max_size:128
-com.daml.ledger.api.v2.Enum.constructor type:FT_STATIC max_size:128
-com.daml.ledger.api.v2.RecordField.label type:FT_STATIC max_size:128
-com.daml.ledger.api.v2.TextMap.Entry.key type:FT_STATIC max_size:256
+com.daml.ledger.api.v2.GenMap.entries type:FT_POINTER
+com.daml.ledger.api.v2.Value.numeric type:FT_POINTER
+com.daml.ledger.api.v2.Value.party type:FT_POINTER
+com.daml.ledger.api.v2.Value.text type:FT_POINTER
+com.daml.ledger.api.v2.Value.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.Identifier.package_id type:FT_POINTER
+com.daml.ledger.api.v2.Identifier.module_name type:FT_POINTER
+com.daml.ledger.api.v2.Identifier.entity_name type:FT_POINTER
+com.daml.ledger.api.v2.Variant.constructor type:FT_POINTER
+com.daml.ledger.api.v2.Enum.constructor type:FT_POINTER
+com.daml.ledger.api.v2.RecordField.label type:FT_POINTER
+com.daml.ledger.api.v2.TextMap.Entry.key type:FT_POINTER
+com.daml.ledger.api.v2.Record.fields type:FT_POINTER
 EOF
-# com.daml.ledger.api.v2.TextMap.entries type:FT_STATIC max_count:16
 
 echo "Creating interactive_submission_data.options file..."
 cat > interactive_submission_data.options << 'EOF'
+* anonymous_oneof:true
 # Handle recursive fields in interactive submission data
-com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.signatories type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.signatories type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.stakeholders type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.stakeholders type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.acting_parties type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.acting_parties type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.choice_observers type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.choice_observers type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.signatories type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.signatories type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.stakeholders type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.stakeholders type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.acting_parties type:FT_STATIC max_count: 10
-com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.acting_parties type:FT_STATIC max_size: 128
-com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.interface_id type:FT_STATIC max_size: 256
-com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.interface_id type:FT_STATIC max_size: 256
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.lf_version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.package_name type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.signatories type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.acting_parties type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.choice_observers type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.signatories type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.acting_parties type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.interface_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.interface_id type:FT_POINTER
+EOF
+
+echo "Creating interactive_submission_service.options file..."
+cat > interactive_submission_service.options << 'EOF'
+* anonymous_oneof:true
+com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.prepared_transaction_hash max_size: 32
+com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.hashing_details type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DamlTransaction.NodeSeed.node_id type:FT_STATIC 
+com.daml.ledger.api.v2.interactive.DamlTransaction.version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
+# NOTE: For some reason, without `max_count: 10000` nanopb static assertions fail here
+com.daml.ledger.api.v2.interactive.DamlTransaction.nodes type:FT_POINTER max_count: 10000
+com.daml.ledger.api.v2.interactive.DamlTransaction.node_seeds type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DamlTransaction.Node.node_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DamlTransaction.NodeSeed type:FT_POINTER
+com.daml.ledger.api.v2.interactive.ExecuteSubmissionRequest.submission_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.ExecuteSubmissionRequest.user_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.Metadata.synchronizer_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.Metadata.transaction_uuid type:FT_POINTER
+com.daml.ledger.api.v2.interactive.Metadata.input_contracts type:FT_POINTER
+com.daml.ledger.api.v2.interactive.Metadata.SubmitterInfo.act_as type:FT_POINTER
+com.daml.ledger.api.v2.interactive.Metadata.SubmitterInfo.command_id type:FT_POINTER
 EOF
 
 # Generate nanopb C/H code for protobuf messages
