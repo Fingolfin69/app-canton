@@ -2,6 +2,16 @@
 # pre-commit install --hook-type pre-commit
 # pre-commit install --hook-type commit-msg
 
+# Global exclude pattern - applies to all hooks by default
+exclude: |
+    (?x)^(
+        vendor/.*|
+        src/com/.*|
+        src/google/.*|
+        tests/snapshots-tmp/.*|
+        tests/snapshots/.*
+    )$
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
