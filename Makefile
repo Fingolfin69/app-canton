@@ -50,10 +50,10 @@ ICON_FLEX = icons/app_canton_40px.gif
 ICON_HOME_NANO = glyphs/home_canton_14px.gif
 
 # Application allowed derivation curves.
-CURVE_APP_LOAD_PARAMS = secp256r1
+CURVE_APP_LOAD_PARAMS = ed25519
 
 # Application allowed derivation paths.
-PATH_APP_LOAD_PARAMS = "44'/20047'"
+PATH_APP_LOAD_PARAMS = "44'/6767'"
 
 # Variants list
 VARIANT_PARAM = COIN
