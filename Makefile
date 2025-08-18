@@ -38,16 +38,16 @@ APP_SOURCE_PATH += src
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon
-ICON_NANOX = icons/app_boilerplate_14px.gif
-ICON_NANOSP = icons/app_boilerplate_14px.gif
-ICON_STAX = icons/app_boilerplate_32px.gif
-ICON_FLEX = icons/app_boilerplate_40px.gif
+ICON_NANOX = icons/app_canton_14px.gif
+ICON_NANOSP = icons/app_canton_14px.gif
+ICON_STAX = icons/app_canton_32px.gif
+ICON_FLEX = icons/app_canton_40px.gif
 
 # With the Nano NBGL Design, the Home Screen icon is the reverse of the App icon:
 # It should be on white background, with rounded corners.
 # This definition allows SDK Makefiles to automatically generate it based on the App icon.
 # Please note that the icon is dynamically generated, and declared in the .gitignore to avoid storing it.
-ICON_HOME_NANO = glyphs/home_boilerplate_14px.gif
+ICON_HOME_NANO = glyphs/home_canton_14px.gif
 
 # Application allowed derivation curves.
 CURVE_APP_LOAD_PARAMS = secp256r1

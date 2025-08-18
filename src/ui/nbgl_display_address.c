@@ -64,8 +64,8 @@ int ui_display_address() {
 
     nbgl_useCaseAddressReview(g_address,
                               NULL,
-                              &ICON_APP_BOILERPLATE,
-                              "Verify BOL address",
+                              &ICON_APP_CANTON,
+                              "Verify Canton address",
                               NULL,
                               review_choice);
     return 0;
