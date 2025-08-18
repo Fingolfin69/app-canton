@@ -108,7 +108,7 @@ class BoilerplateCommandSender:
                               data=pack_derivation_path(path))
         messages = split_message(transaction, MAX_APDU_LEN)
         idx: int = P1.P1_START + 1
-        
+
         print(f"Sending {len(messages)} chunks of transaction data")
 
         for msg in messages[:-1]:

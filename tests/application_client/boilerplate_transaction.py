@@ -2,9 +2,12 @@ import json
 from io import BytesIO
 from typing import Union
 
-from .boilerplate_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 from google.protobuf.json_format import Parse
-from com.daml.ledger.api.v2.interactive import interactive_submission_service_pb2
+# pylint: disable=no-name-in-module, import-error
+from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import \
+    PrepareSubmissionResponse # type: ignore
+
+from .boilerplate_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 
 # from proto.message_pb2 import SimpleInt
 
@@ -54,12 +57,11 @@ class Transaction:
         return cls(nonce=nonce, to=to, value=value, memo=memo)
 
     @classmethod
-    def serialize_from_json(self, json_file: str) -> bytes:
-        with open(json_file, "r") as file:
+    def serialize_from_json(cls, json_file: str) -> bytes:
+        with open(json_file, "r", encoding="utf-8") as file:
             data = json.load(file)
-            
-        prepared_tx = interactive_submission_service_pb2.PrepareSubmissionResponse()
-        Parse(json.dumps(data), prepared_tx)
-    
-        return prepared_tx.SerializeToString()
 
+        prepared_tx = PrepareSubmissionResponse()
+        Parse(json.dumps(data), prepared_tx)
+
+        return prepared_tx.SerializeToString()

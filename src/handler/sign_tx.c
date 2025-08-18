@@ -108,13 +108,7 @@ int handler_sign_tx(buffer_t *cdata, uint8_t chunk, bool more) {
 
             PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
 
-            return io_send_sw(SW_OK);
-            // Example to trig a blind-sign flow
-            // if (strcmp((char *) G_context.tx_info.transaction.memo, "Blind-sign") == 0) {
-            //     return ui_display_blind_signed_transaction();
-            // } else {
-            //     return ui_display_transaction();
-            // }
+            return ui_display_blind_signed_transaction();
         }
     }
     return 0;

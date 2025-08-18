@@ -64,7 +64,7 @@ cat > value.options << 'EOF'
 * anonymous_oneof:true
 # Handle recursive Value fields with pointers to break cycles
 com.daml.ledger.api.v2.RecordField.value type:FT_POINTER
-com.daml.ledger.api.v2.List.elements type:FT_POINTER  
+com.daml.ledger.api.v2.List.elements type:FT_POINTER
 com.daml.ledger.api.v2.Optional.value type:FT_POINTER
 com.daml.ledger.api.v2.Variant.value type:FT_POINTER
 com.daml.ledger.api.v2.TextMap.Entry.value type:FT_POINTER
@@ -111,7 +111,7 @@ cat > interactive_submission_service.options << 'EOF'
 * anonymous_oneof:true
 com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.prepared_transaction_hash max_size: 32
 com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.hashing_details type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DamlTransaction.NodeSeed.node_id type:FT_STATIC 
+com.daml.ledger.api.v2.interactive.DamlTransaction.NodeSeed.node_id type:FT_STATIC
 com.daml.ledger.api.v2.interactive.DamlTransaction.version type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
@@ -140,7 +140,7 @@ generate_nanopb_code() {
   # Extract the base name for the options file
   local base_name=$(basename "$proto_file" .proto)
   local options_file="${base_name}.options"
-  
+
   # Check if specific options file exists, otherwise use value.options for Value-related protos
   if [ ! -f "$options_file" ] && [[ "$proto_file" == *"value.proto"* ]]; then
     options_file="value.options"
@@ -148,21 +148,21 @@ generate_nanopb_code() {
 
   # Build the protoc command
   local protoc_cmd="$PROTOC --nanopb_out=$OUTPUT_DIR"
-  
+
   # Add options file if it exists
   if [ -f "$options_file" ]; then
     protoc_cmd="$protoc_cmd --nanopb_opt=-f$options_file"
   fi
-  
+
   # Add common options to handle recursion and static allocation
   protoc_cmd="$protoc_cmd --nanopb_opt=-T"
   protoc_cmd="$protoc_cmd --nanopb_opt=-s\"max_size:1024\""
-  
+
   # Add extra options if provided
   if [ -n "$extra_opts" ]; then
     protoc_cmd="$protoc_cmd $extra_opts"
   fi
-  
+
   # Add include paths
   protoc_cmd="$protoc_cmd -I$include_paths -I. --plugin=protoc-gen-nanopb=$NANOPB_GENERATOR $proto_file"
   py_protoc_cmd="$PROTOC -I$include_paths -I. --python_out=tests --pyi_out=tests $proto_file"
