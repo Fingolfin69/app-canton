@@ -8,7 +8,7 @@ red() { echo -e "\e[31m$*\e[0m"; }
 green() { echo -e "\e[32m$*\e[0m"; }
 yellow() { echo -e "\e[33m$*\e[0m"; }
 
-ROOT_PATH=$(git rev-parse --show-toplevel)
+ROOT_PATH=$(git rev-parse --show-toplevel)/proto
 LEDGER_API_PROTO_PATH=$ROOT_PATH/canton/community/ledger-api/src/main/protobuf
 LAPI_VALUE_PROTO_PATH=$ROOT_PATH/daml/sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2/value.proto
 LEDGER_API_V2_PATH=$LEDGER_API_PROTO_PATH/com/daml/ledger/api/v2
@@ -55,6 +55,15 @@ download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protob
 clone_if_not_exists "https://github.com/digital-asset/daml.git" "sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2"
 clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive"
 mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledger/api/v2/value.proto"
+
+# Patch proto files
+echo "Applying patches to proto files..."
+if [ -f "split_nodes.patch" ]; then
+  patch -p0 -f < split_nodes.patch
+else
+  red "split_nodes.patch not found. Skipping patching."
+  exit 1
+fi
 
 # Create the options file for value.proto
 echo "Creating value.options file..."
@@ -201,5 +210,6 @@ generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/commands.prot
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/completion.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/event.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/transaction.proto"
+generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/transaction_filter.proto"
 
 green "Done! Generated files are in: $OUTPUT_DIR"
