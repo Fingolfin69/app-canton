@@ -38,9 +38,7 @@ ledger/
 !src/com/daml/ledger/
 
 # Proto sources
-canton/
-daml/
-!src/com/daml/
-!src/google/
-google/
-value.options
+proto/canton/
+proto/daml/
+!proto/com/daml/*
+proto/*.options

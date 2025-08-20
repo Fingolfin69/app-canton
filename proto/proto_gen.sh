@@ -12,11 +12,9 @@ ROOT_PATH=$(git rev-parse --show-toplevel)
 LEDGER_API_PROTO_PATH=$ROOT_PATH/canton/community/ledger-api/src/main/protobuf
 LAPI_VALUE_PROTO_PATH=$ROOT_PATH/daml/sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2/value.proto
 LEDGER_API_V2_PATH=$LEDGER_API_PROTO_PATH/com/daml/ledger/api/v2
-OUTPUT_DIR="./src/"
-NANOPB_GENERATOR="vendor/nanopb/generator/protoc-gen-nanopb"
-PROTOC="vendor/nanopb/generator/protoc"
-
-mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR="./"
+NANOPB_GENERATOR="../vendor/nanopb/generator/protoc-gen-nanopb"
+PROTOC="../vendor/nanopb/generator/protoc"
 
 # Download utility
 download_if_not_exists() {
@@ -165,7 +163,7 @@ generate_nanopb_code() {
 
   # Add include paths
   protoc_cmd="$protoc_cmd -I$include_paths -I. --plugin=protoc-gen-nanopb=$NANOPB_GENERATOR $proto_file"
-  py_protoc_cmd="$PROTOC -I$include_paths -I. --python_out=tests --pyi_out=tests $proto_file"
+  py_protoc_cmd="$PROTOC -I$include_paths -I. --python_out=$OUTPUT_DIR --pyi_out=$OUTPUT_DIR $proto_file"
 
   # Execute the command
   yellow "Running: $protoc_cmd"

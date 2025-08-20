@@ -111,9 +111,10 @@ DEFINES += PB_ENABLE_MALLOC=1
 
 include vendor/nanopb/extra/nanopb.mk
 
-INCLUDES_PATH += $(NANOPB_DIR) .
+INCLUDES_PATH += $(NANOPB_DIR) . proto
 
 DEFINES   += PB_NO_ERRMSG=1
 SOURCE_FILES += $(NANOPB_CORE)
+APP_SOURCE_PATH += proto
 
 include $(BOLOS_SDK)/Makefile.standard_app
