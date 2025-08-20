@@ -6,8 +6,7 @@
 exclude: |
     (?x)^(
         vendor/.*|
-        src/com/.*|
-        src/google/.*|
+        proto/.*|
         tests/snapshots-tmp/.*|
         tests/snapshots/.*
     )$

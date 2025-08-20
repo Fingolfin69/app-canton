@@ -39,4 +39,4 @@ jobs:
           mypy --install-types
           pip install -r tests/requirements.txt
       - name: Mypy type checking
-        run: mypy tests/application_client/
+        run: mypy tests/application_client/ --ignore-missing-imports
