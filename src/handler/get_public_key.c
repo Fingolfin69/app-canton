@@ -43,7 +43,7 @@ int handler_get_public_key(buffer_t *cdata, bool display) {
         return io_send_sw(SW_WRONG_DATA_LENGTH);
     }
 
-    cx_err_t error = bip32_derive_get_pubkey_256(CX_CURVE_256K1,
+    cx_err_t error = bip32_derive_get_pubkey_256(CX_CURVE_Ed25519,
                                                  G_context.bip32_path,
                                                  G_context.bip32_path_len,
                                                  G_context.pk_info.raw_public_key,
