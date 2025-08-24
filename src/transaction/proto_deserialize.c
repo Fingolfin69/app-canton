@@ -30,43 +30,80 @@
 #include "ledger_assert.h"
 #endif
 
-parser_status_e proto_deserialize(buffer_t *buf, signing_type_e type, transaction_t *tx) {
-    LEDGER_ASSERT(buf != NULL, "NULL buf");
-    LEDGER_ASSERT(tx != NULL, "NULL tx");
-
-    if (buf->size > MAX_TX_LEN) {
-        return WRONG_LENGTH_ERROR;
-    }
-
+parser_status_e deserialize_transaction_part_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
-    PRINTF("Decoding transaction from buffer of size %d bytes\n", buf->size);
+    PRINTF("Decoding Daml transaction from buffer of size %d bytes\n", buf->size);
 
-    const pb_msgdesc_t *message_type;
-
-    switch (type) {
-        case SIGN_PREPARED_TRANSACTION:
-            message_type = com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_fields;
-            break;
-        case SIGN_UNTYPED_VERSIONED_MESSAGE:
-            // TODO: implement when needed
-        case SIGN_HASH:
-        default:
-            return VALUE_PARSING_ERROR;
-    }
-
-    if (!pb_decode(&stream, message_type, &tx->prepared_tx)) {
-        PRINTF("Failed to decode transaction: %s\n", PB_GET_ERROR(&stream));
+    if (!pb_decode(&stream,
+                   com_daml_ledger_api_v2_interactive_DamlTransaction_fields,
+                   &tx_ctx->tx_parts_ctx.daml_transaction)) {
+        PRINTF("Failed to decode Daml transaction: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
     }
 
-    PRINTF("Decoded transaction successfully.\n");
-    // PRINTF("Transaction fields : \n");
-    // PRINTF("Prepared TX hash: %.*H\n",
-    //        tx->prepared_tx.prepared_transaction_hash.size,
-    //        tx->prepared_tx.prepared_transaction_hash.bytes);
-    // PRINTF("  Has prepared transaction: %d\n", tx->prepared_tx.has_prepared_transaction);
-    // PRINTF("  Has hashing details: %d\n", tx->prepared_tx.hashing_details != NULL);
+    return PARSING_OK;
+}
+
+parser_status_e deserialize_transaction_part_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
+
+    PRINTF("Decoding Node from buffer of size %d bytes\n", buf->size);
+
+    if (!pb_decode(&stream,
+                   com_daml_ledger_api_v2_interactive_DamlTransaction_Node_fields,
+                   &tx_ctx->tx_parts_ctx.node)) {
+        PRINTF("Failed to decode Node: %s\n", PB_GET_ERROR(&stream));
+        return VALUE_PARSING_ERROR;
+    }
+
+    return PARSING_OK;
+}
+
+parser_status_e deserialize_transaction_part_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
+
+    PRINTF("Decoding Metadata from buffer of size %d bytes\n", buf->size);
+
+    if (!pb_decode(&stream,
+                   com_daml_ledger_api_v2_interactive_Metadata_fields,
+                   &tx_ctx->tx_parts_ctx.metadata)) {
+        PRINTF("Failed to decode Metadata: %s\n", PB_GET_ERROR(&stream));
+        return VALUE_PARSING_ERROR;
+    }
+
+    return PARSING_OK;
+}
+
+parser_status_e deserialize_transaction_part_input_contract(buffer_t *buf,
+                                                            transaction_ctx_t *tx_ctx) {
+    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
+
+    PRINTF("Decoding Input contract from buffer of size %d bytes\n", buf->size);
+
+    if (!pb_decode(&stream,
+                   com_daml_ledger_api_v2_interactive_Metadata_InputContract_fields,
+                   &tx_ctx->tx_parts_ctx.input_contract)) {
+        PRINTF("Failed to decode Input contract: %s\n", PB_GET_ERROR(&stream));
+        return VALUE_PARSING_ERROR;
+    }
+
+    return PARSING_OK;
+}
+
+parser_status_e deserialize_transaction_part_prepared_submission_details(
+    buffer_t *buf,
+    transaction_ctx_t *tx_ctx) {
+    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
+
+    PRINTF("Decoding prepared submission details from buffer of size %d bytes\n", buf->size);
+
+    if (!pb_decode(&stream,
+                   com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_fields,
+                   &tx_ctx->tx_parts_ctx.prepared_submission_details)) {
+        PRINTF("Failed to decode prepared submission details: %s\n", PB_GET_ERROR(&stream));
+        return VALUE_PARSING_ERROR;
+    }
 
     return PARSING_OK;
 }

@@ -11,18 +11,18 @@
    // May be removed in future versions
 -  bytes prepared_transaction_hash = 2;
 +  bytes prepared_transaction_hash = 1;
- 
+
    // The hashing scheme version used when building the hash
 -  HashingSchemeVersion hashing_scheme_version = 3;
 +  HashingSchemeVersion hashing_scheme_version = 2;
- 
+
    // Optional additional details on how the transaction was encoded and hashed. Only set if verbose_hashing = true in the request
    // Note that there are no guarantees on the stability of the format or content of this field.
    // Its content should NOT be parsed and should only be used for troubleshooting purposes.
 -  optional string hashing_details = 4;
 +  optional string hashing_details = 3;
  }
- 
+
  message Signature {
 @@ -325,7 +325,7 @@
    uint32 mediator_group = 4;
@@ -30,7 +30,7 @@
    uint64 preparation_time = 6;
 -  repeated InputContract input_contracts = 7;
 +  int32 input_contracts_count = 7;
- 
+
    /*
     * Where ledger time constraints are imposed during the execution of the contract they will be populated
 @@ -376,10 +376,10 @@
@@ -43,7 +43,7 @@
 -  repeated NodeSeed node_seeds = 4;
 +  repeated NodeSeed node_seeds = 3;
 +  // Number of nodes in the transaction
-+  int32 node_count = 4;
++  int32 nodes_count = 4;
  }
- 
+
  message GetPreferredPackageVersionRequest {

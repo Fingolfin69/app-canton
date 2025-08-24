@@ -94,7 +94,8 @@ int apdu_dispatcher(const command_t *cmd) {
             return handler_sign_tx(&buf,
                                    (signing_type_e) cmd->p1,
                                    (bool) (cmd->p2 & P2_FIRST),
-                                   (bool) (cmd->p2 & P2_MORE));
+                                   (bool) (cmd->p2 & P2_MORE),
+                                   (bool) (cmd->p2 & P2_MSG_END));
         default:
             return io_send_sw(SW_INS_NOT_SUPPORTED);
     }
