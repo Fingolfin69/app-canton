@@ -8,17 +8,10 @@
 
 PB_BIND(com_daml_ledger_api_v2_Event, com_daml_ledger_api_v2_Event, 4)
 
-
 PB_BIND(com_daml_ledger_api_v2_CreatedEvent, com_daml_ledger_api_v2_CreatedEvent, 4)
-
 
 PB_BIND(com_daml_ledger_api_v2_InterfaceView, com_daml_ledger_api_v2_InterfaceView, 2)
 
-
 PB_BIND(com_daml_ledger_api_v2_ArchivedEvent, com_daml_ledger_api_v2_ArchivedEvent, 2)
 
-
 PB_BIND(com_daml_ledger_api_v2_ExercisedEvent, com_daml_ledger_api_v2_ExercisedEvent, 4)
-
-
-

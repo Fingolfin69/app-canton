@@ -7,6 +7,3 @@
 #endif
 
 PB_BIND(com_daml_ledger_api_v2_PackageReference, com_daml_ledger_api_v2_PackageReference, 2)
-
-
-

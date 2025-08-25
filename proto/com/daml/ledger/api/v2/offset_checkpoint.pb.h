@@ -15,53 +15,66 @@
 
  - detect time out of commands.
  - provide an offset which can be used to restart consumption. */
-typedef struct _com_daml_ledger_api_v2_OffsetCheckpoint { 
-    /* The participant's offset, the details of the offset field are described in ``community/ledger-api/README.md``.
- Required, must be a valid absolute offset (positive integer). */
-    int64_t offset; 
-    pb_callback_t synchronizer_times; 
+typedef struct _com_daml_ledger_api_v2_OffsetCheckpoint {
+    /* The participant's offset, the details of the offset field are described in
+ ``community/ledger-api/README.md``. Required, must be a valid absolute offset (positive integer).
+ */
+    int64_t offset;
+    pb_callback_t synchronizer_times;
 } com_daml_ledger_api_v2_OffsetCheckpoint;
 
-typedef struct _com_daml_ledger_api_v2_SynchronizerTime { 
+typedef struct _com_daml_ledger_api_v2_SynchronizerTime {
     /* The id of the synchronizer.
  Required */
-    char synchronizer_id[1024]; 
-    /* All commands with a maximum record time below this value MUST be considered lost if their completion has not arrived before this checkpoint.
- Required */
+    char synchronizer_id[1024];
+    /* All commands with a maximum record time below this value MUST be considered lost if their
+ completion has not arrived before this checkpoint. Required */
     bool has_record_time;
-    google_protobuf_Timestamp record_time; 
+    google_protobuf_Timestamp record_time;
 } com_daml_ledger_api_v2_SynchronizerTime;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define com_daml_ledger_api_v2_OffsetCheckpoint_init_default {0, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_SynchronizerTime_init_default {"", false, google_protobuf_Timestamp_init_default}
-#define com_daml_ledger_api_v2_OffsetCheckpoint_init_zero {0, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_SynchronizerTime_init_zero {"", false, google_protobuf_Timestamp_init_zero}
+#define com_daml_ledger_api_v2_OffsetCheckpoint_init_default \
+    {                                                        \
+        0, {                                                 \
+            {NULL}, NULL                                     \
+        }                                                    \
+    }
+#define com_daml_ledger_api_v2_SynchronizerTime_init_default \
+    { "", false, google_protobuf_Timestamp_init_default }
+#define com_daml_ledger_api_v2_OffsetCheckpoint_init_zero \
+    {                                                     \
+        0, {                                              \
+            {NULL}, NULL                                  \
+        }                                                 \
+    }
+#define com_daml_ledger_api_v2_SynchronizerTime_init_zero \
+    { "", false, google_protobuf_Timestamp_init_zero }
 
 /* Field tags (for use in manual encoding/decoding) */
-#define com_daml_ledger_api_v2_OffsetCheckpoint_offset_tag 1
+#define com_daml_ledger_api_v2_OffsetCheckpoint_offset_tag             1
 #define com_daml_ledger_api_v2_OffsetCheckpoint_synchronizer_times_tag 2
-#define com_daml_ledger_api_v2_SynchronizerTime_synchronizer_id_tag 1
-#define com_daml_ledger_api_v2_SynchronizerTime_record_time_tag 2
+#define com_daml_ledger_api_v2_SynchronizerTime_synchronizer_id_tag    1
+#define com_daml_ledger_api_v2_SynchronizerTime_record_time_tag        2
 
 /* Struct field encoding specification for nanopb */
 #define com_daml_ledger_api_v2_OffsetCheckpoint_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, INT64,    offset,            1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  synchronizer_times,   2)
+    X(a, STATIC, SINGULAR, INT64, offset, 1)                    \
+    X(a, CALLBACK, REPEATED, MESSAGE, synchronizer_times, 2)
 #define com_daml_ledger_api_v2_OffsetCheckpoint_CALLBACK pb_default_field_callback
-#define com_daml_ledger_api_v2_OffsetCheckpoint_DEFAULT NULL
-#define com_daml_ledger_api_v2_OffsetCheckpoint_synchronizer_times_MSGTYPE com_daml_ledger_api_v2_SynchronizerTime
+#define com_daml_ledger_api_v2_OffsetCheckpoint_DEFAULT  NULL
+#define com_daml_ledger_api_v2_OffsetCheckpoint_synchronizer_times_MSGTYPE \
+    com_daml_ledger_api_v2_SynchronizerTime
 
 #define com_daml_ledger_api_v2_SynchronizerTime_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   synchronizer_id,   1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  record_time,       2)
-#define com_daml_ledger_api_v2_SynchronizerTime_CALLBACK NULL
-#define com_daml_ledger_api_v2_SynchronizerTime_DEFAULT NULL
+    X(a, STATIC, SINGULAR, STRING, synchronizer_id, 1)          \
+    X(a, STATIC, OPTIONAL, MESSAGE, record_time, 2)
+#define com_daml_ledger_api_v2_SynchronizerTime_CALLBACK            NULL
+#define com_daml_ledger_api_v2_SynchronizerTime_DEFAULT             NULL
 #define com_daml_ledger_api_v2_SynchronizerTime_record_time_MSGTYPE google_protobuf_Timestamp
 
 extern const pb_msgdesc_t com_daml_ledger_api_v2_OffsetCheckpoint_msg;

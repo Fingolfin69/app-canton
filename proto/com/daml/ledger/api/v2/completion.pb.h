@@ -14,36 +14,37 @@
 #endif
 
 /* Struct definitions */
-/* A completion represents the status of a submitted command on the ledger: it can be successful or failed. */
-typedef struct _com_daml_ledger_api_v2_Completion { 
+/* A completion represents the status of a submitted command on the ledger: it can be successful or
+ * failed. */
+typedef struct _com_daml_ledger_api_v2_Completion {
     /* The ID of the succeeded or failed command.
  Must be a valid LedgerString (as described in ``value.proto``).
  Required */
-    char command_id[1024]; 
+    char command_id[1024];
     /* Identifies the exact type of the error.
  It uses the same format of conveying error details as it is used for the RPC responses of the APIs.
  Optional */
     bool has_status;
-    google_rpc_Status status; 
-    /* The update_id of the transaction or reassignment that resulted from the command with command_id.
- Only set for successfully executed commands.
- Must be a valid LedgerString (as described in ``value.proto``). */
-    char update_id[1024]; 
+    google_rpc_Status status;
+    /* The update_id of the transaction or reassignment that resulted from the command with
+ command_id. Only set for successfully executed commands. Must be a valid LedgerString (as described
+ in ``value.proto``). */
+    char update_id[1024];
     /* The user-id that was used for the submission, as described in ``commands.proto``.
  Must be a valid UserIdString (as described in ``value.proto``).
  Optional for historic completions where this data is not available. */
-    char user_id[1024]; 
+    char user_id[1024];
     /* The set of parties on whose behalf the commands were executed.
  Contains the ``act_as`` parties from ``commands.proto``
  filtered to the requesting parties in CompletionStreamRequest.
  The order of the parties need not be the same as in the submission.
  Each element must be a valid PartyIdString (as described in ``value.proto``).
  Optional for historic completions where this data is not available. */
-    pb_callback_t act_as; 
+    pb_callback_t act_as;
     /* The submission ID this completion refers to, as described in ``commands.proto``.
  Must be a valid LedgerString (as described in ``value.proto``).
  Optional */
-    char submission_id[1024]; 
+    char submission_id[1024];
     /* Specifies the start of the deduplication period by a completion stream offset (exclusive).
 
  Must be a valid absolute offset (positive integer) or participant begin (zero). */
@@ -51,13 +52,13 @@ typedef struct _com_daml_ledger_api_v2_Completion {
     union {
         int64_t deduplication_offset;
         google_protobuf_Duration deduplication_duration;
-    } deduplication_period; 
+    } deduplication_period;
     /* Specifies the length of the deduplication period.
  It is measured in record time of completions.
 
  Must be non-negative. */
     bool has_trace_context;
-    com_daml_ledger_api_v2_TraceContext trace_context; 
+    com_daml_ledger_api_v2_TraceContext trace_context;
     /* Optional; ledger API trace context
 
  The trace context transported in this message corresponds to the trace context supplied
@@ -67,54 +68,75 @@ typedef struct _com_daml_ledger_api_v2_Completion {
  This field will be populated with the trace context contained in the original submission.
  If that was not provided, a unique ledger-api-server generated trace context will be used
  instead. */
-    int64_t offset; 
-    /* May be used in a subsequent CompletionStreamRequest to resume the consumption of this stream at a later time.
- Required, must be a valid absolute offset (positive integer). */
+    int64_t offset;
+    /* May be used in a subsequent CompletionStreamRequest to resume the consumption of this stream
+ at a later time. Required, must be a valid absolute offset (positive integer). */
     bool has_synchronizer_time;
-    com_daml_ledger_api_v2_SynchronizerTime synchronizer_time; 
+    com_daml_ledger_api_v2_SynchronizerTime synchronizer_time;
 } com_daml_ledger_api_v2_Completion;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define com_daml_ledger_api_v2_Completion_init_default {"", false, google_rpc_Status_init_default, "", "", {{NULL}, NULL}, "", 0, {0}, false, com_daml_ledger_api_v2_TraceContext_init_default, 0, false, com_daml_ledger_api_v2_SynchronizerTime_init_default}
-#define com_daml_ledger_api_v2_Completion_init_zero {"", false, google_rpc_Status_init_zero, "", "", {{NULL}, NULL}, "", 0, {0}, false, com_daml_ledger_api_v2_TraceContext_init_zero, 0, false, com_daml_ledger_api_v2_SynchronizerTime_init_zero}
+#define com_daml_ledger_api_v2_Completion_init_default                                        \
+    {                                                                                         \
+        "", false, google_rpc_Status_init_default, "", "", {{NULL}, NULL}, "", 0, {0}, false, \
+            com_daml_ledger_api_v2_TraceContext_init_default, 0, false,                       \
+            com_daml_ledger_api_v2_SynchronizerTime_init_default                              \
+    }
+#define com_daml_ledger_api_v2_Completion_init_zero                                        \
+    {                                                                                      \
+        "", false, google_rpc_Status_init_zero, "", "", {{NULL}, NULL}, "", 0, {0}, false, \
+            com_daml_ledger_api_v2_TraceContext_init_zero, 0, false,                       \
+            com_daml_ledger_api_v2_SynchronizerTime_init_zero                              \
+    }
 
 /* Field tags (for use in manual encoding/decoding) */
-#define com_daml_ledger_api_v2_Completion_command_id_tag 1
-#define com_daml_ledger_api_v2_Completion_status_tag 2
-#define com_daml_ledger_api_v2_Completion_update_id_tag 3
-#define com_daml_ledger_api_v2_Completion_user_id_tag 4
-#define com_daml_ledger_api_v2_Completion_act_as_tag 5
-#define com_daml_ledger_api_v2_Completion_submission_id_tag 6
-#define com_daml_ledger_api_v2_Completion_deduplication_offset_tag 7
+#define com_daml_ledger_api_v2_Completion_command_id_tag             1
+#define com_daml_ledger_api_v2_Completion_status_tag                 2
+#define com_daml_ledger_api_v2_Completion_update_id_tag              3
+#define com_daml_ledger_api_v2_Completion_user_id_tag                4
+#define com_daml_ledger_api_v2_Completion_act_as_tag                 5
+#define com_daml_ledger_api_v2_Completion_submission_id_tag          6
+#define com_daml_ledger_api_v2_Completion_deduplication_offset_tag   7
 #define com_daml_ledger_api_v2_Completion_deduplication_duration_tag 8
-#define com_daml_ledger_api_v2_Completion_trace_context_tag 9
-#define com_daml_ledger_api_v2_Completion_offset_tag 10
-#define com_daml_ledger_api_v2_Completion_synchronizer_time_tag 11
+#define com_daml_ledger_api_v2_Completion_trace_context_tag          9
+#define com_daml_ledger_api_v2_Completion_offset_tag                 10
+#define com_daml_ledger_api_v2_Completion_synchronizer_time_tag      11
 
 /* Struct field encoding specification for nanopb */
-#define com_daml_ledger_api_v2_Completion_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   command_id,        1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  status,            2) \
-X(a, STATIC,   SINGULAR, STRING,   update_id,         3) \
-X(a, STATIC,   SINGULAR, STRING,   user_id,           4) \
-X(a, CALLBACK, REPEATED, STRING,   act_as,            5) \
-X(a, STATIC,   SINGULAR, STRING,   submission_id,     6) \
-X(a, STATIC,   ONEOF,    INT64,    (deduplication_period,deduplication_offset,deduplication_period.deduplication_offset),   7) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (deduplication_period,deduplication_duration,deduplication_period.deduplication_duration),   8) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  trace_context,     9) \
-X(a, STATIC,   SINGULAR, INT64,    offset,           10) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  synchronizer_time,  11)
-#define com_daml_ledger_api_v2_Completion_CALLBACK pb_default_field_callback
-#define com_daml_ledger_api_v2_Completion_DEFAULT NULL
+#define com_daml_ledger_api_v2_Completion_FIELDLIST(X, a)                                          \
+    X(a, STATIC, SINGULAR, STRING, command_id, 1)                                                  \
+    X(a, STATIC, OPTIONAL, MESSAGE, status, 2)                                                     \
+    X(a, STATIC, SINGULAR, STRING, update_id, 3)                                                   \
+    X(a, STATIC, SINGULAR, STRING, user_id, 4)                                                     \
+    X(a, CALLBACK, REPEATED, STRING, act_as, 5)                                                    \
+    X(a, STATIC, SINGULAR, STRING, submission_id, 6)                                               \
+    X(a,                                                                                           \
+      STATIC,                                                                                      \
+      ONEOF,                                                                                       \
+      INT64,                                                                                       \
+      (deduplication_period, deduplication_offset, deduplication_period.deduplication_offset),     \
+      7)                                                                                           \
+    X(a,                                                                                           \
+      STATIC,                                                                                      \
+      ONEOF,                                                                                       \
+      MESSAGE,                                                                                     \
+      (deduplication_period, deduplication_duration, deduplication_period.deduplication_duration), \
+      8)                                                                                           \
+    X(a, STATIC, OPTIONAL, MESSAGE, trace_context, 9)                                              \
+    X(a, STATIC, SINGULAR, INT64, offset, 10)                                                      \
+    X(a, STATIC, OPTIONAL, MESSAGE, synchronizer_time, 11)
+#define com_daml_ledger_api_v2_Completion_CALLBACK       pb_default_field_callback
+#define com_daml_ledger_api_v2_Completion_DEFAULT        NULL
 #define com_daml_ledger_api_v2_Completion_status_MSGTYPE google_rpc_Status
-#define com_daml_ledger_api_v2_Completion_deduplication_period_deduplication_duration_MSGTYPE google_protobuf_Duration
+#define com_daml_ledger_api_v2_Completion_deduplication_period_deduplication_duration_MSGTYPE \
+    google_protobuf_Duration
 #define com_daml_ledger_api_v2_Completion_trace_context_MSGTYPE com_daml_ledger_api_v2_TraceContext
-#define com_daml_ledger_api_v2_Completion_synchronizer_time_MSGTYPE com_daml_ledger_api_v2_SynchronizerTime
+#define com_daml_ledger_api_v2_Completion_synchronizer_time_MSGTYPE \
+    com_daml_ledger_api_v2_SynchronizerTime
 
 extern const pb_msgdesc_t com_daml_ledger_api_v2_Completion_msg;
 

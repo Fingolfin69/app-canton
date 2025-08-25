@@ -1,7 +1,11 @@
+import datetime
+
 from com.daml.ledger.api.v2 import commands_pb2 as _commands_pb2
 from com.daml.ledger.api.v2.interactive import interactive_submission_common_data_pb2 as _interactive_submission_common_data_pb2
 from com.daml.ledger.api.v2.interactive.transaction.v1 import interactive_submission_data_pb2 as _interactive_submission_data_pb2
 from com.daml.ledger.api.v2 import package_reference_pb2 as _package_reference_pb2
+from com.daml.ledger.api.v2 import transaction_pb2 as _transaction_pb2
+from com.daml.ledger.api.v2 import transaction_filter_pb2 as _transaction_filter_pb2
 from com.daml.ledger.api.v2 import value_pb2 as _value_pb2
 from google.protobuf import duration_pb2 as _duration_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
@@ -9,7 +13,8 @@ from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -71,16 +76,14 @@ class PrepareSubmissionRequest(_message.Message):
     def __init__(self, user_id: _Optional[str] = ..., command_id: _Optional[str] = ..., commands: _Optional[_Iterable[_Union[_commands_pb2.Command, _Mapping]]] = ..., min_ledger_time: _Optional[_Union[MinLedgerTime, _Mapping]] = ..., act_as: _Optional[_Iterable[str]] = ..., read_as: _Optional[_Iterable[str]] = ..., disclosed_contracts: _Optional[_Iterable[_Union[_commands_pb2.DisclosedContract, _Mapping]]] = ..., synchronizer_id: _Optional[str] = ..., package_id_selection_preference: _Optional[_Iterable[str]] = ..., verbose_hashing: bool = ..., prefetch_contract_keys: _Optional[_Iterable[_Union[_commands_pb2.PrefetchContractKey, _Mapping]]] = ...) -> None: ...
 
 class PrepareSubmissionResponse(_message.Message):
-    __slots__ = ("prepared_transaction", "prepared_transaction_hash", "hashing_scheme_version", "hashing_details")
-    PREPARED_TRANSACTION_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("prepared_transaction_hash", "hashing_scheme_version", "hashing_details")
     PREPARED_TRANSACTION_HASH_FIELD_NUMBER: _ClassVar[int]
     HASHING_SCHEME_VERSION_FIELD_NUMBER: _ClassVar[int]
     HASHING_DETAILS_FIELD_NUMBER: _ClassVar[int]
-    prepared_transaction: PreparedTransaction
     prepared_transaction_hash: bytes
     hashing_scheme_version: HashingSchemeVersion
     hashing_details: str
-    def __init__(self, prepared_transaction: _Optional[_Union[PreparedTransaction, _Mapping]] = ..., prepared_transaction_hash: _Optional[bytes] = ..., hashing_scheme_version: _Optional[_Union[HashingSchemeVersion, str]] = ..., hashing_details: _Optional[str] = ...) -> None: ...
+    def __init__(self, prepared_transaction_hash: _Optional[bytes] = ..., hashing_scheme_version: _Optional[_Union[HashingSchemeVersion, str]] = ..., hashing_details: _Optional[str] = ...) -> None: ...
 
 class Signature(_message.Message):
     __slots__ = ("format", "signature", "signed_by", "signing_algorithm_spec")
@@ -126,11 +129,67 @@ class ExecuteSubmissionRequest(_message.Message):
     user_id: str
     hashing_scheme_version: HashingSchemeVersion
     min_ledger_time: MinLedgerTime
-    def __init__(self, prepared_transaction: _Optional[_Union[PreparedTransaction, _Mapping]] = ..., party_signatures: _Optional[_Union[PartySignatures, _Mapping]] = ..., deduplication_duration: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., deduplication_offset: _Optional[int] = ..., submission_id: _Optional[str] = ..., user_id: _Optional[str] = ..., hashing_scheme_version: _Optional[_Union[HashingSchemeVersion, str]] = ..., min_ledger_time: _Optional[_Union[MinLedgerTime, _Mapping]] = ...) -> None: ...
+    def __init__(self, prepared_transaction: _Optional[_Union[PreparedTransaction, _Mapping]] = ..., party_signatures: _Optional[_Union[PartySignatures, _Mapping]] = ..., deduplication_duration: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., deduplication_offset: _Optional[int] = ..., submission_id: _Optional[str] = ..., user_id: _Optional[str] = ..., hashing_scheme_version: _Optional[_Union[HashingSchemeVersion, str]] = ..., min_ledger_time: _Optional[_Union[MinLedgerTime, _Mapping]] = ...) -> None: ...
 
 class ExecuteSubmissionResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class ExecuteSubmissionAndWaitRequest(_message.Message):
+    __slots__ = ("prepared_transaction", "party_signatures", "deduplication_duration", "deduplication_offset", "submission_id", "user_id", "hashing_scheme_version", "min_ledger_time")
+    PREPARED_TRANSACTION_FIELD_NUMBER: _ClassVar[int]
+    PARTY_SIGNATURES_FIELD_NUMBER: _ClassVar[int]
+    DEDUPLICATION_DURATION_FIELD_NUMBER: _ClassVar[int]
+    DEDUPLICATION_OFFSET_FIELD_NUMBER: _ClassVar[int]
+    SUBMISSION_ID_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    HASHING_SCHEME_VERSION_FIELD_NUMBER: _ClassVar[int]
+    MIN_LEDGER_TIME_FIELD_NUMBER: _ClassVar[int]
+    prepared_transaction: PreparedTransaction
+    party_signatures: PartySignatures
+    deduplication_duration: _duration_pb2.Duration
+    deduplication_offset: int
+    submission_id: str
+    user_id: str
+    hashing_scheme_version: HashingSchemeVersion
+    min_ledger_time: MinLedgerTime
+    def __init__(self, prepared_transaction: _Optional[_Union[PreparedTransaction, _Mapping]] = ..., party_signatures: _Optional[_Union[PartySignatures, _Mapping]] = ..., deduplication_duration: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., deduplication_offset: _Optional[int] = ..., submission_id: _Optional[str] = ..., user_id: _Optional[str] = ..., hashing_scheme_version: _Optional[_Union[HashingSchemeVersion, str]] = ..., min_ledger_time: _Optional[_Union[MinLedgerTime, _Mapping]] = ...) -> None: ...
+
+class ExecuteSubmissionAndWaitResponse(_message.Message):
+    __slots__ = ("update_id", "completion_offset")
+    UPDATE_ID_FIELD_NUMBER: _ClassVar[int]
+    COMPLETION_OFFSET_FIELD_NUMBER: _ClassVar[int]
+    update_id: str
+    completion_offset: int
+    def __init__(self, update_id: _Optional[str] = ..., completion_offset: _Optional[int] = ...) -> None: ...
+
+class ExecuteSubmissionAndWaitForTransactionRequest(_message.Message):
+    __slots__ = ("prepared_transaction", "party_signatures", "deduplication_duration", "deduplication_offset", "submission_id", "user_id", "hashing_scheme_version", "min_ledger_time", "transaction_format")
+    PREPARED_TRANSACTION_FIELD_NUMBER: _ClassVar[int]
+    PARTY_SIGNATURES_FIELD_NUMBER: _ClassVar[int]
+    DEDUPLICATION_DURATION_FIELD_NUMBER: _ClassVar[int]
+    DEDUPLICATION_OFFSET_FIELD_NUMBER: _ClassVar[int]
+    SUBMISSION_ID_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    HASHING_SCHEME_VERSION_FIELD_NUMBER: _ClassVar[int]
+    MIN_LEDGER_TIME_FIELD_NUMBER: _ClassVar[int]
+    TRANSACTION_FORMAT_FIELD_NUMBER: _ClassVar[int]
+    prepared_transaction: PreparedTransaction
+    party_signatures: PartySignatures
+    deduplication_duration: _duration_pb2.Duration
+    deduplication_offset: int
+    submission_id: str
+    user_id: str
+    hashing_scheme_version: HashingSchemeVersion
+    min_ledger_time: MinLedgerTime
+    transaction_format: _transaction_filter_pb2.TransactionFormat
+    def __init__(self, prepared_transaction: _Optional[_Union[PreparedTransaction, _Mapping]] = ..., party_signatures: _Optional[_Union[PartySignatures, _Mapping]] = ..., deduplication_duration: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., deduplication_offset: _Optional[int] = ..., submission_id: _Optional[str] = ..., user_id: _Optional[str] = ..., hashing_scheme_version: _Optional[_Union[HashingSchemeVersion, str]] = ..., min_ledger_time: _Optional[_Union[MinLedgerTime, _Mapping]] = ..., transaction_format: _Optional[_Union[_transaction_filter_pb2.TransactionFormat, _Mapping]] = ...) -> None: ...
+
+class ExecuteSubmissionAndWaitForTransactionResponse(_message.Message):
+    __slots__ = ("transaction",)
+    TRANSACTION_FIELD_NUMBER: _ClassVar[int]
+    transaction: _transaction_pb2.Transaction
+    def __init__(self, transaction: _Optional[_Union[_transaction_pb2.Transaction, _Mapping]] = ...) -> None: ...
 
 class MinLedgerTime(_message.Message):
     __slots__ = ("min_ledger_time_abs", "min_ledger_time_rel")
@@ -138,7 +197,7 @@ class MinLedgerTime(_message.Message):
     MIN_LEDGER_TIME_REL_FIELD_NUMBER: _ClassVar[int]
     min_ledger_time_abs: _timestamp_pb2.Timestamp
     min_ledger_time_rel: _duration_pb2.Duration
-    def __init__(self, min_ledger_time_abs: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., min_ledger_time_rel: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ...) -> None: ...
+    def __init__(self, min_ledger_time_abs: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., min_ledger_time_rel: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
 class PreparedTransaction(_message.Message):
     __slots__ = ("transaction", "metadata")
@@ -149,7 +208,7 @@ class PreparedTransaction(_message.Message):
     def __init__(self, transaction: _Optional[_Union[DamlTransaction, _Mapping]] = ..., metadata: _Optional[_Union[Metadata, _Mapping]] = ...) -> None: ...
 
 class Metadata(_message.Message):
-    __slots__ = ("submitter_info", "synchronizer_id", "mediator_group", "transaction_uuid", "preparation_time", "input_contracts", "min_ledger_effective_time", "max_ledger_effective_time", "global_key_mapping")
+    __slots__ = ("submitter_info", "synchronizer_id", "mediator_group", "transaction_uuid", "preparation_time", "input_contracts_count", "min_ledger_effective_time", "max_ledger_effective_time", "global_key_mapping")
     class SubmitterInfo(_message.Message):
         __slots__ = ("act_as", "command_id")
         ACT_AS_FIELD_NUMBER: _ClassVar[int]
@@ -178,7 +237,7 @@ class Metadata(_message.Message):
     MEDIATOR_GROUP_FIELD_NUMBER: _ClassVar[int]
     TRANSACTION_UUID_FIELD_NUMBER: _ClassVar[int]
     PREPARATION_TIME_FIELD_NUMBER: _ClassVar[int]
-    INPUT_CONTRACTS_FIELD_NUMBER: _ClassVar[int]
+    INPUT_CONTRACTS_COUNT_FIELD_NUMBER: _ClassVar[int]
     MIN_LEDGER_EFFECTIVE_TIME_FIELD_NUMBER: _ClassVar[int]
     MAX_LEDGER_EFFECTIVE_TIME_FIELD_NUMBER: _ClassVar[int]
     GLOBAL_KEY_MAPPING_FIELD_NUMBER: _ClassVar[int]
@@ -187,14 +246,14 @@ class Metadata(_message.Message):
     mediator_group: int
     transaction_uuid: str
     preparation_time: int
-    input_contracts: _containers.RepeatedCompositeFieldContainer[Metadata.InputContract]
+    input_contracts_count: int
     min_ledger_effective_time: int
     max_ledger_effective_time: int
     global_key_mapping: _containers.RepeatedCompositeFieldContainer[Metadata.GlobalKeyMappingEntry]
-    def __init__(self, submitter_info: _Optional[_Union[Metadata.SubmitterInfo, _Mapping]] = ..., synchronizer_id: _Optional[str] = ..., mediator_group: _Optional[int] = ..., transaction_uuid: _Optional[str] = ..., preparation_time: _Optional[int] = ..., input_contracts: _Optional[_Iterable[_Union[Metadata.InputContract, _Mapping]]] = ..., min_ledger_effective_time: _Optional[int] = ..., max_ledger_effective_time: _Optional[int] = ..., global_key_mapping: _Optional[_Iterable[_Union[Metadata.GlobalKeyMappingEntry, _Mapping]]] = ...) -> None: ...
+    def __init__(self, submitter_info: _Optional[_Union[Metadata.SubmitterInfo, _Mapping]] = ..., synchronizer_id: _Optional[str] = ..., mediator_group: _Optional[int] = ..., transaction_uuid: _Optional[str] = ..., preparation_time: _Optional[int] = ..., input_contracts_count: _Optional[int] = ..., min_ledger_effective_time: _Optional[int] = ..., max_ledger_effective_time: _Optional[int] = ..., global_key_mapping: _Optional[_Iterable[_Union[Metadata.GlobalKeyMappingEntry, _Mapping]]] = ...) -> None: ...
 
 class DamlTransaction(_message.Message):
-    __slots__ = ("version", "roots", "nodes", "node_seeds")
+    __slots__ = ("version", "roots", "node_seeds", "nodes_count")
     class NodeSeed(_message.Message):
         __slots__ = ("node_id", "seed")
         NODE_ID_FIELD_NUMBER: _ClassVar[int]
@@ -211,13 +270,13 @@ class DamlTransaction(_message.Message):
         def __init__(self, node_id: _Optional[str] = ..., v1: _Optional[_Union[_interactive_submission_data_pb2.Node, _Mapping]] = ...) -> None: ...
     VERSION_FIELD_NUMBER: _ClassVar[int]
     ROOTS_FIELD_NUMBER: _ClassVar[int]
-    NODES_FIELD_NUMBER: _ClassVar[int]
     NODE_SEEDS_FIELD_NUMBER: _ClassVar[int]
+    NODES_COUNT_FIELD_NUMBER: _ClassVar[int]
     version: str
     roots: _containers.RepeatedScalarFieldContainer[str]
-    nodes: _containers.RepeatedCompositeFieldContainer[DamlTransaction.Node]
     node_seeds: _containers.RepeatedCompositeFieldContainer[DamlTransaction.NodeSeed]
-    def __init__(self, version: _Optional[str] = ..., roots: _Optional[_Iterable[str]] = ..., nodes: _Optional[_Iterable[_Union[DamlTransaction.Node, _Mapping]]] = ..., node_seeds: _Optional[_Iterable[_Union[DamlTransaction.NodeSeed, _Mapping]]] = ...) -> None: ...
+    nodes_count: int
+    def __init__(self, version: _Optional[str] = ..., roots: _Optional[_Iterable[str]] = ..., node_seeds: _Optional[_Iterable[_Union[DamlTransaction.NodeSeed, _Mapping]]] = ..., nodes_count: _Optional[int] = ...) -> None: ...
 
 class GetPreferredPackageVersionRequest(_message.Message):
     __slots__ = ("parties", "package_name", "synchronizer_id", "vetting_valid_at")
@@ -229,7 +288,7 @@ class GetPreferredPackageVersionRequest(_message.Message):
     package_name: str
     synchronizer_id: str
     vetting_valid_at: _timestamp_pb2.Timestamp
-    def __init__(self, parties: _Optional[_Iterable[str]] = ..., package_name: _Optional[str] = ..., synchronizer_id: _Optional[str] = ..., vetting_valid_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    def __init__(self, parties: _Optional[_Iterable[str]] = ..., package_name: _Optional[str] = ..., synchronizer_id: _Optional[str] = ..., vetting_valid_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class GetPreferredPackageVersionResponse(_message.Message):
     __slots__ = ("package_preference",)
@@ -261,7 +320,7 @@ class GetPreferredPackagesRequest(_message.Message):
     package_vetting_requirements: _containers.RepeatedCompositeFieldContainer[PackageVettingRequirement]
     synchronizer_id: str
     vetting_valid_at: _timestamp_pb2.Timestamp
-    def __init__(self, package_vetting_requirements: _Optional[_Iterable[_Union[PackageVettingRequirement, _Mapping]]] = ..., synchronizer_id: _Optional[str] = ..., vetting_valid_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    def __init__(self, package_vetting_requirements: _Optional[_Iterable[_Union[PackageVettingRequirement, _Mapping]]] = ..., synchronizer_id: _Optional[str] = ..., vetting_valid_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class GetPreferredPackagesResponse(_message.Message):
     __slots__ = ("package_references", "synchronizer_id")
