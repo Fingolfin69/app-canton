@@ -92,7 +92,7 @@ class Transaction:
 
 
         metadata = json_tx["prepared_transaction"]["metadata"]
-        input_contracts = metadata.pop("input_contracts", [])
+        input_contracts = metadata.pop("inputContracts", [])
         input_contracts_pb = []
 
         metadata["input_contracts_count"] = len(input_contracts)
