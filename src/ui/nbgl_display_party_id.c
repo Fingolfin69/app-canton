@@ -29,44 +29,48 @@
 #include "constants.h"
 #include "globals.h"
 #include "sw.h"
-#include "address.h"
+#include "party_id.h"
 #include "validate.h"
 #include "tx_types.h"
 #include "menu.h"
 
-static char g_address[43];
+static nbgl_layoutTagValue_t pairs[1];
+static nbgl_layoutTagValueList_t pairList;
+static uint8_t g_party_id[PARTY_ID_LEN];
 
 static void review_choice(bool confirm) {
-    // Answer, display a status page and go back to main
     validate_pubkey(confirm);
     if (confirm) {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_VERIFIED, ui_menu_main);
+        nbgl_useCaseStatus("Party ID\napproved", true, ui_menu_main);
     } else {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_REJECTED, ui_menu_main);
+        nbgl_useCaseStatus("Party ID\nrejected", false, ui_menu_main);
     }
 }
 
-int ui_display_address() {
+int ui_display_party_id() {
     if (G_context.req_type != CONFIRM_ADDRESS || G_context.state != STATE_NONE) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }
 
-    memset(g_address, 0, sizeof(g_address));
-    uint8_t address[ADDRESS_LEN] = {0};
-    if (!address_from_pubkey(G_context.pk_info.raw_public_key, address, sizeof(address))) {
+    memset(g_party_id, 0, sizeof(g_party_id));
+    if (!party_id_from_pubkey(G_context.pk_info.raw_public_key, g_party_id, sizeof(g_party_id))) {
         return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
     }
 
-    if (format_hex(address, sizeof(address), g_address, sizeof(g_address)) == -1) {
-        return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
-    }
+    pairs[0].item = "Party ID";
+    pairs[0].value = (const char*) g_party_id;
 
-    nbgl_useCaseAddressReview(g_address,
-                              NULL,
-                              &ICON_APP_CANTON,
-                              "Verify Canton address",
-                              NULL,
-                              review_choice);
+    pairList.nbMaxLinesForValue = 0;
+    pairList.nbPairs = 1;
+    pairList.pairs = pairs;
+
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &pairList,
+                            &ICON_APP_CANTON,
+                            "Confirm party ID",
+                            NULL,
+                            "Approve party ID",
+                            review_choice);
     return 0;
 }

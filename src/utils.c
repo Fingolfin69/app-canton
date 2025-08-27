@@ -16,32 +16,24 @@
  *****************************************************************************/
 
 #include <stdint.h>   // uint*_t
-#include <stddef.h>   // size_t
 #include <stdbool.h>  // bool
 #include <string.h>   // memmove
 
+#include "types.h"
+
+
 #include "os.h"
 #include "cx.h"
-#include "ledger_assert.h"
 
-#include "address.h"
-
-#include "tx_types.h"
-
-bool address_from_pubkey(const uint8_t public_key[static 65], uint8_t *out, size_t out_len) {
-    uint8_t address[32] = {0};
-
-    LEDGER_ASSERT(out != NULL, "NULL out");
-
-    if (out_len < ADDRESS_LEN) {
-        return false;
+void sha256_with_purpose(uint8_t purpose,
+                         const uint8_t *data,
+                         size_t data_len,
+                         uint8_t out[32]) {
+    cx_sha256_t ctx;
+    CX_ASSERT(cx_sha256_init_no_throw(&ctx));
+    CX_ASSERT(cx_hash_update((cx_hash_t *) &ctx, &purpose, 1));
+    if (data_len > 0) {
+        CX_ASSERT(cx_hash_update((cx_hash_t *) &ctx, data, data_len));
     }
-
-    if (cx_keccak_256_hash(public_key + 1, 64, address) != CX_OK) {
-        return false;
-    }
-
-    memmove(out, address + sizeof(address) - ADDRESS_LEN, ADDRESS_LEN);
-
-    return true;
+    CX_ASSERT(cx_hash_final((cx_hash_t *) &ctx, out));
 }
