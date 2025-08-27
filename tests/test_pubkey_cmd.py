@@ -1,56 +1,75 @@
 import pytest
-
+import inspect
+from pathlib import Path
 from ragger.bip import calculate_public_key_and_chaincode, CurveChoice
 from ragger.error import ExceptionRAPDU
 from ragger.backend.interface import BackendInterface
 from ragger.navigator.navigation_scenario import NavigateWithScenario
+from ragger.navigator import Navigator
+from ragger.navigator.instruction import NavInsID 
 
-from application_client.boilerplate_command_sender import BoilerplateCommandSender, Errors
-from application_client.boilerplate_response_unpacker import unpack_get_public_key_response
+from tests.application_client.canton_command_sender import BoilerplateCommandSender, Errors
+from tests.application_client.canton_response_unpacker import unpack_get_public_key_response
 
+ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
 # In this test we check that the GET_PUBLIC_KEY works in non-confirmation mode
 def test_get_public_key_no_confirm(backend: BackendInterface) -> None:
     path_list = [
-        "m/44'/1'/0'/0/0",
-        "m/44'/1'/0/0/0",
-        "m/44'/1'/911'/0/0",
-        "m/44'/1'/255/255/255",
-        "m/44'/1'/2147483647/0/0/0/0/0/0/0"
+        "m/44'/6767'/0'/0'/0'",
+        "m/44'/6767'/911'/0'/0'",
+        "m/44'/6767'/255'/255'/255'",
+        "m/44'/6767'/2147483647'/0'/0'/0'/0'/0'/0'",
     ]
     for path in path_list:
         client = BoilerplateCommandSender(backend)
         response = client.get_public_key(path=path).data
         _, public_key, _, chain_code = unpack_get_public_key_response(response)
 
-        ref_public_key, ref_chain_code = calculate_public_key_and_chaincode(CurveChoice.Secp256k1, path=path)
-        assert public_key.hex() == ref_public_key
+        ref_public_key, ref_chain_code = calculate_public_key_and_chaincode(CurveChoice.Ed25519Slip, path=path)
+        assert public_key.hex() == ref_public_key[2:]
         assert chain_code.hex() == ref_chain_code
 
 
 # In this test we check that the GET_PUBLIC_KEY works in confirmation mode
-def test_get_public_key_confirm_accepted(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
+def test_get_public_key_confirm_accepted(backend: BackendInterface, navigator: Navigator) -> None:
     client = BoilerplateCommandSender(backend)
-    path = "m/44'/1'/0'/0/0"
+    path = "m/44'/6767'/0'/0'/0'"
     with client.get_public_key_with_confirmation(path=path):
-        scenario_navigator.address_review_approve()
+        navigator.navigate_until_text_and_compare(
+            navigate_instruction=NavInsID.SWIPE_CENTER_TO_LEFT,
+            validation_instructions=[NavInsID.USE_CASE_CHOICE_CONFIRM],
+            text="Approve",
+            path=ROOT_SCREENSHOT_PATH,
+            test_case_name="test_get_public_key_confirm_accepted"
+        )
 
     response = client.get_async_response().data
     _, public_key, _, chain_code = unpack_get_public_key_response(response)
 
-    ref_public_key, ref_chain_code = calculate_public_key_and_chaincode(CurveChoice.Secp256k1, path=path)
-    assert public_key.hex() == ref_public_key
+    ref_public_key, ref_chain_code = calculate_public_key_and_chaincode(CurveChoice.Ed25519Slip, path=path)
+    
+    print(f"Public key: {public_key.hex()}")
+    print(f"Reference public key: {ref_public_key}")
+
+    assert public_key.hex() == ref_public_key[2:]
     assert chain_code.hex() == ref_chain_code
 
 
 # In this test we check that the GET_PUBLIC_KEY in confirmation mode replies an error if the user refuses
-def test_get_public_key_confirm_refused(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
+def test_get_public_key_confirm_refused(backend: BackendInterface, navigator: Navigator) -> None:
     client = BoilerplateCommandSender(backend)
-    path = "m/44'/1'/0'/0/0"
+    path = "m/44'/6767'/0'/0'/0'"
 
     with pytest.raises(ExceptionRAPDU) as e:
         with client.get_public_key_with_confirmation(path=path):
-            scenario_navigator.address_review_reject()
+            navigator.navigate_until_text_and_compare(
+                navigate_instruction=NavInsID.SWIPE_CENTER_TO_LEFT,
+                validation_instructions=[NavInsID.USE_CASE_CHOICE_REJECT, NavInsID.USE_CASE_CHOICE_CONFIRM],
+                text="Approve",
+                path=ROOT_SCREENSHOT_PATH,
+                test_case_name="test_get_public_key_confirm_refused"
+            )
 
     # Assert that we have received a refusal
     assert e.value.status == Errors.SW_DENY

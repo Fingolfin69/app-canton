@@ -11,18 +11,18 @@ MAX_APDU_LEN: int = 255
 CLA: int = 0xE0
 
 class P1(IntEnum):
-    # Parameter 1 for first APDU number.
-    P1_START = 0x00
-    # Parameter 1 for maximum APDU number.
-    P1_MAX   = 0x03
-    # Parameter 1 for screen confirmation for GET_PUBLIC_KEY.
+    P1_NONE = 0x00
     P1_CONFIRM = 0x01
 
+class P1SignType(IntEnum):
+    P1_SIGN_HASH = 0x00
+    P1_SIGN_UNTYPED_VERSIONED_MESSAGE = 0x01
+    P1_SIGN_PREPARED_TRANSACTION = 0x02
+
 class P2(IntEnum):
-    # Parameter 2 for last APDU to receive.
-    P2_LAST = 0x00
-    # Parameter 2 for more APDU to receive.
-    P2_MORE = 0x80
+    P2_NONE = 0x00
+    P2_FIRST = 0x01
+    P2_MORE = 0x02
 
 class InsType(IntEnum):
     GET_VERSION    = 0x03
@@ -59,32 +59,32 @@ class BoilerplateCommandSender:
     def get_app_and_version(self) -> RAPDU:
         return self.backend.exchange(cla=0xB0,  # specific CLA for BOLOS
                                      ins=0x01,  # specific INS for get_app_and_version
-                                     p1=P1.P1_START,
-                                     p2=P2.P2_LAST,
+                                     p1=P1.P1_NONE,
+                                     p2=P2.P2_NONE,
                                      data=b"")
 
 
     def get_version(self) -> RAPDU:
         return self.backend.exchange(cla=CLA,
                                      ins=InsType.GET_VERSION,
-                                     p1=P1.P1_START,
-                                     p2=P2.P2_LAST,
+                                     p1=P1.P1_NONE,
+                                     p2=P2.P2_NONE,
                                      data=b"")
 
 
     def get_app_name(self) -> RAPDU:
         return self.backend.exchange(cla=CLA,
                                      ins=InsType.GET_APP_NAME,
-                                     p1=P1.P1_START,
-                                     p2=P2.P2_LAST,
+                                     p1=P1.P1_NONE,
+                                     p2=P2.P2_NONE,
                                      data=b"")
 
 
     def get_public_key(self, path: str) -> RAPDU:
         return self.backend.exchange(cla=CLA,
                                      ins=InsType.GET_PUBLIC_KEY,
-                                     p1=P1.P1_START,
-                                     p2=P2.P2_LAST,
+                                     p1=P1.P1_NONE,
+                                     p2=P2.P2_NONE,
                                      data=pack_derivation_path(path))
 
 
@@ -93,37 +93,34 @@ class BoilerplateCommandSender:
         with self.backend.exchange_async(cla=CLA,
                                          ins=InsType.GET_PUBLIC_KEY,
                                          p1=P1.P1_CONFIRM,
-                                         p2=P2.P2_LAST,
+                                         p2=P2.P2_NONE,
                                          data=pack_derivation_path(path)) as response:
             yield response
 
 
     @contextmanager
-    def sign_tx(self, path: str, transaction: bytes) -> Generator[None, None, None]:
+    def sign_tx(self, path: str, transaction: bytes, p1: P1SignType) -> Generator[None, None, None]:
         print(f"Signing transaction with path: {path} and transaction length: {len(transaction)} bytes")
         self.backend.exchange(cla=CLA,
                               ins=InsType.SIGN_TX,
-                              p1=P1.P1_START,
-                              p2=P2.P2_MORE,
+                              p1=p1,
+                              p2=P2.P2_FIRST | P2.P2_MORE,
                               data=pack_derivation_path(path))
         messages = split_message(transaction, MAX_APDU_LEN)
-        idx: int = P1.P1_START + 1
 
         print(f"Sending {len(messages)} chunks of transaction data")
 
         for msg in messages[:-1]:
-            print(f"Sending chunk {idx} of {len(messages)}")
             self.backend.exchange(cla=CLA,
                                   ins=InsType.SIGN_TX,
-                                  p1=idx,
+                                  p1=p1,
                                   p2=P2.P2_MORE,
                                   data=msg)
-            idx += 1
 
         with self.backend.exchange_async(cla=CLA,
                                          ins=InsType.SIGN_TX,
-                                         p1=idx,
-                                         p2=P2.P2_LAST,
+                                         p1=p1,
+                                         p2=P2.P2_NONE,
                                          data=messages[-1]) as response:
             yield response
 

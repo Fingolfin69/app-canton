@@ -1,4 +1,5 @@
 import json
+import base64
 from io import BytesIO
 from typing import Union
 
@@ -7,7 +8,7 @@ from google.protobuf.json_format import Parse
 from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import \
     PrepareSubmissionResponse # type: ignore
 
-from .boilerplate_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
+from .canton_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 
 # from proto.message_pb2 import SimpleInt
 
@@ -65,3 +66,9 @@ class Transaction:
         Parse(json.dumps(data), prepared_tx)
 
         return prepared_tx.SerializeToString()
+
+    @classmethod
+    def get_hash_from_json(cls, json_file: str) -> bytes:
+        with open(json_file, "r", encoding="utf-8") as file:
+            data = json.load(file)
+        return base64.b64decode(data["prepared_transaction_hash"])
