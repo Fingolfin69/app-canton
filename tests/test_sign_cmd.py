@@ -60,11 +60,10 @@ def test_sign_tx_ping(
         "tests/tx_examples/external_sign_ping.json"
     )
     print(f"Transaction hash: {tx_hash.hex()}")
-
     print(f"Serialized transaction length: {len(serialized_tx)} bytes")
 
     with client.sign_tx(path=path, transaction=serialized_tx, p1=P1SignType.P1_SIGN_PREPARED_TRANSACTION):
-        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_tx_ping")
+        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)
 
     response = client.get_async_response().data
     _, der_sig, _ = unpack_sign_tx_response(response)
