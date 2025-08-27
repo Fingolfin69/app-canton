@@ -37,16 +37,19 @@ static int crypto_sign_message(void) {
     uint32_t info = 0;
     size_t sig_len = sizeof(G_context.tx_info.signature);
 
-    cx_err_t error = bip32_derive_ecdsa_sign_hash_256(CX_CURVE_256K1,
-                                                      G_context.bip32_path,
-                                                      G_context.bip32_path_len,
-                                                      CX_RND_RFC6979 | CX_LAST,
-                                                      CX_SHA256,
-                                                      G_context.tx_info.m_hash,
-                                                      sizeof(G_context.tx_info.m_hash),
-                                                      G_context.tx_info.signature,
-                                                      &sig_len,
-                                                      &info);
+    
+    cx_err_t error = bip32_derive_with_seed_eddsa_sign_hash_256(HDW_ED25519_SLIP10,
+                                                        CX_CURVE_Ed25519,
+                                                        G_context.bip32_path,
+                                                        G_context.bip32_path_len,
+                                                        CX_SHA512,
+                                                        G_context.tx_info.m_hash,
+                                                        sizeof(G_context.tx_info.m_hash),
+                                                        G_context.tx_info.signature,
+                                                        &sig_len,
+                                                        NULL,
+                                                        0);
+
     if (error != CX_OK) {
         return -1;
     }

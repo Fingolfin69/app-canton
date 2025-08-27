@@ -30,17 +30,12 @@
 #include "constants.h"
 #include "globals.h"
 #include "sw.h"
-#include "address.h"
+// #include "address.h"
 #include "validate.h"
 #include "tx_types.h"
 #include "menu.h"
 
-// Buffer where the transaction amount string is written
-static char g_amount[30];
-// Buffer where the transaction address string is written
-static char g_address[43];
-
-static nbgl_contentTagValue_t pairs[2];
+static nbgl_contentTagValue_t pairs[1];
 static nbgl_contentTagValueList_t pairList;
 
 // called when long press button on 3rd page is long-touched or when reject footer is touched
@@ -52,6 +47,7 @@ static void review_choice(bool confirm) {
     } else {
         nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_REJECTED, ui_menu_main);
     }
+    app_mem_free((void *) pairs[0].value);
 }
 
 // Public function to start the transaction review
@@ -65,32 +61,21 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         return io_send_sw(SW_BAD_STATE);
     }
 
-    // Format amount and address to g_amount and g_address buffers
-    memset(g_amount, 0, sizeof(g_amount));
-    char amount[30] = {0};
-    if (!format_fpu64(amount,
-                      sizeof(amount),
-                      G_context.tx_info.transaction.value,
-                      EXPONENT_SMALLEST_UNIT)) {
-        return io_send_sw(SW_DISPLAY_AMOUNT_FAIL);
-    }
-    snprintf(g_amount, sizeof(g_amount), "BOL %.*s", sizeof(amount), amount);
-    memset(g_address, 0, sizeof(g_address));
-
-    if (format_hex(G_context.tx_info.transaction.to, ADDRESS_LEN, g_address, sizeof(g_address)) ==
-        -1) {
-        return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
-    }
-
     // Setup data to display
-    pairs[0].item = "Amount";
-    pairs[0].value = g_amount;
-    pairs[1].item = "Address";
-    pairs[1].value = g_address;
+    size_t hex_hash_length = 2 * sizeof(G_context.tx_info.m_hash) + 1;
+    pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
+    LEDGER_ASSERT(pairs[0].value != NULL, "Memory full");
+    pairs[0].item = "Transaction hash";
+#pragma GCC diagnostic ignored "-Wformat"
+    snprintf((char*) pairs[0].value,
+             hex_hash_length,
+             "%.*H",
+             sizeof(G_context.tx_info.m_hash),
+             G_context.tx_info.m_hash);
 
     // Setup list
     pairList.nbMaxLinesForValue = 0;
-    pairList.nbPairs = 2;
+    pairList.nbPairs = 1;
     pairList.pairs = pairs;
 
     if (is_blind_signed) {
@@ -98,10 +83,10 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         nbgl_useCaseReviewBlindSigning(TYPE_TRANSACTION,
                                        &pairList,
                                        &ICON_APP_CANTON,
-                                       "Review transaction\nto send BOL",
+                                       "Review transaction",
                                        NULL,
 #ifdef SCREEN_SIZE_WALLET
-                                       "Sign transaction\nto send BOL",
+                                       "Accept risk and sign\ntransaction?",
 #else
                                        NULL,
 #endif
@@ -112,10 +97,10 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &pairList,
                            &ICON_APP_CANTON,
-                           "Review transaction\nto send BOL",
+                           "Review transaction",
                            NULL,
 #ifdef SCREEN_SIZE_WALLET
-                           "Sign transaction\nto send BOL",
+                           "Sign transaction",
 #else
                            NULL,
 #endif
