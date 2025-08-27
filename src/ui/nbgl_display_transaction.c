@@ -67,7 +67,7 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
     LEDGER_ASSERT(pairs[0].value != NULL, "Memory full");
     pairs[0].item = "Transaction hash";
 #pragma GCC diagnostic ignored "-Wformat"
-    snprintf((char*) pairs[0].value,
+    snprintf((char *) pairs[0].value,
              hex_hash_length,
              "%.*H",
              sizeof(G_context.tx_info.m_hash),

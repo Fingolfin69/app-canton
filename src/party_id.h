@@ -5,7 +5,7 @@
 #include <stdbool.h>  // bool
 
 /**
- * Convert public key to party id. Party id is defined as: 
+ * Convert public key to party id. Party id is defined as:
  * the concatenation of:
  * - the hex-encoded ed25519 public key (32 bytes)
  * - a colon (':', 1 byte)
@@ -13,7 +13,7 @@
  *  - a purpose byte (0x0C for party id)
  *  - the raw public key (32 bytes)
  *
- * party id = hex(public_key) : hex(sha256(hash purpose (12) || public_key)) 
+ * party id = hex(public_key) : hex(sha256(hash purpose (12) || public_key))
  *
  * @param[in]  public_key
  *   Pointer to byte buffer with public key.

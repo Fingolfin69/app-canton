@@ -1,7 +1,7 @@
 from ragger.backend.interface import BackendInterface
 
-from tests.application_client.canton_command_sender import BoilerplateCommandSender
-from tests.application_client.canton_response_unpacker import unpack_get_app_name_response
+from application_client.canton_command_sender import BoilerplateCommandSender
+from application_client.canton_response_unpacker import unpack_get_app_name_response
 
 from utils import verify_name
 

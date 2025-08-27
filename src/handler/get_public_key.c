@@ -47,15 +47,14 @@ int handler_get_public_key(buffer_t *cdata, bool display) {
     }
 
     cx_err_t error = bip32_derive_with_seed_get_pubkey_256(HDW_ED25519_SLIP10,
-                                                    CX_CURVE_Ed25519,
-                                                    G_context.bip32_path,
-                                                    G_context.bip32_path_len,
-                                                    rawPubkey,
-                                                    G_context.pk_info.chain_code,
-                                                    CX_SHA512,
-                                                    NULL,
-                                                    0);
-     
+                                                           CX_CURVE_Ed25519,
+                                                           G_context.bip32_path,
+                                                           G_context.bip32_path_len,
+                                                           rawPubkey,
+                                                           G_context.pk_info.chain_code,
+                                                           CX_SHA512,
+                                                           NULL,
+                                                           0);
 
     if (error != CX_OK) {
         return io_send_sw(error);
@@ -68,7 +67,9 @@ int handler_get_public_key(buffer_t *cdata, bool display) {
         G_context.pk_info.raw_public_key[PUBKEY_LEN - 1] |= 0x80;
     }
 
-    PRINTF("Public key: %.*H\n", sizeof(G_context.pk_info.raw_public_key), G_context.pk_info.raw_public_key);
+    PRINTF("Public key: %.*H\n",
+           sizeof(G_context.pk_info.raw_public_key),
+           G_context.pk_info.raw_public_key);
 
     if (display) {
         return ui_display_party_id();

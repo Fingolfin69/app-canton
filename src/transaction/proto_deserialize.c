@@ -42,7 +42,7 @@ parser_status_e proto_deserialize(buffer_t *buf, signing_type_e type, transactio
 
     PRINTF("Decoding transaction from buffer of size %d bytes\n", buf->size);
 
-    const pb_msgdesc_t* message_type;
+    const pb_msgdesc_t *message_type;
 
     switch (type) {
         case SIGN_PREPARED_TRANSACTION:
@@ -55,9 +55,7 @@ parser_status_e proto_deserialize(buffer_t *buf, signing_type_e type, transactio
             return VALUE_PARSING_ERROR;
     }
 
-    if (!pb_decode(&stream,
-                   message_type,
-                   &tx->prepared_tx)) {
+    if (!pb_decode(&stream, message_type, &tx->prepared_tx)) {
         PRINTF("Failed to decode transaction: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
     }

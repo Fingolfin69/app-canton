@@ -5,7 +5,6 @@
 
 #include "types.h"
 
-
 /**
  * Compute SHA-256 hash with a purpose byte as domain separator.
  *

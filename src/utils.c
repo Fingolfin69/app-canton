@@ -21,14 +21,10 @@
 
 #include "types.h"
 
-
 #include "os.h"
 #include "cx.h"
 
-void sha256_with_purpose(uint8_t purpose,
-                         const uint8_t *data,
-                         size_t data_len,
-                         uint8_t out[32]) {
+void sha256_with_purpose(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[32]) {
     cx_sha256_t ctx;
     CX_ASSERT(cx_sha256_init_no_throw(&ctx));
     CX_ASSERT(cx_hash_update((cx_hash_t *) &ctx, &purpose, 1));

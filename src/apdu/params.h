@@ -43,5 +43,4 @@
 /**
  * P2 containing all address display bits.
  */
-#define P2_ADDR_FLAGS_MAX \
-    (P2_ADDR_FLAG_TESTNET | P2_ADDR_FLAG_MASTERCHAIN )
+#define P2_ADDR_FLAGS_MAX (P2_ADDR_FLAG_TESTNET | P2_ADDR_FLAG_MASTERCHAIN)

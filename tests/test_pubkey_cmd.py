@@ -1,15 +1,13 @@
-import pytest
-import inspect
 from pathlib import Path
+import pytest
 from ragger.bip import calculate_public_key_and_chaincode, CurveChoice
 from ragger.error import ExceptionRAPDU
 from ragger.backend.interface import BackendInterface
-from ragger.navigator.navigation_scenario import NavigateWithScenario
 from ragger.navigator import Navigator
-from ragger.navigator.instruction import NavInsID 
+from ragger.navigator.instruction import NavInsID
 
-from tests.application_client.canton_command_sender import BoilerplateCommandSender, Errors
-from tests.application_client.canton_response_unpacker import unpack_get_public_key_response
+from application_client.canton_command_sender import BoilerplateCommandSender, Errors
+from application_client.canton_response_unpacker import unpack_get_public_key_response
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
@@ -48,7 +46,7 @@ def test_get_public_key_confirm_accepted(backend: BackendInterface, navigator: N
     _, public_key, _, chain_code = unpack_get_public_key_response(response)
 
     ref_public_key, ref_chain_code = calculate_public_key_and_chaincode(CurveChoice.Ed25519Slip, path=path)
-    
+
     print(f"Public key: {public_key.hex()}")
     print(f"Reference public key: {ref_public_key}")
 

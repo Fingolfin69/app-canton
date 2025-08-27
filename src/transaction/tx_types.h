@@ -6,7 +6,7 @@
 #include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
 
 #define MAX_TX_LEN   2048
-#define PARTY_ID_LEN  130  // 2*32 + 2 + 2*32
+#define PARTY_ID_LEN 130  // 2*32 + 2 + 2*32
 #define MAX_MEMO_LEN 465  // 510 - ADDRESS_LEN - 2*SIZE(U64) - SIZE(MAX_VARINT)
 
 typedef enum {
