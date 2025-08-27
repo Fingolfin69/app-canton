@@ -17,4 +17,4 @@
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e transaction_deserialize(buffer_t *buf, transaction_t *tx);
+parser_status_e proto_deserialize(buffer_t *buf, signing_type_e type, transaction_t *tx);
