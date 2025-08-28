@@ -136,7 +136,7 @@ class BoilerplateCommandSender:
         prepared_submission_details: bytes
     ) -> Generator[None, None, None]:
         print(f"Signing transaction (in parts) with path: {path}")
-        p1 = P1SignType.P1_SIGN_PREPARED_TRANSACTION,
+        p1 = P1SignType.P1_SIGN_PREPARED_TRANSACTION
 
         self.backend.exchange(cla=CLA,
                               ins=InsType.SIGN_TX,
@@ -233,7 +233,7 @@ class BoilerplateCommandSender:
         with self.backend.exchange_async(cla=CLA,
                                          ins=InsType.SIGN_TX,
                                          p1=p1,
-                                         p2=P2.P2_NONE,
+                                         p2=P2.P2_MSG_END,
                                          data=ps_messages[-1]) as response:
             yield response
 

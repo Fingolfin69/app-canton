@@ -78,10 +78,8 @@ typedef enum {
     HASH_ERROR_BUFFER_OVERFLOW = 1,
     HASH_ERROR_INVALID_HASH_STRING = 2,
     HASH_ERROR_UNSUPPORTED_VALUE = 3,
-    HASH_ERROR_NODE_ID_MISMATCH = 4,
-    HASH_ERROR_UNKNOWN_NODE_VERSION = 5,
-    HASH_ERROR_UNKNOWN_NODE_TYPE = 6,
-    HASH_ERROR_NODE_ID_OUT_OF_BOUNDS = 7,
+    HASH_ERROR_UNKNOWN_NODE_VERSION = 4,
+    HASH_ERROR_UNKNOWN_NODE_TYPE = 5,
 } HashError;
 
 typedef struct {
@@ -502,7 +500,7 @@ static void encode_node(ByteWriter *bw,
 }
 
 // Hash a referenced node‑id and write the 32‑byte digest
-static void encode_node_id(ByteWriter *bw,
+static void encode_node_id_hash(ByteWriter *bw,
                            const Node *node,
                            const DamlTransaction *tx,
                            const NodeSeed *seeds,
@@ -565,7 +563,7 @@ int hash_transaction(ByteWriter *bw, const DamlTransaction *tx) {
 
 // Hash a referenced node‑id and write the 32‑byte digest
 int hash_node(ByteWriter *bw, const DamlTransaction *tx, const Node *node) {
-    encode_node_id(bw, node, tx, tx->node_seeds, tx->node_seeds_count);
+    encode_node_id_hash(bw, node, tx, tx->node_seeds, tx->node_seeds_count);
 
     if (is_hash_error()) {
         PRINTF("Error hashing node: '%s', code: %d\n",

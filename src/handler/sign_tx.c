@@ -35,7 +35,7 @@
 #include "canonical_hash.h"
 
 static int process_tx_chunk(buffer_t *cdata, signing_type_e type, bool first, bool more, bool msg_end);
-static int process_sign_prepared_transaction(buffer_t *buf);
+static int process_sign_prepared_transaction(transaction_ctx_t *tx_info);
 static int process_sign_transaction_hash(buffer_t *buf, uint8_t out[32]);
 static int process_prepared_tx_part(buffer_t *buf);
 
@@ -59,7 +59,7 @@ int handler_sign_tx(buffer_t *cdata, signing_type_e type, bool first, bool more,
 
         switch (G_context.signing_type) {
             case SIGN_PREPARED_TRANSACTION:
-                result = process_sign_prepared_transaction(&buf);
+                result = process_sign_prepared_transaction(&G_context.tx_info);
                 break;
             case SIGN_HASH:
                 result = process_sign_transaction_hash(&buf, G_context.tx_info.m_hash);
@@ -79,7 +79,9 @@ int handler_sign_tx(buffer_t *cdata, signing_type_e type, bool first, bool more,
         PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
 
         return ui_display_blind_signed_transaction();
-    } else if (G_context.state == STATE_EXPECTING_MORE) {
+    } else if (
+        G_context.state >= STATE_EXPECTING_MORE && G_context.state <= STATE_RECEIVING_PREPARED_SUBMISSION_DETAILS
+    ) {
         // More APDUs with transaction parts are expected.
         // Send a SW_OK to signal that we have received the chunk
         return io_send_sw(SW_OK);
@@ -125,16 +127,18 @@ static int process_tx_chunk(buffer_t *cdata, signing_type_e type, bool first, bo
 
         G_context.tx_info.raw_tx_len += cdata->size;
 
-        if (G_context.signing_type == SIGN_PREPARED_TRANSACTION && msg_end) {
-            buffer_t buf = {.ptr = G_context.tx_info.raw_tx,
-                            .size = G_context.tx_info.raw_tx_len,
-                            .offset = 0};
+        if (G_context.signing_type == SIGN_PREPARED_TRANSACTION) {
+            if (msg_end) {
+                buffer_t buf = {.ptr = G_context.tx_info.raw_tx,
+                                .size = G_context.tx_info.raw_tx_len,
+                                .offset = 0};
 
-            // Reset for next message (transaction part)
-            G_context.tx_info.raw_tx_len = 0;
+                // Reset for next message (transaction part)
+                G_context.tx_info.raw_tx_len = 0;
 
-            // Deserialize and hash received message (transaction part)
-            return process_prepared_tx_part(&buf);
+                // Deserialize and hash received message (transaction part)
+                return process_prepared_tx_part(&buf);
+            }
         } else {
             if (more) {
                 G_context.state = STATE_EXPECTING_MORE;
@@ -146,30 +150,28 @@ static int process_tx_chunk(buffer_t *cdata, signing_type_e type, bool first, bo
     return 0;
 }
 
-static int process_sign_prepared_transaction(buffer_t *buf) {
-    int res = finalize_hash(G_context.tx_info.partial_tx_hash,
-                            G_context.tx_info.partial_md_hash,
-                            G_context.tx_info.m_hash);
+static int process_sign_prepared_transaction(transaction_ctx_t *tx_info) {
+    int res = finalize_hash(tx_info->partial_tx_hash,
+                            tx_info->partial_md_hash,
+                            tx_info->m_hash);
 
     if (res != 0) {
         PRINTF("Failed to compute transaction hash: %d\n", res);
         return SW_TX_HASH_FAIL;
     }
 
-    if (memcmp(G_context.tx_info.m_hash,
-               G_context.tx_info.tx_parts_ctx.prepared_submission_details.prepared_transaction_hash.bytes,
+    if (memcmp(tx_info->m_hash,
+               tx_info->tx_parts_ctx.prepared_submission_details.prepared_transaction_hash.bytes,
                sizeof(G_context.tx_info.m_hash)) != 0) {
         PRINTF("Transaction hash mismatch: computed %.*H, expected %.*H\n",
                 32,
-                G_context.tx_info.m_hash,
+                tx_info->m_hash,
                 32,
-                G_context.tx_info.tx_parts_ctx.prepared_submission_details
+                tx_info->tx_parts_ctx.prepared_submission_details
                     .prepared_transaction_hash.bytes);
 
         return SW_TX_HASH_FAIL;
     }
-
-    memcpy(G_context.tx_info.m_hash, buf->ptr, 32);
 
     return 0;
 }
@@ -296,6 +298,7 @@ static int process_prepared_tx_part(buffer_t *buf) {
 
         } break;
         default:
+            PRINTF("Invalid state during processing prepared tx part: %d\n", G_context.state);
             return SW_BAD_STATE;
     }
 
