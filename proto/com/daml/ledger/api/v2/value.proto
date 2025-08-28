@@ -31,7 +31,7 @@ message Value {
     google.protobuf.Empty unit = 1;
 
     // True or false.
-    bool bool_ = 2;
+    bool bool = 2;
 
     sint64 int64 = 3 [jstype = JS_STRING];
 
@@ -87,7 +87,7 @@ message Value {
     Variant variant = 15;
 
     // The Enum type
-    Enum enum_ = 16;
+    Enum enum = 16;
   }
 }
 

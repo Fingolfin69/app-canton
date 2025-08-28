@@ -7,3 +7,6 @@
 #endif
 
 PB_BIND(google_protobuf_Timestamp, google_protobuf_Timestamp, AUTO)
+
+
+

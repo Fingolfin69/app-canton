@@ -8,4 +8,8 @@
 
 PB_BIND(com_daml_ledger_api_v2_OffsetCheckpoint, com_daml_ledger_api_v2_OffsetCheckpoint, AUTO)
 
+
 PB_BIND(com_daml_ledger_api_v2_SynchronizerTime, com_daml_ledger_api_v2_SynchronizerTime, 2)
+
+
+
