@@ -57,7 +57,7 @@ PATH_APP_LOAD_PARAMS = "44'/6767'"
 
 # Variants list
 VARIANT_PARAM = COIN
-VARIANT_VALUES = CANTON
+VARIANT_VALUES = CC
 
 # Enabling DEBUG flag will enable PRINTF and disable optimizations
 #DEBUG = 1
