@@ -22,15 +22,15 @@ typedef enum {
  * Enumeration with parsing state.
  */
 typedef enum {
-    STATE_NONE,            /// No state
-    STATE_EXPECTING_MORE,  /// Expecting more data (for chunked APDU)
+    STATE_NONE,                                   /// No state
+    STATE_EXPECTING_MORE,                         /// Expecting more data (for chunked APDU)
     STATE_RECEIVING_DAML_TX_PART,                 /// Receiving part of DAML transaction
     STATE_RECEIVING_DAML_NODES,                   /// Receiving DAML nodes
     STATE_RECEIVING_METADATA,                     /// Receiving metadata
     STATE_RECEIVING_METADATA_INPUT_CONTRACTS,     /// Receiving input contracts
-    STATE_RECEIVING_PREPARED_SUBMISSION_DETAILS,   /// Receiving prepared submission details
-    STATE_PARSED,           /// All transaction data parsed
-    STATE_APPROVED         /// Transaction data approved
+    STATE_RECEIVING_PREPARED_SUBMISSION_DETAILS,  /// Receiving prepared submission details
+    STATE_PARSED,                                 /// All transaction data parsed
+    STATE_APPROVED                                /// Transaction data approved
 } state_e;
 
 /**

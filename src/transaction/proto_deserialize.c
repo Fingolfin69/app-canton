@@ -30,7 +30,7 @@
 #include "ledger_assert.h"
 #endif
 
-parser_status_e deserialize_transaction_part_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Daml transaction from buffer of size %d bytes\n", buf->size);
@@ -45,7 +45,7 @@ parser_status_e deserialize_transaction_part_daml_tx(buffer_t *buf, transaction_
     return PARSING_OK;
 }
 
-parser_status_e deserialize_transaction_part_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Node from buffer of size %d bytes\n", buf->size);
@@ -60,7 +60,7 @@ parser_status_e deserialize_transaction_part_node(buffer_t *buf, transaction_ctx
     return PARSING_OK;
 }
 
-parser_status_e deserialize_transaction_part_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Metadata from buffer of size %d bytes\n", buf->size);
@@ -75,8 +75,7 @@ parser_status_e deserialize_transaction_part_metadata(buffer_t *buf, transaction
     return PARSING_OK;
 }
 
-parser_status_e deserialize_transaction_part_input_contract(buffer_t *buf,
-                                                            transaction_ctx_t *tx_ctx) {
+parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Input contract from buffer of size %d bytes\n", buf->size);
@@ -91,9 +90,8 @@ parser_status_e deserialize_transaction_part_input_contract(buffer_t *buf,
     return PARSING_OK;
 }
 
-parser_status_e deserialize_transaction_part_prepared_submission_details(
-    buffer_t *buf,
-    transaction_ctx_t *tx_ctx) {
+parser_status_e proto_deserialize_prepared_submission_details(buffer_t *buf,
+                                                              transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding prepared submission details from buffer of size %d bytes\n", buf->size);

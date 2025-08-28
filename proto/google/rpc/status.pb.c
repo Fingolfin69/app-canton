@@ -7,6 +7,3 @@
 #endif
 
 PB_BIND(google_rpc_Status, google_rpc_Status, 2)
-
-
-

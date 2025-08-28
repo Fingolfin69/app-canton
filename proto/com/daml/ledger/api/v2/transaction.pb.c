@@ -8,14 +8,10 @@
 
 PB_BIND(com_daml_ledger_api_v2_TreeEvent, com_daml_ledger_api_v2_TreeEvent, 4)
 
-
 PB_BIND(com_daml_ledger_api_v2_TransactionTree, com_daml_ledger_api_v2_TransactionTree, 2)
 
-
-PB_BIND(com_daml_ledger_api_v2_TransactionTree_EventsByIdEntry, com_daml_ledger_api_v2_TransactionTree_EventsByIdEntry, 4)
-
+PB_BIND(com_daml_ledger_api_v2_TransactionTree_EventsByIdEntry,
+        com_daml_ledger_api_v2_TransactionTree_EventsByIdEntry,
+        4)
 
 PB_BIND(com_daml_ledger_api_v2_Transaction, com_daml_ledger_api_v2_Transaction, 2)
-
-
-

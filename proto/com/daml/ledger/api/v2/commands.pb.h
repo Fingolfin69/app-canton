@@ -14,26 +14,26 @@
 
 /* Struct definitions */
 /* A composite command that groups multiple commands together. */
-typedef struct _com_daml_ledger_api_v2_Commands { 
+typedef struct _com_daml_ledger_api_v2_Commands {
     /* Identifier of the on-ledger workflow that this command is a part of.
  Must be a valid LedgerString (as described in ``value.proto``).
  Optional */
-    char workflow_id[1024]; 
+    char workflow_id[1024];
     /* Uniquely identifies the participant user that issued the command.
  Must be a valid UserIdString (as described in ``value.proto``).
  Required unless authentication is used with a user token.
  In that case, the token's user-id will be used for the request's user_id. */
-    char user_id[1024]; 
+    char user_id[1024];
     /* Uniquely identifies the command.
  The triple (user_id, act_as, command_id) constitutes the change ID for the intended ledger change,
  where act_as is interpreted as a set of party names.
  The change ID can be used for matching the intended ledger changes with all their completions.
  Must be a valid LedgerString (as described in ``value.proto``).
  Required */
-    char command_id[1024]; 
+    char command_id[1024];
     /* Individual elements of this atomic command. Must be non-empty.
  Required */
-    pb_callback_t commands; 
+    pb_callback_t commands;
     /* Specifies the length of the deduplication period.
  It is interpreted relative to the local clock at some point during the submission's processing.
  Must be non-negative. Must not exceed the maximum deduplication time. */
@@ -41,348 +41,442 @@ typedef struct _com_daml_ledger_api_v2_Commands {
     union {
         google_protobuf_Duration deduplication_duration;
         int64_t deduplication_offset;
-    } deduplication_period; 
+    } deduplication_period;
     /* Specifies the start of the deduplication period by a completion stream offset (exclusive).
  Must be a valid absolute offset (positive integer) or participant begin (zero). */
     bool has_min_ledger_time_abs;
-    google_protobuf_Timestamp min_ledger_time_abs; 
+    google_protobuf_Timestamp min_ledger_time_abs;
     /* Lower bound for the ledger time assigned to the resulting transaction.
  Note: The ledger time of a transaction is assigned as part of command interpretation.
- Use this property if you expect that command interpretation will take a considerate amount of time, such that by
- the time the resulting transaction is sequenced, its assigned ledger time is not valid anymore.
- Must not be set at the same time as min_ledger_time_rel.
- Optional */
+ Use this property if you expect that command interpretation will take a considerate amount of time,
+ such that by the time the resulting transaction is sequenced, its assigned ledger time is not valid
+ anymore. Must not be set at the same time as min_ledger_time_rel. Optional */
     bool has_min_ledger_time_rel;
-    google_protobuf_Duration min_ledger_time_rel; 
-    /* Same as min_ledger_time_abs, but specified as a duration, starting from the time the command is received by the server.
- Must not be set at the same time as min_ledger_time_abs.
- Optional */
-    pb_callback_t act_as; 
+    google_protobuf_Duration min_ledger_time_rel;
+    /* Same as min_ledger_time_abs, but specified as a duration, starting from the time the command
+ is received by the server. Must not be set at the same time as min_ledger_time_abs. Optional */
+    pb_callback_t act_as;
     /* Set of parties on whose behalf the command should be executed.
- If ledger API authorization is enabled, then the authorization metadata must authorize the sender of the request
- to act on behalf of each of the given parties.
- Each element must be a valid PartyIdString (as described in ``value.proto``).
- Required, must be non-empty. */
-    pb_callback_t read_as; 
-    /* Set of parties on whose behalf (in addition to all parties listed in ``act_as``) contracts can be retrieved.
- This affects Daml operations such as ``fetch``, ``fetchByKey``, ``lookupByKey``, ``exercise``, and ``exerciseByKey``.
- Note: A participant node of a Daml network can host multiple parties. Each contract present on the participant
- node is only visible to a subset of these parties. A command can only use contracts that are visible to at least
- one of the parties in ``act_as`` or ``read_as``. This visibility check is independent from the Daml authorization
- rules for fetch operations.
- If ledger API authorization is enabled, then the authorization metadata must authorize the sender of the request
- to read contract data on behalf of each of the given parties.
+ If ledger API authorization is enabled, then the authorization metadata must authorize the sender
+ of the request to act on behalf of each of the given parties. Each element must be a valid
+ PartyIdString (as described in ``value.proto``). Required, must be non-empty. */
+    pb_callback_t read_as;
+    /* Set of parties on whose behalf (in addition to all parties listed in ``act_as``) contracts
+ can be retrieved. This affects Daml operations such as ``fetch``, ``fetchByKey``, ``lookupByKey``,
+ ``exercise``, and ``exerciseByKey``. Note: A participant node of a Daml network can host multiple
+ parties. Each contract present on the participant node is only visible to a subset of these
+ parties. A command can only use contracts that are visible to at least one of the parties in
+ ``act_as`` or ``read_as``. This visibility check is independent from the Daml authorization rules
+ for fetch operations. If ledger API authorization is enabled, then the authorization metadata must
+ authorize the sender of the request to read contract data on behalf of each of the given parties.
  Optional */
-    char submission_id[1024]; 
-    /* A unique identifier to distinguish completions for different submissions with the same change ID.
- Typically a random UUID. Applications are expected to use a different UUID for each retry of a submission
- with the same change ID.
- Must be a valid LedgerString (as described in ``value.proto``).
+    char submission_id[1024];
+    /* A unique identifier to distinguish completions for different submissions with the same change
+ ID. Typically a random UUID. Applications are expected to use a different UUID for each retry of a
+ submission with the same change ID. Must be a valid LedgerString (as described in ``value.proto``).
 
  If omitted, the participant or the committer may set a value of their choice.
  Optional */
-    pb_callback_t disclosed_contracts; 
+    pb_callback_t disclosed_contracts;
     /* Additional contracts used to resolve contract & contract key lookups.
  Optional */
-    char synchronizer_id[1024]; 
+    char synchronizer_id[1024];
     /* Must be a valid synchronizer id
  Optional */
-    pb_callback_t package_id_selection_preference; 
+    pb_callback_t package_id_selection_preference;
     /* The package-id selection preference of the client for resolving
  package names and interface instances in command submission and interpretation */
-    pb_callback_t prefetch_contract_keys; 
+    pb_callback_t prefetch_contract_keys;
 } com_daml_ledger_api_v2_Commands;
 
 /* Create a contract and exercise a choice on it in the same transaction. */
-typedef struct _com_daml_ledger_api_v2_CreateAndExerciseCommand { 
+typedef struct _com_daml_ledger_api_v2_CreateAndExerciseCommand {
     /* The template of the contract the client wants to create.
  Both package-name and package-id reference identifier formats for the template-id are supported.
- Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
+ Note: The package-id reference identifier format is deprecated. We plan to end support for this
+ format in version 3.4.
 
  Required */
     bool has_template_id;
-    com_daml_ledger_api_v2_Identifier template_id; 
+    com_daml_ledger_api_v2_Identifier template_id;
     /* The arguments required for creating a contract from this template.
  Required */
     bool has_create_arguments;
-    com_daml_ledger_api_v2_Record create_arguments; 
+    com_daml_ledger_api_v2_Record create_arguments;
     /* The name of the choice the client wants to exercise.
  Must be a valid NameString (as described in ``value.proto``).
  Required */
-    char choice[1024]; 
+    char choice[1024];
     /* The argument for this choice.
  Required */
     bool has_choice_argument;
-    com_daml_ledger_api_v2_Value choice_argument; 
+    com_daml_ledger_api_v2_Value choice_argument;
 } com_daml_ledger_api_v2_CreateAndExerciseCommand;
 
 /* Create a new contract instance based on a template. */
-typedef struct _com_daml_ledger_api_v2_CreateCommand { 
+typedef struct _com_daml_ledger_api_v2_CreateCommand {
     /* The template of contract the client wants to create.
  Both package-name and package-id reference identifier formats for the template-id are supported.
- Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
+ Note: The package-id reference identifier format is deprecated. We plan to end support for this
+ format in version 3.4.
 
  Required */
     bool has_template_id;
-    com_daml_ledger_api_v2_Identifier template_id; 
+    com_daml_ledger_api_v2_Identifier template_id;
     /* The arguments required for creating a contract from this template.
  Required */
     bool has_create_arguments;
-    com_daml_ledger_api_v2_Record create_arguments; 
+    com_daml_ledger_api_v2_Record create_arguments;
 } com_daml_ledger_api_v2_CreateCommand;
 
 typedef PB_BYTES_ARRAY_T(1024) com_daml_ledger_api_v2_DisclosedContract_created_event_blob_t;
 /* An additional contract that is used to resolve
  contract & contract key lookups. */
-typedef struct _com_daml_ledger_api_v2_DisclosedContract { 
+typedef struct _com_daml_ledger_api_v2_DisclosedContract {
     /* The template id of the contract.
  The identifier uses the package-id reference format.
 
  Required */
     bool has_template_id;
-    com_daml_ledger_api_v2_Identifier template_id; 
+    com_daml_ledger_api_v2_Identifier template_id;
     /* The contract id
  Required */
-    char contract_id[1024]; 
+    char contract_id[1024];
     /* Opaque byte string containing the complete payload required by the Daml engine
  to reconstruct a contract not known to the receiving participant.
  Required */
-    com_daml_ledger_api_v2_DisclosedContract_created_event_blob_t created_event_blob; 
+    com_daml_ledger_api_v2_DisclosedContract_created_event_blob_t created_event_blob;
     /* The ID of the synchronizer where the contract is currently assigned
  Optional */
-    char synchronizer_id[1024]; 
+    char synchronizer_id[1024];
 } com_daml_ledger_api_v2_DisclosedContract;
 
 /* Exercise a choice on an existing contract specified by its key. */
-typedef struct _com_daml_ledger_api_v2_ExerciseByKeyCommand { 
+typedef struct _com_daml_ledger_api_v2_ExerciseByKeyCommand {
     /* The template of contract the client wants to exercise.
  Both package-name and package-id reference identifier formats for the template-id are supported.
- Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
+ Note: The package-id reference identifier format is deprecated. We plan to end support for this
+ format in version 3.4.
 
  Required */
     bool has_template_id;
-    com_daml_ledger_api_v2_Identifier template_id; 
+    com_daml_ledger_api_v2_Identifier template_id;
     /* The key of the contract the client wants to exercise upon.
  Required */
     bool has_contract_key;
-    com_daml_ledger_api_v2_Value contract_key; 
+    com_daml_ledger_api_v2_Value contract_key;
     /* The name of the choice the client wants to exercise.
  Must be a valid NameString (as described in ``value.proto``)
  Required */
-    char choice[1024]; 
+    char choice[1024];
     /* The argument for this choice.
  Required */
     bool has_choice_argument;
-    com_daml_ledger_api_v2_Value choice_argument; 
+    com_daml_ledger_api_v2_Value choice_argument;
 } com_daml_ledger_api_v2_ExerciseByKeyCommand;
 
 /* Exercise a choice on an existing contract. */
-typedef struct _com_daml_ledger_api_v2_ExerciseCommand { 
+typedef struct _com_daml_ledger_api_v2_ExerciseCommand {
     /* The template or interface of the contract the client wants to exercise.
  Both package-name and package-id reference identifier formats for the template-id are supported.
- Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
- To exercise a choice on an interface, specify the interface identifier in the template_id field.
+ Note: The package-id reference identifier format is deprecated. We plan to end support for this
+ format in version 3.4. To exercise a choice on an interface, specify the interface identifier in
+ the template_id field.
 
  Required */
     bool has_template_id;
-    com_daml_ledger_api_v2_Identifier template_id; 
+    com_daml_ledger_api_v2_Identifier template_id;
     /* The ID of the contract the client wants to exercise upon.
  Must be a valid LedgerString (as described in ``value.proto``).
  Required */
-    char contract_id[1024]; 
+    char contract_id[1024];
     /* The name of the choice the client wants to exercise.
  Must be a valid NameString (as described in ``value.proto``)
  Required */
-    char choice[1024]; 
+    char choice[1024];
     /* The argument for this choice.
  Required */
     bool has_choice_argument;
-    com_daml_ledger_api_v2_Value choice_argument; 
+    com_daml_ledger_api_v2_Value choice_argument;
 } com_daml_ledger_api_v2_ExerciseCommand;
 
 /* Preload contracts */
-typedef struct _com_daml_ledger_api_v2_PrefetchContractKey { 
+typedef struct _com_daml_ledger_api_v2_PrefetchContractKey {
     /* The template of contract the client wants to prefetch.
  Both package-name and package-id reference identifier formats for the template-id are supported.
- Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
+ Note: The package-id reference identifier format is deprecated. We plan to end support for this
+ format in version 3.4.
 
  Required */
     bool has_template_id;
-    com_daml_ledger_api_v2_Identifier template_id; 
+    com_daml_ledger_api_v2_Identifier template_id;
     /* The key of the contract the client wants to prefetch.
  Required */
     bool has_contract_key;
-    com_daml_ledger_api_v2_Value contract_key; 
+    com_daml_ledger_api_v2_Value contract_key;
 } com_daml_ledger_api_v2_PrefetchContractKey;
 
 /* A command can either create a new contract or exercise a choice on an existing contract. */
-typedef struct _com_daml_ledger_api_v2_Command { 
+typedef struct _com_daml_ledger_api_v2_Command {
     pb_size_t which_command;
     union {
         com_daml_ledger_api_v2_CreateCommand create;
         com_daml_ledger_api_v2_ExerciseCommand exercise;
         com_daml_ledger_api_v2_CreateAndExerciseCommand create_and_exercise;
         com_daml_ledger_api_v2_ExerciseByKeyCommand exercise_by_key;
-    } command; 
+    } command;
 } com_daml_ledger_api_v2_Command;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define com_daml_ledger_api_v2_Command_init_default {0, {com_daml_ledger_api_v2_CreateCommand_init_default}}
-#define com_daml_ledger_api_v2_CreateCommand_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Record_init_default}
-#define com_daml_ledger_api_v2_ExerciseCommand_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, "", "", false, com_daml_ledger_api_v2_Value_init_default}
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Value_init_default, "", false, com_daml_ledger_api_v2_Value_init_default}
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Record_init_default, "", false, com_daml_ledger_api_v2_Value_init_default}
-#define com_daml_ledger_api_v2_DisclosedContract_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, "", {0, {0}}, ""}
-#define com_daml_ledger_api_v2_Commands_init_default {"", "", "", {{NULL}, NULL}, 0, {google_protobuf_Duration_init_default}, false, google_protobuf_Timestamp_init_default, false, google_protobuf_Duration_init_default, {{NULL}, NULL}, {{NULL}, NULL}, "", {{NULL}, NULL}, "", {{NULL}, NULL}, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_PrefetchContractKey_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Value_init_default}
-#define com_daml_ledger_api_v2_Command_init_zero {0, {com_daml_ledger_api_v2_CreateCommand_init_zero}}
-#define com_daml_ledger_api_v2_CreateCommand_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Record_init_zero}
-#define com_daml_ledger_api_v2_ExerciseCommand_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, "", "", false, com_daml_ledger_api_v2_Value_init_zero}
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Value_init_zero, "", false, com_daml_ledger_api_v2_Value_init_zero}
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Record_init_zero, "", false, com_daml_ledger_api_v2_Value_init_zero}
-#define com_daml_ledger_api_v2_DisclosedContract_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, "", {0, {0}}, ""}
-#define com_daml_ledger_api_v2_Commands_init_zero {"", "", "", {{NULL}, NULL}, 0, {google_protobuf_Duration_init_zero}, false, google_protobuf_Timestamp_init_zero, false, google_protobuf_Duration_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, "", {{NULL}, NULL}, "", {{NULL}, NULL}, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_PrefetchContractKey_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Value_init_zero}
+#define com_daml_ledger_api_v2_Command_init_default           \
+    {                                                         \
+        0, {                                                  \
+            com_daml_ledger_api_v2_CreateCommand_init_default \
+        }                                                     \
+    }
+#define com_daml_ledger_api_v2_CreateCommand_init_default             \
+    {                                                                 \
+        false, com_daml_ledger_api_v2_Identifier_init_default, false, \
+            com_daml_ledger_api_v2_Record_init_default                \
+    }
+#define com_daml_ledger_api_v2_ExerciseCommand_init_default                   \
+    {                                                                         \
+        false, com_daml_ledger_api_v2_Identifier_init_default, "", "", false, \
+            com_daml_ledger_api_v2_Value_init_default                         \
+    }
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_init_default      \
+    {                                                                 \
+        false, com_daml_ledger_api_v2_Identifier_init_default, false, \
+            com_daml_ledger_api_v2_Value_init_default, "", false,     \
+            com_daml_ledger_api_v2_Value_init_default                 \
+    }
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_init_default  \
+    {                                                                 \
+        false, com_daml_ledger_api_v2_Identifier_init_default, false, \
+            com_daml_ledger_api_v2_Record_init_default, "", false,    \
+            com_daml_ledger_api_v2_Value_init_default                 \
+    }
+#define com_daml_ledger_api_v2_DisclosedContract_init_default \
+    { false, com_daml_ledger_api_v2_Identifier_init_default, "", {0, {0}}, "" }
+#define com_daml_ledger_api_v2_Commands_init_default                                              \
+    {                                                                                             \
+        "", "", "", {{NULL}, NULL}, 0, {google_protobuf_Duration_init_default}, false,            \
+            google_protobuf_Timestamp_init_default, false, google_protobuf_Duration_init_default, \
+            {{NULL}, NULL}, {{NULL}, NULL}, "", {{NULL}, NULL}, "", {{NULL}, NULL}, {             \
+            {NULL}, NULL                                                                          \
+        }                                                                                         \
+    }
+#define com_daml_ledger_api_v2_PrefetchContractKey_init_default       \
+    {                                                                 \
+        false, com_daml_ledger_api_v2_Identifier_init_default, false, \
+            com_daml_ledger_api_v2_Value_init_default                 \
+    }
+#define com_daml_ledger_api_v2_Command_init_zero           \
+    {                                                      \
+        0, {                                               \
+            com_daml_ledger_api_v2_CreateCommand_init_zero \
+        }                                                  \
+    }
+#define com_daml_ledger_api_v2_CreateCommand_init_zero             \
+    {                                                              \
+        false, com_daml_ledger_api_v2_Identifier_init_zero, false, \
+            com_daml_ledger_api_v2_Record_init_zero                \
+    }
+#define com_daml_ledger_api_v2_ExerciseCommand_init_zero                   \
+    {                                                                      \
+        false, com_daml_ledger_api_v2_Identifier_init_zero, "", "", false, \
+            com_daml_ledger_api_v2_Value_init_zero                         \
+    }
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_init_zero      \
+    {                                                              \
+        false, com_daml_ledger_api_v2_Identifier_init_zero, false, \
+            com_daml_ledger_api_v2_Value_init_zero, "", false,     \
+            com_daml_ledger_api_v2_Value_init_zero                 \
+    }
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_init_zero  \
+    {                                                              \
+        false, com_daml_ledger_api_v2_Identifier_init_zero, false, \
+            com_daml_ledger_api_v2_Record_init_zero, "", false,    \
+            com_daml_ledger_api_v2_Value_init_zero                 \
+    }
+#define com_daml_ledger_api_v2_DisclosedContract_init_zero \
+    { false, com_daml_ledger_api_v2_Identifier_init_zero, "", {0, {0}}, "" }
+#define com_daml_ledger_api_v2_Commands_init_zero                                           \
+    {                                                                                       \
+        "", "", "", {{NULL}, NULL}, 0, {google_protobuf_Duration_init_zero}, false,         \
+            google_protobuf_Timestamp_init_zero, false, google_protobuf_Duration_init_zero, \
+            {{NULL}, NULL}, {{NULL}, NULL}, "", {{NULL}, NULL}, "", {{NULL}, NULL}, {       \
+            {NULL}, NULL                                                                    \
+        }                                                                                   \
+    }
+#define com_daml_ledger_api_v2_PrefetchContractKey_init_zero       \
+    {                                                              \
+        false, com_daml_ledger_api_v2_Identifier_init_zero, false, \
+            com_daml_ledger_api_v2_Value_init_zero                 \
+    }
 
 /* Field tags (for use in manual encoding/decoding) */
-#define com_daml_ledger_api_v2_Commands_workflow_id_tag 1
-#define com_daml_ledger_api_v2_Commands_user_id_tag 2
-#define com_daml_ledger_api_v2_Commands_command_id_tag 3
-#define com_daml_ledger_api_v2_Commands_commands_tag 4
-#define com_daml_ledger_api_v2_Commands_deduplication_duration_tag 5
-#define com_daml_ledger_api_v2_Commands_deduplication_offset_tag 6
-#define com_daml_ledger_api_v2_Commands_min_ledger_time_abs_tag 7
-#define com_daml_ledger_api_v2_Commands_min_ledger_time_rel_tag 8
-#define com_daml_ledger_api_v2_Commands_act_as_tag 9
-#define com_daml_ledger_api_v2_Commands_read_as_tag 10
-#define com_daml_ledger_api_v2_Commands_submission_id_tag 11
-#define com_daml_ledger_api_v2_Commands_disclosed_contracts_tag 12
-#define com_daml_ledger_api_v2_Commands_synchronizer_id_tag 13
-#define com_daml_ledger_api_v2_Commands_package_id_selection_preference_tag 14
-#define com_daml_ledger_api_v2_Commands_prefetch_contract_keys_tag 15
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_template_id_tag 1
+#define com_daml_ledger_api_v2_Commands_workflow_id_tag                      1
+#define com_daml_ledger_api_v2_Commands_user_id_tag                          2
+#define com_daml_ledger_api_v2_Commands_command_id_tag                       3
+#define com_daml_ledger_api_v2_Commands_commands_tag                         4
+#define com_daml_ledger_api_v2_Commands_deduplication_duration_tag           5
+#define com_daml_ledger_api_v2_Commands_deduplication_offset_tag             6
+#define com_daml_ledger_api_v2_Commands_min_ledger_time_abs_tag              7
+#define com_daml_ledger_api_v2_Commands_min_ledger_time_rel_tag              8
+#define com_daml_ledger_api_v2_Commands_act_as_tag                           9
+#define com_daml_ledger_api_v2_Commands_read_as_tag                          10
+#define com_daml_ledger_api_v2_Commands_submission_id_tag                    11
+#define com_daml_ledger_api_v2_Commands_disclosed_contracts_tag              12
+#define com_daml_ledger_api_v2_Commands_synchronizer_id_tag                  13
+#define com_daml_ledger_api_v2_Commands_package_id_selection_preference_tag  14
+#define com_daml_ledger_api_v2_Commands_prefetch_contract_keys_tag           15
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_template_id_tag      1
 #define com_daml_ledger_api_v2_CreateAndExerciseCommand_create_arguments_tag 2
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_choice_tag 3
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_choice_argument_tag 4
-#define com_daml_ledger_api_v2_CreateCommand_template_id_tag 1
-#define com_daml_ledger_api_v2_CreateCommand_create_arguments_tag 2
-#define com_daml_ledger_api_v2_DisclosedContract_template_id_tag 1
-#define com_daml_ledger_api_v2_DisclosedContract_contract_id_tag 2
-#define com_daml_ledger_api_v2_DisclosedContract_created_event_blob_tag 3
-#define com_daml_ledger_api_v2_DisclosedContract_synchronizer_id_tag 4
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_template_id_tag 1
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_contract_key_tag 2
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_choice_tag 3
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_choice_argument_tag 4
-#define com_daml_ledger_api_v2_ExerciseCommand_template_id_tag 1
-#define com_daml_ledger_api_v2_ExerciseCommand_contract_id_tag 2
-#define com_daml_ledger_api_v2_ExerciseCommand_choice_tag 3
-#define com_daml_ledger_api_v2_ExerciseCommand_choice_argument_tag 4
-#define com_daml_ledger_api_v2_PrefetchContractKey_template_id_tag 1
-#define com_daml_ledger_api_v2_PrefetchContractKey_contract_key_tag 2
-#define com_daml_ledger_api_v2_Command_create_tag 1
-#define com_daml_ledger_api_v2_Command_exercise_tag 2
-#define com_daml_ledger_api_v2_Command_create_and_exercise_tag 3
-#define com_daml_ledger_api_v2_Command_exercise_by_key_tag 4
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_choice_tag           3
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_choice_argument_tag  4
+#define com_daml_ledger_api_v2_CreateCommand_template_id_tag                 1
+#define com_daml_ledger_api_v2_CreateCommand_create_arguments_tag            2
+#define com_daml_ledger_api_v2_DisclosedContract_template_id_tag             1
+#define com_daml_ledger_api_v2_DisclosedContract_contract_id_tag             2
+#define com_daml_ledger_api_v2_DisclosedContract_created_event_blob_tag      3
+#define com_daml_ledger_api_v2_DisclosedContract_synchronizer_id_tag         4
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_template_id_tag          1
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_contract_key_tag         2
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_choice_tag               3
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_choice_argument_tag      4
+#define com_daml_ledger_api_v2_ExerciseCommand_template_id_tag               1
+#define com_daml_ledger_api_v2_ExerciseCommand_contract_id_tag               2
+#define com_daml_ledger_api_v2_ExerciseCommand_choice_tag                    3
+#define com_daml_ledger_api_v2_ExerciseCommand_choice_argument_tag           4
+#define com_daml_ledger_api_v2_PrefetchContractKey_template_id_tag           1
+#define com_daml_ledger_api_v2_PrefetchContractKey_contract_key_tag          2
+#define com_daml_ledger_api_v2_Command_create_tag                            1
+#define com_daml_ledger_api_v2_Command_exercise_tag                          2
+#define com_daml_ledger_api_v2_Command_create_and_exercise_tag               3
+#define com_daml_ledger_api_v2_Command_exercise_by_key_tag                   4
 
 /* Struct field encoding specification for nanopb */
-#define com_daml_ledger_api_v2_Command_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,create,command.create),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,exercise,command.exercise),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,create_and_exercise,command.create_and_exercise),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,exercise_by_key,command.exercise_by_key),   4)
-#define com_daml_ledger_api_v2_Command_CALLBACK NULL
-#define com_daml_ledger_api_v2_Command_DEFAULT NULL
+#define com_daml_ledger_api_v2_Command_FIELDLIST(X, a)                                           \
+    X(a, STATIC, ONEOF, MESSAGE, (command, create, command.create), 1)                           \
+    X(a, STATIC, ONEOF, MESSAGE, (command, exercise, command.exercise), 2)                       \
+    X(a, STATIC, ONEOF, MESSAGE, (command, create_and_exercise, command.create_and_exercise), 3) \
+    X(a, STATIC, ONEOF, MESSAGE, (command, exercise_by_key, command.exercise_by_key), 4)
+#define com_daml_ledger_api_v2_Command_CALLBACK               NULL
+#define com_daml_ledger_api_v2_Command_DEFAULT                NULL
 #define com_daml_ledger_api_v2_Command_command_create_MSGTYPE com_daml_ledger_api_v2_CreateCommand
-#define com_daml_ledger_api_v2_Command_command_exercise_MSGTYPE com_daml_ledger_api_v2_ExerciseCommand
-#define com_daml_ledger_api_v2_Command_command_create_and_exercise_MSGTYPE com_daml_ledger_api_v2_CreateAndExerciseCommand
-#define com_daml_ledger_api_v2_Command_command_exercise_by_key_MSGTYPE com_daml_ledger_api_v2_ExerciseByKeyCommand
+#define com_daml_ledger_api_v2_Command_command_exercise_MSGTYPE \
+    com_daml_ledger_api_v2_ExerciseCommand
+#define com_daml_ledger_api_v2_Command_command_create_and_exercise_MSGTYPE \
+    com_daml_ledger_api_v2_CreateAndExerciseCommand
+#define com_daml_ledger_api_v2_Command_command_exercise_by_key_MSGTYPE \
+    com_daml_ledger_api_v2_ExerciseByKeyCommand
 
 #define com_daml_ledger_api_v2_CreateCommand_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  template_id,       1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  create_arguments,   2)
-#define com_daml_ledger_api_v2_CreateCommand_CALLBACK NULL
-#define com_daml_ledger_api_v2_CreateCommand_DEFAULT NULL
-#define com_daml_ledger_api_v2_CreateCommand_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
+    X(a, STATIC, OPTIONAL, MESSAGE, template_id, 1)          \
+    X(a, STATIC, OPTIONAL, MESSAGE, create_arguments, 2)
+#define com_daml_ledger_api_v2_CreateCommand_CALLBACK                 NULL
+#define com_daml_ledger_api_v2_CreateCommand_DEFAULT                  NULL
+#define com_daml_ledger_api_v2_CreateCommand_template_id_MSGTYPE      com_daml_ledger_api_v2_Identifier
 #define com_daml_ledger_api_v2_CreateCommand_create_arguments_MSGTYPE com_daml_ledger_api_v2_Record
 
 #define com_daml_ledger_api_v2_ExerciseCommand_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  template_id,       1) \
-X(a, STATIC,   SINGULAR, STRING,   contract_id,       2) \
-X(a, STATIC,   SINGULAR, STRING,   choice,            3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  choice_argument,   4)
-#define com_daml_ledger_api_v2_ExerciseCommand_CALLBACK NULL
-#define com_daml_ledger_api_v2_ExerciseCommand_DEFAULT NULL
-#define com_daml_ledger_api_v2_ExerciseCommand_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
+    X(a, STATIC, OPTIONAL, MESSAGE, template_id, 1)            \
+    X(a, STATIC, SINGULAR, STRING, contract_id, 2)             \
+    X(a, STATIC, SINGULAR, STRING, choice, 3)                  \
+    X(a, STATIC, OPTIONAL, MESSAGE, choice_argument, 4)
+#define com_daml_ledger_api_v2_ExerciseCommand_CALLBACK                NULL
+#define com_daml_ledger_api_v2_ExerciseCommand_DEFAULT                 NULL
+#define com_daml_ledger_api_v2_ExerciseCommand_template_id_MSGTYPE     com_daml_ledger_api_v2_Identifier
 #define com_daml_ledger_api_v2_ExerciseCommand_choice_argument_MSGTYPE com_daml_ledger_api_v2_Value
 
 #define com_daml_ledger_api_v2_ExerciseByKeyCommand_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  template_id,       1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  contract_key,      2) \
-X(a, STATIC,   SINGULAR, STRING,   choice,            3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  choice_argument,   4)
+    X(a, STATIC, OPTIONAL, MESSAGE, template_id, 1)                 \
+    X(a, STATIC, OPTIONAL, MESSAGE, contract_key, 2)                \
+    X(a, STATIC, SINGULAR, STRING, choice, 3)                       \
+    X(a, STATIC, OPTIONAL, MESSAGE, choice_argument, 4)
 #define com_daml_ledger_api_v2_ExerciseByKeyCommand_CALLBACK NULL
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_DEFAULT NULL
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_contract_key_MSGTYPE com_daml_ledger_api_v2_Value
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_choice_argument_MSGTYPE com_daml_ledger_api_v2_Value
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_DEFAULT  NULL
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_template_id_MSGTYPE \
+    com_daml_ledger_api_v2_Identifier
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_contract_key_MSGTYPE \
+    com_daml_ledger_api_v2_Value
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_choice_argument_MSGTYPE \
+    com_daml_ledger_api_v2_Value
 
 #define com_daml_ledger_api_v2_CreateAndExerciseCommand_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  template_id,       1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  create_arguments,   2) \
-X(a, STATIC,   SINGULAR, STRING,   choice,            3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  choice_argument,   4)
+    X(a, STATIC, OPTIONAL, MESSAGE, template_id, 1)                     \
+    X(a, STATIC, OPTIONAL, MESSAGE, create_arguments, 2)                \
+    X(a, STATIC, SINGULAR, STRING, choice, 3)                           \
+    X(a, STATIC, OPTIONAL, MESSAGE, choice_argument, 4)
 #define com_daml_ledger_api_v2_CreateAndExerciseCommand_CALLBACK NULL
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_DEFAULT NULL
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_create_arguments_MSGTYPE com_daml_ledger_api_v2_Record
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_choice_argument_MSGTYPE com_daml_ledger_api_v2_Value
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_DEFAULT  NULL
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_template_id_MSGTYPE \
+    com_daml_ledger_api_v2_Identifier
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_create_arguments_MSGTYPE \
+    com_daml_ledger_api_v2_Record
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_choice_argument_MSGTYPE \
+    com_daml_ledger_api_v2_Value
 
 #define com_daml_ledger_api_v2_DisclosedContract_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  template_id,       1) \
-X(a, STATIC,   SINGULAR, STRING,   contract_id,       2) \
-X(a, STATIC,   SINGULAR, BYTES,    created_event_blob,   3) \
-X(a, STATIC,   SINGULAR, STRING,   synchronizer_id,   4)
+    X(a, STATIC, OPTIONAL, MESSAGE, template_id, 1)              \
+    X(a, STATIC, SINGULAR, STRING, contract_id, 2)               \
+    X(a, STATIC, SINGULAR, BYTES, created_event_blob, 3)         \
+    X(a, STATIC, SINGULAR, STRING, synchronizer_id, 4)
 #define com_daml_ledger_api_v2_DisclosedContract_CALLBACK NULL
-#define com_daml_ledger_api_v2_DisclosedContract_DEFAULT NULL
-#define com_daml_ledger_api_v2_DisclosedContract_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
+#define com_daml_ledger_api_v2_DisclosedContract_DEFAULT  NULL
+#define com_daml_ledger_api_v2_DisclosedContract_template_id_MSGTYPE \
+    com_daml_ledger_api_v2_Identifier
 
-#define com_daml_ledger_api_v2_Commands_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   workflow_id,       1) \
-X(a, STATIC,   SINGULAR, STRING,   user_id,           2) \
-X(a, STATIC,   SINGULAR, STRING,   command_id,        3) \
-X(a, CALLBACK, REPEATED, MESSAGE,  commands,          4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (deduplication_period,deduplication_duration,deduplication_period.deduplication_duration),   5) \
-X(a, STATIC,   ONEOF,    INT64,    (deduplication_period,deduplication_offset,deduplication_period.deduplication_offset),   6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  min_ledger_time_abs,   7) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  min_ledger_time_rel,   8) \
-X(a, CALLBACK, REPEATED, STRING,   act_as,            9) \
-X(a, CALLBACK, REPEATED, STRING,   read_as,          10) \
-X(a, STATIC,   SINGULAR, STRING,   submission_id,    11) \
-X(a, CALLBACK, REPEATED, MESSAGE,  disclosed_contracts,  12) \
-X(a, STATIC,   SINGULAR, STRING,   synchronizer_id,  13) \
-X(a, CALLBACK, REPEATED, STRING,   package_id_selection_preference,  14) \
-X(a, CALLBACK, REPEATED, MESSAGE,  prefetch_contract_keys,  15)
-#define com_daml_ledger_api_v2_Commands_CALLBACK pb_default_field_callback
-#define com_daml_ledger_api_v2_Commands_DEFAULT NULL
+#define com_daml_ledger_api_v2_Commands_FIELDLIST(X, a)                                            \
+    X(a, STATIC, SINGULAR, STRING, workflow_id, 1)                                                 \
+    X(a, STATIC, SINGULAR, STRING, user_id, 2)                                                     \
+    X(a, STATIC, SINGULAR, STRING, command_id, 3)                                                  \
+    X(a, CALLBACK, REPEATED, MESSAGE, commands, 4)                                                 \
+    X(a,                                                                                           \
+      STATIC,                                                                                      \
+      ONEOF,                                                                                       \
+      MESSAGE,                                                                                     \
+      (deduplication_period, deduplication_duration, deduplication_period.deduplication_duration), \
+      5)                                                                                           \
+    X(a,                                                                                           \
+      STATIC,                                                                                      \
+      ONEOF,                                                                                       \
+      INT64,                                                                                       \
+      (deduplication_period, deduplication_offset, deduplication_period.deduplication_offset),     \
+      6)                                                                                           \
+    X(a, STATIC, OPTIONAL, MESSAGE, min_ledger_time_abs, 7)                                        \
+    X(a, STATIC, OPTIONAL, MESSAGE, min_ledger_time_rel, 8)                                        \
+    X(a, CALLBACK, REPEATED, STRING, act_as, 9)                                                    \
+    X(a, CALLBACK, REPEATED, STRING, read_as, 10)                                                  \
+    X(a, STATIC, SINGULAR, STRING, submission_id, 11)                                              \
+    X(a, CALLBACK, REPEATED, MESSAGE, disclosed_contracts, 12)                                     \
+    X(a, STATIC, SINGULAR, STRING, synchronizer_id, 13)                                            \
+    X(a, CALLBACK, REPEATED, STRING, package_id_selection_preference, 14)                          \
+    X(a, CALLBACK, REPEATED, MESSAGE, prefetch_contract_keys, 15)
+#define com_daml_ledger_api_v2_Commands_CALLBACK         pb_default_field_callback
+#define com_daml_ledger_api_v2_Commands_DEFAULT          NULL
 #define com_daml_ledger_api_v2_Commands_commands_MSGTYPE com_daml_ledger_api_v2_Command
-#define com_daml_ledger_api_v2_Commands_deduplication_period_deduplication_duration_MSGTYPE google_protobuf_Duration
+#define com_daml_ledger_api_v2_Commands_deduplication_period_deduplication_duration_MSGTYPE \
+    google_protobuf_Duration
 #define com_daml_ledger_api_v2_Commands_min_ledger_time_abs_MSGTYPE google_protobuf_Timestamp
 #define com_daml_ledger_api_v2_Commands_min_ledger_time_rel_MSGTYPE google_protobuf_Duration
-#define com_daml_ledger_api_v2_Commands_disclosed_contracts_MSGTYPE com_daml_ledger_api_v2_DisclosedContract
-#define com_daml_ledger_api_v2_Commands_prefetch_contract_keys_MSGTYPE com_daml_ledger_api_v2_PrefetchContractKey
+#define com_daml_ledger_api_v2_Commands_disclosed_contracts_MSGTYPE \
+    com_daml_ledger_api_v2_DisclosedContract
+#define com_daml_ledger_api_v2_Commands_prefetch_contract_keys_MSGTYPE \
+    com_daml_ledger_api_v2_PrefetchContractKey
 
 #define com_daml_ledger_api_v2_PrefetchContractKey_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  template_id,       1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  contract_key,      2)
+    X(a, STATIC, OPTIONAL, MESSAGE, template_id, 1)                \
+    X(a, STATIC, OPTIONAL, MESSAGE, contract_key, 2)
 #define com_daml_ledger_api_v2_PrefetchContractKey_CALLBACK NULL
-#define com_daml_ledger_api_v2_PrefetchContractKey_DEFAULT NULL
-#define com_daml_ledger_api_v2_PrefetchContractKey_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
+#define com_daml_ledger_api_v2_PrefetchContractKey_DEFAULT  NULL
+#define com_daml_ledger_api_v2_PrefetchContractKey_template_id_MSGTYPE \
+    com_daml_ledger_api_v2_Identifier
 #define com_daml_ledger_api_v2_PrefetchContractKey_contract_key_MSGTYPE com_daml_ledger_api_v2_Value
 
 extern const pb_msgdesc_t com_daml_ledger_api_v2_Command_msg;
@@ -395,33 +489,47 @@ extern const pb_msgdesc_t com_daml_ledger_api_v2_Commands_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_PrefetchContractKey_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define com_daml_ledger_api_v2_Command_fields &com_daml_ledger_api_v2_Command_msg
-#define com_daml_ledger_api_v2_CreateCommand_fields &com_daml_ledger_api_v2_CreateCommand_msg
+#define com_daml_ledger_api_v2_Command_fields         &com_daml_ledger_api_v2_Command_msg
+#define com_daml_ledger_api_v2_CreateCommand_fields   &com_daml_ledger_api_v2_CreateCommand_msg
 #define com_daml_ledger_api_v2_ExerciseCommand_fields &com_daml_ledger_api_v2_ExerciseCommand_msg
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_fields &com_daml_ledger_api_v2_ExerciseByKeyCommand_msg
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_fields &com_daml_ledger_api_v2_CreateAndExerciseCommand_msg
-#define com_daml_ledger_api_v2_DisclosedContract_fields &com_daml_ledger_api_v2_DisclosedContract_msg
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_fields \
+    &com_daml_ledger_api_v2_ExerciseByKeyCommand_msg
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_fields \
+    &com_daml_ledger_api_v2_CreateAndExerciseCommand_msg
+#define com_daml_ledger_api_v2_DisclosedContract_fields \
+    &com_daml_ledger_api_v2_DisclosedContract_msg
 #define com_daml_ledger_api_v2_Commands_fields &com_daml_ledger_api_v2_Commands_msg
-#define com_daml_ledger_api_v2_PrefetchContractKey_fields &com_daml_ledger_api_v2_PrefetchContractKey_msg
+#define com_daml_ledger_api_v2_PrefetchContractKey_fields \
+    &com_daml_ledger_api_v2_PrefetchContractKey_msg
 
 /* Maximum encoded size of messages (where known) */
 /* com_daml_ledger_api_v2_Commands_size depends on runtime parameters */
-#if defined(com_daml_ledger_api_v2_Record_size) && defined(com_daml_ledger_api_v2_Value_size) && defined(com_daml_ledger_api_v2_Record_size) && defined(com_daml_ledger_api_v2_Value_size) && defined(com_daml_ledger_api_v2_Value_size) && defined(com_daml_ledger_api_v2_Value_size)
-#define com_daml_ledger_api_v2_Command_size      (0 + sizeof(union com_daml_ledger_api_v2_Command_command_size_union))
-union com_daml_ledger_api_v2_Command_command_size_union {char f1[(3093 + com_daml_ledger_api_v2_Record_size)]; char f2[(5145 + com_daml_ledger_api_v2_Value_size)]; char f3[(4125 + com_daml_ledger_api_v2_Record_size + com_daml_ledger_api_v2_Value_size)]; char f4[(4125 + com_daml_ledger_api_v2_Value_size + com_daml_ledger_api_v2_Value_size)];};
+#if defined(com_daml_ledger_api_v2_Record_size) && defined(com_daml_ledger_api_v2_Value_size) && \
+    defined(com_daml_ledger_api_v2_Record_size) && defined(com_daml_ledger_api_v2_Value_size) && \
+    defined(com_daml_ledger_api_v2_Value_size) && defined(com_daml_ledger_api_v2_Value_size)
+#define com_daml_ledger_api_v2_Command_size \
+    (0 + sizeof(union com_daml_ledger_api_v2_Command_command_size_union))
+union com_daml_ledger_api_v2_Command_command_size_union {
+    char f1[(3093 + com_daml_ledger_api_v2_Record_size)];
+    char f2[(5145 + com_daml_ledger_api_v2_Value_size)];
+    char f3[(4125 + com_daml_ledger_api_v2_Record_size + com_daml_ledger_api_v2_Value_size)];
+    char f4[(4125 + com_daml_ledger_api_v2_Value_size + com_daml_ledger_api_v2_Value_size)];
+};
 #endif
 #if defined(com_daml_ledger_api_v2_Record_size)
 #define com_daml_ledger_api_v2_CreateCommand_size (3087 + com_daml_ledger_api_v2_Record_size)
 #endif
 #if defined(com_daml_ledger_api_v2_Value_size)
-#define com_daml_ledger_api_v2_ExerciseCommand_size (5139 + com_daml_ledger_api_v2_Value_size)
+#define com_daml_ledger_api_v2_ExerciseCommand_size     (5139 + com_daml_ledger_api_v2_Value_size)
 #define com_daml_ledger_api_v2_PrefetchContractKey_size (3087 + com_daml_ledger_api_v2_Value_size)
 #endif
 #if defined(com_daml_ledger_api_v2_Value_size) && defined(com_daml_ledger_api_v2_Value_size)
-#define com_daml_ledger_api_v2_ExerciseByKeyCommand_size (4119 + com_daml_ledger_api_v2_Value_size + com_daml_ledger_api_v2_Value_size)
+#define com_daml_ledger_api_v2_ExerciseByKeyCommand_size \
+    (4119 + com_daml_ledger_api_v2_Value_size + com_daml_ledger_api_v2_Value_size)
 #endif
 #if defined(com_daml_ledger_api_v2_Record_size) && defined(com_daml_ledger_api_v2_Value_size)
-#define com_daml_ledger_api_v2_CreateAndExerciseCommand_size (4119 + com_daml_ledger_api_v2_Record_size + com_daml_ledger_api_v2_Value_size)
+#define com_daml_ledger_api_v2_CreateAndExerciseCommand_size \
+    (4119 + com_daml_ledger_api_v2_Record_size + com_daml_ledger_api_v2_Value_size)
 #endif
 #define com_daml_ledger_api_v2_DisclosedContract_size 6160
 

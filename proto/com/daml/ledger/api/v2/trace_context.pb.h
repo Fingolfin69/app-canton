@@ -10,33 +10,34 @@
 #endif
 
 /* Struct definitions */
-typedef struct _com_daml_ledger_api_v2_TraceContext { 
+typedef struct _com_daml_ledger_api_v2_TraceContext {
     /* https://www.w3.org/TR/trace-context/ */
     bool has_traceparent;
-    char traceparent[1024]; 
+    char traceparent[1024];
     bool has_tracestate;
-    char tracestate[1024]; 
+    char tracestate[1024];
 } com_daml_ledger_api_v2_TraceContext;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define com_daml_ledger_api_v2_TraceContext_init_default {false, "", false, ""}
-#define com_daml_ledger_api_v2_TraceContext_init_zero {false, "", false, ""}
+#define com_daml_ledger_api_v2_TraceContext_init_default \
+    { false, "", false, "" }
+#define com_daml_ledger_api_v2_TraceContext_init_zero \
+    { false, "", false, "" }
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_daml_ledger_api_v2_TraceContext_traceparent_tag 1
-#define com_daml_ledger_api_v2_TraceContext_tracestate_tag 2
+#define com_daml_ledger_api_v2_TraceContext_tracestate_tag  2
 
 /* Struct field encoding specification for nanopb */
 #define com_daml_ledger_api_v2_TraceContext_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, STRING,   traceparent,       1) \
-X(a, STATIC,   OPTIONAL, STRING,   tracestate,        2)
+    X(a, STATIC, OPTIONAL, STRING, traceparent, 1)          \
+    X(a, STATIC, OPTIONAL, STRING, tracestate, 2)
 #define com_daml_ledger_api_v2_TraceContext_CALLBACK NULL
-#define com_daml_ledger_api_v2_TraceContext_DEFAULT NULL
+#define com_daml_ledger_api_v2_TraceContext_DEFAULT  NULL
 
 extern const pb_msgdesc_t com_daml_ledger_api_v2_TraceContext_msg;
 

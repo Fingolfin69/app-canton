@@ -27,4 +27,8 @@
  * @return zero or positive integer if success, negative integer otherwise.
  *
  */
-int handler_sign_tx(buffer_t *cdata, signing_type_e signing_type, bool first, bool more, bool msg_end);
+int handler_sign_tx(buffer_t *cdata,
+                    signing_type_e signing_type,
+                    bool first,
+                    bool more,
+                    bool msg_end);

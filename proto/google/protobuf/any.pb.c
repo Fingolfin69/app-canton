@@ -7,6 +7,3 @@
 #endif
 
 PB_BIND(google_protobuf_Any, google_protobuf_Any, 2)
-
-
-

@@ -5,7 +5,7 @@
 #include "types.h"
 
 /**
- * Deserialize raw transaction in structure.
+ * Deserialize DamlTransaction protobuf message in structure.
  *
  * @param[in, out] buf
  *   Pointer to buffer with serialized transaction.
@@ -15,10 +15,10 @@
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e deserialize_transaction_part_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx);
+parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
- * Deserialize raw transaction in structure.
+ * Deserialize DamlTransaction.Node protobuf message in structure.
  *
  * @param[in, out] buf
  *   Pointer to buffer with serialized transaction.
@@ -28,10 +28,10 @@ parser_status_e deserialize_transaction_part_daml_tx(buffer_t *buf, transaction_
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e deserialize_transaction_part_node(buffer_t *buf, transaction_ctx_t *tx_ctx);
+parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
- * Deserialize raw transaction in structure.
+ * Deserialize Metadata protobuf message in structure.
  *
  * @param[in, out] buf
  *   Pointer to buffer with serialized transaction.
@@ -41,10 +41,10 @@ parser_status_e deserialize_transaction_part_node(buffer_t *buf, transaction_ctx
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e deserialize_transaction_part_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx);
+parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
- * Deserialize raw transaction in structure.
+ * Deserialize Metadata.InputContract protobuf message in structure.
  *
  * @param[in, out] buf
  *   Pointer to buffer with serialized transaction.
@@ -54,11 +54,10 @@ parser_status_e deserialize_transaction_part_metadata(buffer_t *buf, transaction
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e deserialize_transaction_part_input_contract(buffer_t *buf,
-                                                            transaction_ctx_t *tx_ctx);
+parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
- * Deserialize raw transaction in structure.
+ * Deserialize PreparedSubmissionResponse protobuf message in structure.
  *
  * @param[in, out] buf
  *   Pointer to buffer with serialized transaction.
@@ -68,5 +67,5 @@ parser_status_e deserialize_transaction_part_input_contract(buffer_t *buf,
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e deserialize_transaction_part_prepared_submission_details(buffer_t *buf,
-                                                                         transaction_ctx_t *tx_ctx);
+parser_status_e proto_deserialize_prepared_submission_details(buffer_t *buf,
+                                                              transaction_ctx_t *tx_ctx);

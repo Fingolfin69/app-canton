@@ -501,10 +501,10 @@ static void encode_node(ByteWriter *bw,
 
 // Hash a referenced node‑id and write the 32‑byte digest
 static void encode_node_id_hash(ByteWriter *bw,
-                           const Node *node,
-                           const DamlTransaction *tx,
-                           const NodeSeed *seeds,
-                           size_t n_seeds) {
+                                const Node *node,
+                                const DamlTransaction *tx,
+                                const NodeSeed *seeds,
+                                size_t n_seeds) {
     uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
     LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
 

@@ -34,7 +34,11 @@
 #include "validate.h"
 #include "canonical_hash.h"
 
-static int process_tx_chunk(buffer_t *cdata, signing_type_e type, bool first, bool more, bool msg_end);
+static int process_tx_chunk(buffer_t *cdata,
+                            signing_type_e type,
+                            bool first,
+                            bool more,
+                            bool msg_end);
 static int process_sign_prepared_transaction(transaction_ctx_t *tx_info);
 static int process_sign_transaction_hash(buffer_t *buf, uint8_t out[32]);
 static int process_prepared_tx_part(buffer_t *buf);
@@ -79,9 +83,8 @@ int handler_sign_tx(buffer_t *cdata, signing_type_e type, bool first, bool more,
         PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
 
         return ui_display_blind_signed_transaction();
-    } else if (
-        G_context.state >= STATE_EXPECTING_MORE && G_context.state <= STATE_RECEIVING_PREPARED_SUBMISSION_DETAILS
-    ) {
+    } else if (G_context.state >= STATE_EXPECTING_MORE &&
+               G_context.state <= STATE_RECEIVING_PREPARED_SUBMISSION_DETAILS) {
         // More APDUs with transaction parts are expected.
         // Send a SW_OK to signal that we have received the chunk
         return io_send_sw(SW_OK);
@@ -92,13 +95,18 @@ int handler_sign_tx(buffer_t *cdata, signing_type_e type, bool first, bool more,
     }
 }
 
-static int process_tx_chunk(buffer_t *cdata, signing_type_e type, bool first, bool more, bool msg_end) {
+static int process_tx_chunk(buffer_t *cdata,
+                            signing_type_e type,
+                            bool first,
+                            bool more,
+                            bool msg_end) {
     if (first) {  // first APDU, parse BIP32 path
         explicit_bzero(&G_context, sizeof(G_context));
         PRINTF("Processing first chunk of transaction\n");
         G_context.req_type = CONFIRM_TRANSACTION;
         G_context.signing_type = type;
-        G_context.state = type == SIGN_PREPARED_TRANSACTION ? STATE_RECEIVING_DAML_TX_PART : STATE_EXPECTING_MORE;
+        G_context.state =
+            type == SIGN_PREPARED_TRANSACTION ? STATE_RECEIVING_DAML_TX_PART : STATE_EXPECTING_MORE;
 
         if (!buffer_read_u8(cdata, &G_context.bip32_path_len) ||
             !buffer_read_bip32_path(cdata,
@@ -151,9 +159,7 @@ static int process_tx_chunk(buffer_t *cdata, signing_type_e type, bool first, bo
 }
 
 static int process_sign_prepared_transaction(transaction_ctx_t *tx_info) {
-    int res = finalize_hash(tx_info->partial_tx_hash,
-                            tx_info->partial_md_hash,
-                            tx_info->m_hash);
+    int res = finalize_hash(tx_info->partial_tx_hash, tx_info->partial_md_hash, tx_info->m_hash);
 
     if (res != 0) {
         PRINTF("Failed to compute transaction hash: %d\n", res);
@@ -164,11 +170,10 @@ static int process_sign_prepared_transaction(transaction_ctx_t *tx_info) {
                tx_info->tx_parts_ctx.prepared_submission_details.prepared_transaction_hash.bytes,
                sizeof(G_context.tx_info.m_hash)) != 0) {
         PRINTF("Transaction hash mismatch: computed %.*H, expected %.*H\n",
-                32,
-                tx_info->m_hash,
-                32,
-                tx_info->tx_parts_ctx.prepared_submission_details
-                    .prepared_transaction_hash.bytes);
+               32,
+               tx_info->m_hash,
+               32,
+               tx_info->tx_parts_ctx.prepared_submission_details.prepared_transaction_hash.bytes);
 
         return SW_TX_HASH_FAIL;
     }
@@ -179,7 +184,7 @@ static int process_sign_prepared_transaction(transaction_ctx_t *tx_info) {
 static int process_prepared_tx_part(buffer_t *buf) {
     switch (G_context.state) {
         case STATE_RECEIVING_DAML_TX_PART: {
-            parser_status_e status = deserialize_transaction_part_daml_tx(buf, &G_context.tx_info);
+            parser_status_e status = proto_deserialize_daml_tx(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse DAML transaction part: %d\n", status);
@@ -200,7 +205,7 @@ static int process_prepared_tx_part(buffer_t *buf) {
                                   : STATE_RECEIVING_DAML_NODES;
         } break;
         case STATE_RECEIVING_DAML_NODES: {
-            parser_status_e status = deserialize_transaction_part_node(buf, &G_context.tx_info);
+            parser_status_e status = proto_deserialize_node(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse DAML Node part: %d\n", status);
@@ -232,7 +237,7 @@ static int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_HASH_FAIL;
             }
 
-            parser_status_e status = deserialize_transaction_part_metadata(buf, &G_context.tx_info);
+            parser_status_e status = proto_deserialize_metadata(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Metadata part: %d\n", status);
@@ -254,8 +259,7 @@ static int process_prepared_tx_part(buffer_t *buf) {
                                   : STATE_RECEIVING_METADATA_INPUT_CONTRACTS;
         } break;
         case STATE_RECEIVING_METADATA_INPUT_CONTRACTS: {
-            parser_status_e status =
-                deserialize_transaction_part_input_contract(buf, &G_context.tx_info);
+            parser_status_e status = proto_deserialize_input_contract(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Input Contract part: %d\n", status);
@@ -287,7 +291,7 @@ static int process_prepared_tx_part(buffer_t *buf) {
             }
 
             parser_status_e status =
-                deserialize_transaction_part_prepared_submission_details(buf, &G_context.tx_info);
+                proto_deserialize_prepared_submission_details(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Prepared Submission Details part: %d\n", status);
