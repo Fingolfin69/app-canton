@@ -18,12 +18,12 @@
 typedef void (*action_validate_cb)(bool);
 
 /**
- * Display address on the device and ask confirmation to export.
+ * Display party id on the device and ask confirmation to export.
  *
  * @return 0 if success, negative integer otherwise.
  *
  */
-int ui_display_address(void);
+int ui_display_party_id(void);
 
 /**
  * Display transaction information on the device and ask confirmation to sign.

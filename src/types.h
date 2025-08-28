@@ -21,24 +21,30 @@ typedef enum {
  * Enumeration with parsing state.
  */
 typedef enum {
-    STATE_NONE,     /// No state
-    STATE_PARSED,   /// Transaction data parsed
-    STATE_APPROVED  /// Transaction data approved
+    STATE_NONE,           /// No state
+    STATE_PARSED,         /// Transaction data parsed
+    STATE_APPROVED,       /// Transaction data approved
+    STATE_EXPECTING_MORE  /// Expecting more data (for chunked APDU)
 } state_e;
 
 /**
  * Enumeration with user request type.
  */
 typedef enum {
-    CONFIRM_ADDRESS,     /// confirm address derived from public key
-    CONFIRM_TRANSACTION  /// confirm transaction information
+    CONFIRM_ADDRESS = 0,      /// confirm address derived from public key
+    CONFIRM_TRANSACTION = 1,  /// confirm transaction before signing
 } request_type_e;
 
+typedef enum {
+    SIGN_HASH = 0,
+    SIGN_UNTYPED_VERSIONED_MESSAGE = 1,
+    SIGN_PREPARED_TRANSACTION = 2,
+} signing_type_e;
 /**
  * Structure for public key context information.
  */
 typedef struct {
-    uint8_t raw_public_key[65];  /// format (1), x-coordinate (32), y-coodinate (32)
+    uint8_t raw_public_key[32];  /// format (1), x-coordinate (32), y-coodinate (32)
     uint8_t chain_code[32];      /// for public key derivation
 } pubkey_ctx_t;
 
@@ -65,6 +71,7 @@ typedef struct {
         transaction_ctx_t tx_info;  /// transaction context
     };
     request_type_e req_type;              /// user request
+    signing_type_e signing_type;          /// signing type (for CONFIRM_TRANSACTION)
     uint32_t bip32_path[MAX_BIP32_PATH];  /// BIP32 path
     uint8_t bip32_path_len;               /// length of BIP32 path
 } global_ctx_t;
