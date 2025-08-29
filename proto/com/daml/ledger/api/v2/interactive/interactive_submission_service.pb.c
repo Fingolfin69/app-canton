@@ -6,73 +6,106 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest, com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest, 2)
+PB_BIND(com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest,
+        com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest,
+        2)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse,
+        com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse,
+        AUTO)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse, com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse, 2)
+PB_BIND(com_daml_ledger_api_v2_interactive_Signature,
+        com_daml_ledger_api_v2_interactive_Signature,
+        2)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_SinglePartySignatures,
+        com_daml_ledger_api_v2_interactive_SinglePartySignatures,
+        2)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_Signature, com_daml_ledger_api_v2_interactive_Signature, 2)
+PB_BIND(com_daml_ledger_api_v2_interactive_PartySignatures,
+        com_daml_ledger_api_v2_interactive_PartySignatures,
+        AUTO)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest,
+        com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest,
+        2)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_SinglePartySignatures, com_daml_ledger_api_v2_interactive_SinglePartySignatures, 2)
+PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionResponse,
+        com_daml_ledger_api_v2_interactive_ExecuteSubmissionResponse,
+        AUTO)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitRequest,
+        com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitRequest,
+        2)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_PartySignatures, com_daml_ledger_api_v2_interactive_PartySignatures, AUTO)
+PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitResponse,
+        com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitResponse,
+        2)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitForTransactionRequest,
+        com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitForTransactionRequest,
+        2)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest, com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest, 2)
+PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitForTransactionResponse,
+        com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitForTransactionResponse,
+        4)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_MinLedgerTime,
+        com_daml_ledger_api_v2_interactive_MinLedgerTime,
+        AUTO)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_ExecuteSubmissionResponse, com_daml_ledger_api_v2_interactive_ExecuteSubmissionResponse, AUTO)
+PB_BIND(com_daml_ledger_api_v2_interactive_PreparedTransaction,
+        com_daml_ledger_api_v2_interactive_PreparedTransaction,
+        AUTO)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_Metadata,
+        com_daml_ledger_api_v2_interactive_Metadata,
+        AUTO)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_MinLedgerTime, com_daml_ledger_api_v2_interactive_MinLedgerTime, AUTO)
+PB_BIND(com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo,
+        com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo,
+        AUTO)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry,
+        com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry,
+        4)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_PreparedTransaction, com_daml_ledger_api_v2_interactive_PreparedTransaction, AUTO)
+PB_BIND(com_daml_ledger_api_v2_interactive_Metadata_InputContract,
+        com_daml_ledger_api_v2_interactive_Metadata_InputContract,
+        4)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_DamlTransaction,
+        com_daml_ledger_api_v2_interactive_DamlTransaction,
+        AUTO)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_Metadata, com_daml_ledger_api_v2_interactive_Metadata, AUTO)
+PB_BIND(com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed,
+        com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed,
+        AUTO)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_DamlTransaction_Node,
+        com_daml_ledger_api_v2_interactive_DamlTransaction_Node,
+        4)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo, com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo, AUTO)
+PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest,
+        com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest,
+        2)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionResponse,
+        com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionResponse,
+        4)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry, com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry, 4)
+PB_BIND(com_daml_ledger_api_v2_interactive_PackagePreference,
+        com_daml_ledger_api_v2_interactive_PackagePreference,
+        2)
 
+PB_BIND(com_daml_ledger_api_v2_interactive_PackageVettingRequirement,
+        com_daml_ledger_api_v2_interactive_PackageVettingRequirement,
+        2)
 
-PB_BIND(com_daml_ledger_api_v2_interactive_Metadata_InputContract, com_daml_ledger_api_v2_interactive_Metadata_InputContract, 4)
+PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackagesRequest,
+        com_daml_ledger_api_v2_interactive_GetPreferredPackagesRequest,
+        2)
 
-
-PB_BIND(com_daml_ledger_api_v2_interactive_DamlTransaction, com_daml_ledger_api_v2_interactive_DamlTransaction, 4)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed, com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed, AUTO)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_DamlTransaction_Node, com_daml_ledger_api_v2_interactive_DamlTransaction_Node, 4)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest, com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest, 2)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionResponse, com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionResponse, 4)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_PackagePreference, com_daml_ledger_api_v2_interactive_PackagePreference, 2)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_PackageVettingRequirement, com_daml_ledger_api_v2_interactive_PackageVettingRequirement, 2)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackagesRequest, com_daml_ledger_api_v2_interactive_GetPreferredPackagesRequest, 2)
-
-
-PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackagesResponse, com_daml_ledger_api_v2_interactive_GetPreferredPackagesResponse, 2)
-
-
-
-
-
-
+PB_BIND(com_daml_ledger_api_v2_interactive_GetPreferredPackagesResponse,
+        com_daml_ledger_api_v2_interactive_GetPreferredPackagesResponse,
+        2)

@@ -10,36 +10,37 @@
 #endif
 
 /* Struct definitions */
-typedef struct _com_daml_ledger_api_v2_PackageReference { 
+typedef struct _com_daml_ledger_api_v2_PackageReference {
     /* Required */
-    char package_id[1024]; 
+    char package_id[1024];
     /* Required */
-    char package_name[1024]; 
+    char package_name[1024];
     /* Required */
-    char package_version[1024]; 
+    char package_version[1024];
 } com_daml_ledger_api_v2_PackageReference;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define com_daml_ledger_api_v2_PackageReference_init_default {"", "", ""}
-#define com_daml_ledger_api_v2_PackageReference_init_zero {"", "", ""}
+#define com_daml_ledger_api_v2_PackageReference_init_default \
+    { "", "", "" }
+#define com_daml_ledger_api_v2_PackageReference_init_zero \
+    { "", "", "" }
 
 /* Field tags (for use in manual encoding/decoding) */
-#define com_daml_ledger_api_v2_PackageReference_package_id_tag 1
-#define com_daml_ledger_api_v2_PackageReference_package_name_tag 2
+#define com_daml_ledger_api_v2_PackageReference_package_id_tag      1
+#define com_daml_ledger_api_v2_PackageReference_package_name_tag    2
 #define com_daml_ledger_api_v2_PackageReference_package_version_tag 3
 
 /* Struct field encoding specification for nanopb */
 #define com_daml_ledger_api_v2_PackageReference_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   package_id,        1) \
-X(a, STATIC,   SINGULAR, STRING,   package_name,      2) \
-X(a, STATIC,   SINGULAR, STRING,   package_version,   3)
+    X(a, STATIC, SINGULAR, STRING, package_id, 1)               \
+    X(a, STATIC, SINGULAR, STRING, package_name, 2)             \
+    X(a, STATIC, SINGULAR, STRING, package_version, 3)
 #define com_daml_ledger_api_v2_PackageReference_CALLBACK NULL
-#define com_daml_ledger_api_v2_PackageReference_DEFAULT NULL
+#define com_daml_ledger_api_v2_PackageReference_DEFAULT  NULL
 
 extern const pb_msgdesc_t com_daml_ledger_api_v2_PackageReference_msg;
 

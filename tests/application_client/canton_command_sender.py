@@ -23,6 +23,7 @@ class P2(IntEnum):
     P2_NONE = 0x00
     P2_FIRST = 0x01
     P2_MORE = 0x02
+    P2_MSG_END = 0x04
 
 class InsType(IntEnum):
     GET_VERSION    = 0x03
@@ -122,6 +123,118 @@ class BoilerplateCommandSender:
                                          p1=p1,
                                          p2=P2.P2_NONE,
                                          data=messages[-1]) as response:
+            yield response
+
+    @contextmanager
+    def sign_tx_in_parts(
+        self,
+        path: str,
+        daml_transaction: bytes,
+        nodes: list[bytes],
+        metadata: bytes,
+        input_contracts: list[bytes],
+        prepared_submission_details: bytes
+    ) -> Generator[None, None, None]:
+        print(f"Signing transaction (in parts) with path: {path}")
+        p1 = P1SignType.P1_SIGN_PREPARED_TRANSACTION
+
+        self.backend.exchange(cla=CLA,
+                              ins=InsType.SIGN_TX,
+                              p1=p1,
+                              p2=P2.P2_FIRST | P2.P2_MORE,
+                              data=pack_derivation_path(path))
+
+        daml_tx_messages = split_message(daml_transaction, MAX_APDU_LEN)
+
+        print(f"Sending {len(daml_tx_messages)} chunks of DamlTransaction data")
+
+        for chunk_id, msg in enumerate(daml_tx_messages[:-1], start=1):
+            print(f"Sending chunk {chunk_id} of {len(daml_tx_messages)}")
+            self.backend.exchange(cla=CLA,
+                                  ins=InsType.SIGN_TX,
+                                  p1=p1,
+                                  p2=P2.P2_MORE,
+                                  data=msg)
+
+        self.backend.exchange(cla=CLA,
+                                ins=InsType.SIGN_TX,
+                                p1=p1,
+                                p2=P2.P2_MORE | P2.P2_MSG_END,
+                                data=daml_tx_messages[-1])
+
+        print(f"Sending {len(nodes)} Nodes")
+
+        for node_id, node in enumerate(nodes):
+            print(f"Sending node  {node_id} of {len(nodes)}")
+            messages = split_message(node, MAX_APDU_LEN)
+            for chunk_id, msg in enumerate(messages[:-1], start=1):
+                print(f"Sending node chunk {chunk_id} of {len(messages)}")
+                self.backend.exchange(cla=CLA,
+                                      ins=InsType.SIGN_TX,
+                                      p1=p1,
+                                      p2=P2.P2_MORE,
+                                      data=msg)
+
+            self.backend.exchange(cla=CLA,
+                                    ins=InsType.SIGN_TX,
+                                    p1=p1,
+                                    p2=P2.P2_MORE | P2.P2_MSG_END,
+                                    data=messages[-1])
+
+
+        metadata_messages = split_message(metadata, MAX_APDU_LEN)
+        print(f"Sending {len(metadata_messages)} chunks of Metadata data")
+
+        for chunk_id, msg in enumerate(metadata_messages[:-1], start=1):
+            print(f"Sending metadata chunk {chunk_id} of {len(metadata_messages)}")
+            self.backend.exchange(cla=CLA,
+                                  ins=InsType.SIGN_TX,
+                                  p1=p1,
+                                  p2=P2.P2_MORE,
+                                  data=msg)
+
+        self.backend.exchange(cla=CLA,
+                                ins=InsType.SIGN_TX,
+                                p1=p1,
+                                p2=P2.P2_MORE | P2.P2_MSG_END,
+                                data=metadata_messages[-1])
+
+
+        print(f"Sending {len(input_contracts)} InputContracts")
+        for input_contract in input_contracts:
+            messages = split_message(input_contract, MAX_APDU_LEN)
+            for chunk_id, msg in enumerate(messages[:-1], start=1):
+                print(f"Sending input contract chunk {chunk_id} of {len(messages)}")
+                self.backend.exchange(cla=CLA,
+                                      ins=InsType.SIGN_TX,
+                                      p1=p1,
+                                      p2=P2.P2_MORE,
+                                      data=msg)
+
+            self.backend.exchange(cla=CLA,
+                                    ins=InsType.SIGN_TX,
+                                    p1=p1,
+                                    p2=P2.P2_MORE | P2.P2_MSG_END,
+                                    data=messages[-1])
+
+
+        ps_messages = split_message(prepared_submission_details, MAX_APDU_LEN)
+
+        print(f"Sending {len(ps_messages)} chunks of PreparedSubmission details data")
+
+        for chunk_id, msg in enumerate(ps_messages[:-1], start=1):
+            print(f"Sending chunk {chunk_id} of {len(ps_messages)}")
+            self.backend.exchange(cla=CLA,
+                                  ins=InsType.SIGN_TX,
+                                  p1=p1,
+                                  p2=P2.P2_MORE,
+                                  data=msg)
+
+        with self.backend.exchange_async(cla=CLA,
+                                         ins=InsType.SIGN_TX,
+                                         p1=p1,
+                                         p2=P2.P2_MSG_END,
+                                         data=ps_messages[-1]) as response:
             yield response
 
     def get_async_response(self) -> Optional[RAPDU]:

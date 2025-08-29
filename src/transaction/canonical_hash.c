@@ -12,7 +12,6 @@
 #include "pb_common.h"  // Contains pb_field_
 
 // Protocol codegen headers
-#include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
 #include "com/daml/ledger/api/v2/value.pb.h"
 
 #include "constants.h"
@@ -56,18 +55,13 @@ static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0
 #define NODE_V1_FETCH_TAG        com_daml_ledger_api_v2_interactive_transaction_v1_Node_fetch_tag
 #define NODE_V1_ROLLBACK_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_rollback_tag
 
-typedef com_daml_ledger_api_v2_interactive_DamlTransaction DamlTransaction;
-typedef com_daml_ledger_api_v2_interactive_DamlTransaction_Node Node;
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Node Node_V1;
 typedef com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed NodeSeed;
-typedef com_daml_ledger_api_v2_interactive_Metadata Metadata;
 
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Create Node_Create;
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Exercise Node_Exercise;
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Fetch Node_Fetch;
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Rollback Node_Rollback;
-
-typedef com_daml_ledger_api_v2_interactive_Metadata_InputContract InputContract;
 
 typedef com_daml_ledger_api_v2_Value Value;
 typedef com_daml_ledger_api_v2_RecordField RecordField;
@@ -84,9 +78,8 @@ typedef enum {
     HASH_ERROR_BUFFER_OVERFLOW = 1,
     HASH_ERROR_INVALID_HASH_STRING = 2,
     HASH_ERROR_UNSUPPORTED_VALUE = 3,
-    HASH_ERROR_NODE_ID_NOT_FOUND = 4,
-    HASH_ERROR_UNKNOWN_NODE_VERSION = 5,
-    HASH_ERROR_UNKNOWN_NODE_TYPE = 6,
+    HASH_ERROR_UNKNOWN_NODE_VERSION = 4,
+    HASH_ERROR_UNKNOWN_NODE_TYPE = 5,
 } HashError;
 
 typedef struct {
@@ -126,11 +119,6 @@ static void set_hash_error(HashError err, const char *msg) {
 /* -------------------------------------------------------------------------- */
 /*  BuffWriter helper                                                         */
 /* -------------------------------------------------------------------------- */
-
-typedef struct {
-    uint8_t *base, *ptr, *end;
-    bool overflow;
-} ByteWriter;
 
 static inline void bw_init(ByteWriter *bw, void *buf, size_t cap) {
     bw->base = bw->ptr = (uint8_t *) buf;
@@ -427,59 +415,6 @@ static const uint8_t *find_seed(const char *node_id, const NodeSeed *seeds, size
     return NULL;
 }
 
-static void encode_node(ByteWriter *,
-                        const Node *,
-                        const DamlTransaction *,
-                        const NodeSeed *,
-                        size_t);
-
-// Hash a referenced node‑id and write the 32‑byte digest
-static void encode_node_id_hashed(ByteWriter *bw,
-                                  const char *node_id,
-                                  const DamlTransaction *tx,
-                                  const NodeSeed *seeds,
-                                  size_t n_seeds) {
-    const Node *node = NULL;
-    for (size_t i = 0; i < tx->nodes_count; ++i)
-        if (strcmp(tx->nodes[i].node_id, node_id) == 0) {
-            node = &tx->nodes[i];
-            break;
-        }
-
-    if (node == NULL) {
-        set_hash_error(HASH_ERROR_NODE_ID_NOT_FOUND, "Node id not found in transaction nodes");
-        return;
-    }
-
-    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
-    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
-
-    ByteWriter n_bw;
-    bw_init(&n_bw, scratch, MAX_ENCODED_NODE_LEN);
-    encode_node(&n_bw, node, tx, seeds, n_seeds);
-
-    uint8_t h[32];
-    cx_sha256_hash(scratch, bw_size(&n_bw), h);
-    bw_put(bw, h, 32);
-
-    app_mem_free(scratch);
-
-    PRINTF("Node id hash: %.*H\n", 32, h);
-}
-
-static void encode_repeated_node_ids(ByteWriter *bw,
-                                     size_t count,
-                                     char *const *ids,
-                                     const DamlTransaction *tx,
-                                     const NodeSeed *seeds,
-                                     size_t n_seeds) {
-    encode_int32(bw, (int32_t) count);
-
-    for (size_t i = 0; i < count; ++i) {
-        encode_node_id_hashed(bw, ids[i], tx, seeds, n_seeds);
-    }
-}
-
 static void encode_create(ByteWriter *bw,
                           const Node_Create *c,
                           const char *node_id,
@@ -564,53 +499,26 @@ static void encode_node(ByteWriter *bw,
     }
 }
 
-static void encode_transaction(ByteWriter *bw, const DamlTransaction *tx) {
-    encode_string(bw, tx->version);
-    encode_repeated_node_ids(bw,
-                             tx->roots_count,
-                             tx->roots,
-                             tx,
-                             tx->node_seeds,
-                             tx->node_seeds_count);
-}
-
-static void hash_transaction(const DamlTransaction *tx, uint8_t out[32]) {
-    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_TX_LEN);
-    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for transaction");
-
-    ByteWriter bw;
-    bw_init(&bw, scratch, MAX_ENCODED_TX_LEN);
-    bw_put(&bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
-    encode_transaction(&bw, tx);
-
-    cx_sha256_hash(scratch, bw_size(&bw), out);
-
-    app_mem_free(scratch);
-
-    PRINTF("TX hash: %.*H\n", 32, out);
-}
-
-static void encode_input_contract(ByteWriter *bw, const InputContract *c) {
-    encode_int64(bw, c->created_at);
-
-    // Encode contract create node in separate buffer and calculate its hash
+// Hash a referenced node‑id and write the 32‑byte digest
+static void encode_node_id_hash(ByteWriter *bw,
+                                const Node *node,
+                                const DamlTransaction *tx,
+                                const NodeSeed *seeds,
+                                size_t n_seeds) {
     uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
     LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
 
     ByteWriter n_bw;
     bw_init(&n_bw, scratch, MAX_ENCODED_NODE_LEN);
-    encode_create(&n_bw, &c->v1, NULL, NULL, 0);
+    encode_node(&n_bw, node, tx, seeds, n_seeds);
 
-    uint8_t hash[32];
-    cx_sha256_hash(scratch, bw_size(&n_bw), hash);
+    uint8_t h[32];
+    cx_sha256_hash(scratch, bw_size(&n_bw), h);
+    bw_put(bw, h, 32);
 
     app_mem_free(scratch);
 
-    encode_hash(bw, hash);
-}
-
-static void wrap_encode_input_contract(ByteWriter *bw, const void *ctx) {
-    encode_input_contract(bw, (const InputContract *) ctx);
+    PRINTF("Node id hash: %.*H\n", 32, h);
 }
 
 static void encode_metadata(ByteWriter *bw, const Metadata *m) {
@@ -633,44 +541,57 @@ static void encode_metadata(ByteWriter *bw, const Metadata *m) {
                     (EncodeFn) encode_int64,
                     &m->max_ledger_effective_time);
     encode_int64(bw, m->preparation_time);
-    encode_repeated(bw,
-                    m->input_contracts_count,
-                    m->input_contracts,
-                    sizeof(InputContract),
-                    wrap_encode_input_contract);
+    encode_int32(bw, m->input_contracts_count);
 }
 
-static void hash_metadata(const Metadata *md, uint8_t out[32]) {
-    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_METADATA_LEN);
-    LEDGER_ASSERT(scratch != NULL, "Failed to allocate buf for metadata hash");
-
-    ByteWriter bw;
-    bw_init(&bw, scratch, MAX_ENCODED_METADATA_LEN);
-    bw_put(&bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
-    encode_metadata(&bw, md);
-
-    cx_sha256_hash(scratch, bw_size(&bw), out);
-
-    app_mem_free(scratch);
-
-    PRINTF("Metadata hash: %.*H\n", 32, out);
-}
-
-int prepared_transaction_hash(const PreparedTransaction *pt, uint8_t out[32]) {
-    uint8_t tx_hash[32], md_hash[32];
-
+int hash_transaction(ByteWriter *bw, const DamlTransaction *tx) {
+    // Reset error state
     clear_hash_error();
 
-    hash_transaction(&pt->transaction, tx_hash);
+    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_TX_LEN);
+    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for transaction");
+
+    bw_init(bw, scratch, MAX_ENCODED_TX_LEN);
+    bw_put(bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+
+    encode_string(bw, tx->version);
+    // Encode nodes count
+    encode_int32(bw, (int32_t) tx->roots_count);
+
+    return 0;
+}
+
+// Hash a referenced node‑id and write the 32‑byte digest
+int hash_node(ByteWriter *bw, const DamlTransaction *tx, const Node *node) {
+    encode_node_id_hash(bw, node, tx, tx->node_seeds, tx->node_seeds_count);
 
     if (is_hash_error()) {
-        PRINTF("Error hashing transaction: '%s', code: %d\n",
+        PRINTF("Error hashing node: '%s', code: %d\n",
                HASH_ERR_INFO.err_msg,
                HASH_ERR_INFO.err_code);
         return HASH_ERR_INFO.err_code;
     }
 
-    hash_metadata(&pt->metadata, md_hash);
+    return 0;
+}
+
+int finalize_hash_transaction(ByteWriter *bw, uint8_t out[32]) {
+    cx_sha256_hash(bw->base, bw_size(bw), out);
+
+    app_mem_free(bw->base);
+
+    PRINTF("TX hash: %.*H\n", 32, out);
+
+    return 0;
+}
+
+int hash_metadata(ByteWriter *bw, const Metadata *md) {
+    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_METADATA_LEN);
+    LEDGER_ASSERT(scratch != NULL, "Failed to allocate buf for metadata hash");
+
+    bw_init(bw, scratch, MAX_ENCODED_METADATA_LEN);
+    bw_put(bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+    encode_metadata(bw, md);
 
     if (is_hash_error()) {
         PRINTF("Error hashing metadata: '%s', code: %d\n",
@@ -679,8 +600,51 @@ int prepared_transaction_hash(const PreparedTransaction *pt, uint8_t out[32]) {
         return HASH_ERR_INFO.err_code;
     }
 
+    return 0;
+}
+
+int hash_input_contract(ByteWriter *bw, const InputContract *c) {
+    encode_int64(bw, c->created_at);
+
+    // Encode contract create node in separate buffer and calculate its hash
+    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
+    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
+
+    ByteWriter n_bw;
+    bw_init(&n_bw, scratch, MAX_ENCODED_NODE_LEN);
+    encode_create(&n_bw, &c->v1, NULL, NULL, 0);
+
+    uint8_t hash[32];
+    cx_sha256_hash(scratch, bw_size(&n_bw), hash);
+
+    app_mem_free(scratch);
+
+    encode_hash(bw, hash);
+
+    if (is_hash_error()) {
+        PRINTF("Error hashing input contract: '%s', code: %d\n",
+               HASH_ERR_INFO.err_msg,
+               HASH_ERR_INFO.err_code);
+        return HASH_ERR_INFO.err_code;
+    }
+
+    return 0;
+}
+
+int finalize_hash_metadata(ByteWriter *bw, uint8_t out[32]) {
+    cx_sha256_hash(bw->base, bw_size(bw), out);
+
+    app_mem_free(bw->base);
+
+    PRINTF("Metadata hash: %.*H\n", 32, out);
+
+    return 0;
+}
+
+int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t out[32]) {
     uint8_t buf[4 + 1 + 32 + 32];
     ByteWriter bw;
+
     bw_init(&bw, buf, sizeof(buf));
     bw_put(&bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
     bw_put_byte(&bw, HASHING_SCHEME_VERSION);

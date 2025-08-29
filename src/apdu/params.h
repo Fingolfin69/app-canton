@@ -31,6 +31,11 @@
 #define P2_MORE 0x02
 
 /**
+ * P2 indicating that this is the last APDU of a message in a multi message request.
+ */
+#define P2_MSG_END 0x04
+
+/**
  * P2 bit indicating that address should be displayed as testnet only.
  */
 #define P2_ADDR_FLAG_TESTNET 0x01

@@ -6,11 +6,10 @@ from typing import Union
 from google.protobuf.json_format import Parse
 # pylint: disable=no-name-in-module, import-error
 from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import \
-    PrepareSubmissionResponse # type: ignore
+    PrepareSubmissionResponse, DamlTransaction, Metadata   # type: ignore
+
 
 from .canton_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
-
-# from proto.message_pb2 import SimpleInt
 
 class TransactionError(Exception):
     pass
@@ -72,3 +71,49 @@ class Transaction:
         with open(json_file, "r", encoding="utf-8") as file:
             data = json.load(file)
         return base64.b64decode(data["prepared_transaction_hash"])
+
+    @classmethod
+    def serialize_from_json_into_tx_parts(self, json_file: str) -> (bytes, list[bytes], bytes, list[bytes], bytes):
+        with open(json_file, "r") as file:
+            json_tx = json.load(file)
+
+        daml_tx = json_tx["prepared_transaction"]["transaction"]
+        nodes = daml_tx.pop("nodes", [])
+        nodes_pb = []
+
+        daml_tx["nodes_count"] = len(nodes)
+        daml_tx_pb = DamlTransaction()
+        Parse(json.dumps(daml_tx), daml_tx_pb)
+
+        for node in nodes:
+            node_pb = DamlTransaction.Node()
+            Parse(json.dumps(node), node_pb)
+            nodes_pb.append(node_pb.SerializeToString())
+
+
+        metadata = json_tx["prepared_transaction"]["metadata"]
+        input_contracts = metadata.pop("inputContracts", [])
+        input_contracts_pb = []
+
+        metadata["input_contracts_count"] = len(input_contracts)
+        metadata_pb = Metadata()
+        Parse(json.dumps(metadata), metadata_pb)
+
+        for contract in input_contracts:
+            contract_pb = Metadata.InputContract()
+            Parse(json.dumps(contract), contract_pb)
+            input_contracts_pb.append(contract_pb.SerializeToString())
+
+
+        prep_sub_resp = json_tx
+        del prep_sub_resp["prepared_transaction"]
+        prep_sub_resp_pb = PrepareSubmissionResponse()
+        Parse(json.dumps(prep_sub_resp), prep_sub_resp_pb)
+
+        return (
+            daml_tx_pb.SerializeToString(),
+            nodes_pb,
+            metadata_pb.SerializeToString(),
+            input_contracts_pb,
+            prep_sub_resp_pb.SerializeToString()
+        )

@@ -7,6 +7,7 @@
 
 #include "constants.h"
 #include "tx_types.h"
+#include "canonical_hash.h"
 
 /**
  * Enumeration with expected INS of APDU commands.
@@ -21,10 +22,15 @@ typedef enum {
  * Enumeration with parsing state.
  */
 typedef enum {
-    STATE_NONE,           /// No state
-    STATE_PARSED,         /// Transaction data parsed
-    STATE_APPROVED,       /// Transaction data approved
-    STATE_EXPECTING_MORE  /// Expecting more data (for chunked APDU)
+    STATE_NONE,                                   /// No state
+    STATE_EXPECTING_MORE,                         /// Expecting more data (for chunked APDU)
+    STATE_RECEIVING_DAML_TX_PART,                 /// Receiving part of DAML transaction
+    STATE_RECEIVING_DAML_NODES,                   /// Receiving DAML nodes
+    STATE_RECEIVING_METADATA,                     /// Receiving metadata
+    STATE_RECEIVING_METADATA_INPUT_CONTRACTS,     /// Receiving input contracts
+    STATE_RECEIVING_PREPARED_SUBMISSION_DETAILS,  /// Receiving prepared submission details
+    STATE_PARSED,                                 /// All transaction data parsed
+    STATE_APPROVED                                /// Transaction data approved
 } state_e;
 
 /**
@@ -40,6 +46,7 @@ typedef enum {
     SIGN_UNTYPED_VERSIONED_MESSAGE = 1,
     SIGN_PREPARED_TRANSACTION = 2,
 } signing_type_e;
+
 /**
  * Structure for public key context information.
  */
@@ -54,11 +61,18 @@ typedef struct {
 typedef struct {
     uint8_t raw_tx[MAX_TRANSACTION_LEN];  /// raw transaction serialized
     size_t raw_tx_len;                    /// length of raw transaction
-    transaction_t transaction;            /// structured transaction
-    uint8_t m_hash[32];                   /// message hash digest
-    uint8_t signature[MAX_DER_SIG_LEN];   /// transaction signature encoded in DER
-    uint8_t signature_len;                /// length of transaction signature
-    uint8_t v;                            /// parity of y-coordinate of R in ECDSA signature
+
+    transaction_parts_ctx_t tx_parts_ctx;  /// transaction parts context
+    ByteWriter hash_buf;          // Dynamicly allocated buffer for incremental hash calculation
+    uint8_t partial_tx_hash[32];  // Incomplete tx hash
+    uint8_t partial_md_hash[32];  // Incomplete md hash
+    int32_t
+        recv_node_idx;  // Index of the current entity being processed ('Node' or 'InputContract')
+
+    uint8_t m_hash[32];                  /// message hash digest
+    uint8_t signature[MAX_DER_SIG_LEN];  /// transaction signature encoded in DER
+    uint8_t signature_len;               /// length of transaction signature
+    uint8_t v;                           /// parity of y-coordinate of R in ECDSA signature
 } transaction_ctx_t;
 
 /**

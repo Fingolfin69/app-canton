@@ -96,7 +96,7 @@ typedef PB_BYTES_ARRAY_T(1024) google_protobuf_Any_value_t;
        "@type": "type.googleapis.com/google.protobuf.Duration",
        "value": "1.212s"
      } */
-typedef struct _google_protobuf_Any { 
+typedef struct _google_protobuf_Any {
     /* A URL/resource name that uniquely identifies the type of the serialized
  protocol buffer message. This string must contain at least
  one "/" character. The last segment of the URL's path must represent
@@ -125,30 +125,43 @@ typedef struct _google_protobuf_Any {
 
  Schemes other than `http`, `https` (or the empty scheme) might be
  used with implementation specific semantics. */
-    char type_url[1024]; 
+    char type_url[1024];
     /* Must be a valid serialized protocol buffer of the above specified type. */
-    google_protobuf_Any_value_t value; 
+    google_protobuf_Any_value_t value;
 } google_protobuf_Any;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define google_protobuf_Any_init_default         {"", {0, {0}}}
-#define google_protobuf_Any_init_zero            {"", {0, {0}}}
+#define google_protobuf_Any_init_default \
+    {                                    \
+        "", {                            \
+            0, {                         \
+                0                        \
+            }                            \
+        }                                \
+    }
+#define google_protobuf_Any_init_zero \
+    {                                 \
+        "", {                         \
+            0, {                      \
+                0                     \
+            }                         \
+        }                             \
+    }
 
 /* Field tags (for use in manual encoding/decoding) */
-#define google_protobuf_Any_type_url_tag         1
-#define google_protobuf_Any_value_tag            2
+#define google_protobuf_Any_type_url_tag 1
+#define google_protobuf_Any_value_tag    2
 
 /* Struct field encoding specification for nanopb */
-#define google_protobuf_Any_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   type_url,          1) \
-X(a, STATIC,   SINGULAR, BYTES,    value,             2)
+#define google_protobuf_Any_FIELDLIST(X, a)     \
+    X(a, STATIC, SINGULAR, STRING, type_url, 1) \
+    X(a, STATIC, SINGULAR, BYTES, value, 2)
 #define google_protobuf_Any_CALLBACK NULL
-#define google_protobuf_Any_DEFAULT NULL
+#define google_protobuf_Any_DEFAULT  NULL
 
 extern const pb_msgdesc_t google_protobuf_Any_msg;
 
@@ -156,7 +169,7 @@ extern const pb_msgdesc_t google_protobuf_Any_msg;
 #define google_protobuf_Any_fields &google_protobuf_Any_msg
 
 /* Maximum encoded size of messages (where known) */
-#define google_protobuf_Any_size                 2053
+#define google_protobuf_Any_size 2053
 
 #ifdef __cplusplus
 } /* extern "C" */

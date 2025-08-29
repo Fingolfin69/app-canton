@@ -20,7 +20,20 @@ typedef enum {
     WRONG_LENGTH_ERROR = -7
 } parser_status_e;
 
+/**
+ * Structure for transaction hashing context.
+ */
 typedef struct {
-    com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse
-        prepared_tx;  /// prepared transaction
-} transaction_t;
+    union {
+        com_daml_ledger_api_v2_interactive_DamlTransaction daml_transaction;  /// DAML transaction
+        com_daml_ledger_api_v2_interactive_Metadata metadata;  /// metadata of the transaction
+        com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse
+            prepared_submission_details;  /// prepared transaction
+    };
+
+    union {
+        com_daml_ledger_api_v2_interactive_DamlTransaction_Node node;  /// DAML transaction node
+        com_daml_ledger_api_v2_interactive_Metadata_InputContract
+            input_contract;  /// input contract
+    };
+} transaction_parts_ctx_t;

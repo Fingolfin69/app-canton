@@ -52,7 +52,7 @@ def test_sign_tx_ping(
     rapdu = client.get_public_key(path=path)
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
-    serialized_tx = Transaction.serialize_from_json(
+    (ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) = Transaction.serialize_from_json_into_tx_parts(
         "tests/tx_examples/external_sign_ping.json"
     )
 
@@ -60,9 +60,9 @@ def test_sign_tx_ping(
         "tests/tx_examples/external_sign_ping.json"
     )
     print(f"Transaction hash: {tx_hash.hex()}")
-    print(f"Serialized transaction length: {len(serialized_tx)} bytes")
+    print(f"Serialized transaction length: {len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts) + len(ser_misc)} bytes")
 
-    with client.sign_tx(path=path, transaction=serialized_tx, p1=P1SignType.P1_SIGN_PREPARED_TRANSACTION):
+    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) as response:
         scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)
 
     response = client.get_async_response().data

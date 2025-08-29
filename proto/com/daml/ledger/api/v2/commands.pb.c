@@ -8,26 +8,18 @@
 
 PB_BIND(com_daml_ledger_api_v2_Command, com_daml_ledger_api_v2_Command, 4)
 
-
 PB_BIND(com_daml_ledger_api_v2_CreateCommand, com_daml_ledger_api_v2_CreateCommand, 2)
-
 
 PB_BIND(com_daml_ledger_api_v2_ExerciseCommand, com_daml_ledger_api_v2_ExerciseCommand, 4)
 
-
 PB_BIND(com_daml_ledger_api_v2_ExerciseByKeyCommand, com_daml_ledger_api_v2_ExerciseByKeyCommand, 4)
 
-
-PB_BIND(com_daml_ledger_api_v2_CreateAndExerciseCommand, com_daml_ledger_api_v2_CreateAndExerciseCommand, 4)
-
+PB_BIND(com_daml_ledger_api_v2_CreateAndExerciseCommand,
+        com_daml_ledger_api_v2_CreateAndExerciseCommand,
+        4)
 
 PB_BIND(com_daml_ledger_api_v2_DisclosedContract, com_daml_ledger_api_v2_DisclosedContract, 2)
 
-
 PB_BIND(com_daml_ledger_api_v2_Commands, com_daml_ledger_api_v2_Commands, 2)
 
-
 PB_BIND(com_daml_ledger_api_v2_PrefetchContractKey, com_daml_ledger_api_v2_PrefetchContractKey, 4)
-
-
-

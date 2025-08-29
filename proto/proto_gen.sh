@@ -8,7 +8,7 @@ red() { echo -e "\e[31m$*\e[0m"; }
 green() { echo -e "\e[32m$*\e[0m"; }
 yellow() { echo -e "\e[33m$*\e[0m"; }
 
-ROOT_PATH=$(git rev-parse --show-toplevel)
+ROOT_PATH=$(git rev-parse --show-toplevel)/proto
 LEDGER_API_PROTO_PATH=$ROOT_PATH/canton/community/ledger-api/src/main/protobuf
 LAPI_VALUE_PROTO_PATH=$ROOT_PATH/daml/sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2/value.proto
 LEDGER_API_V2_PATH=$LEDGER_API_PROTO_PATH/com/daml/ledger/api/v2
@@ -56,6 +56,22 @@ clone_if_not_exists "https://github.com/digital-asset/daml.git" "sdk/daml-lf/led
 clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive"
 mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledger/api/v2/value.proto"
 
+## Patch proto files
+echo "Applying patches to proto files..."
+if [ -f "split_nodes.patch" ]; then
+  set +e
+  patch -p0 -f < split_nodes.patch
+
+  if [ $? -ne 0 ]; then
+    red "Failed to apply split_nodes.patch. Maybe patch was already applied?"
+  fi
+
+  set -e
+else
+  red "split_nodes.patch not found. Exiting."
+  exit 1
+fi
+
 # Create the options file for value.proto
 echo "Creating value.options file..."
 cat > value.options << 'EOF'
@@ -93,15 +109,24 @@ com.daml.ledger.api.v2.interactive.transaction.v1.Create.contract_id type:FT_POI
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.package_name type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.lf_version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.package_name type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.choice_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.signatories type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.stakeholders type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.acting_parties type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.children type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.choice_observers type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.lf_version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.package_name type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.signatories type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.stakeholders type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.acting_parties type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.interface_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.interface_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Rollback.children type:FT_POINTER
 EOF
 
 echo "Creating interactive_submission_service.options file..."
@@ -125,6 +150,7 @@ com.daml.ledger.api.v2.interactive.Metadata.transaction_uuid type:FT_POINTER
 com.daml.ledger.api.v2.interactive.Metadata.input_contracts type:FT_POINTER
 com.daml.ledger.api.v2.interactive.Metadata.SubmitterInfo.act_as type:FT_POINTER
 com.daml.ledger.api.v2.interactive.Metadata.SubmitterInfo.command_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.Metadata.InputContract.event_blob type:FT_IGNORE
 EOF
 
 # Generate nanopb C/H code for protobuf messages
@@ -201,5 +227,6 @@ generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/commands.prot
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/completion.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/event.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/transaction.proto"
+generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/transaction_filter.proto"
 
 green "Done! Generated files are in: $OUTPUT_DIR"
