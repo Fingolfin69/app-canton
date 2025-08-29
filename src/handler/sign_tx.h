@@ -17,8 +17,6 @@
  *   Command data with BIP32 path and raw transaction serialized.
  * @param[in]     chunk
  *   Index number of the APDU chunk.
- * @param[in]       msg_end
- *   Last chunk of logical message.
  * @param[in]       more
  *   Whether more APDU chunk to be received or not.
  * @param[in]       msg_end

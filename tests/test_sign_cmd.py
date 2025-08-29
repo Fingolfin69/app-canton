@@ -5,7 +5,7 @@ from ragger.navigator.navigation_scenario import NavigateWithScenario
 
 from application_client.canton_transaction import Transaction
 from application_client.canton_command_sender import (
-    BoilerplateCommandSender,
+    CantonCommandSender,
     P1SignType,
     # Errors,
 )
@@ -21,7 +21,7 @@ def test_sign_tx_hash(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
     # Use the app interface instead of raw interface
-    client = BoilerplateCommandSender(backend)
+    client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
 
     rapdu = client.get_public_key(path=path)
@@ -46,7 +46,7 @@ def test_sign_tx_ping(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
     # Use the app interface instead of raw interface
-    client = BoilerplateCommandSender(backend)
+    client = CantonCommandSender(backend)
     path: str = "m/44'/6767'/0'/0'/0'"
 
     rapdu = client.get_public_key(path=path)
@@ -60,7 +60,8 @@ def test_sign_tx_ping(
         "tests/tx_examples/external_sign_ping.json"
     )
     print(f"Transaction hash: {tx_hash.hex()}")
-    print(f"Serialized transaction length: {len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts) + len(ser_misc)} bytes")
+    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts) + len(ser_misc)
+    print(f"Serialized transaction length: {total_len} bytes")
 
     with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) as response:
         scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)

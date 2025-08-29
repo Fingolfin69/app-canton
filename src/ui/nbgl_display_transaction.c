@@ -61,6 +61,8 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         return io_send_sw(SW_BAD_STATE);
     }
 
+    PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
+
     // Setup data to display
     size_t hex_hash_length = 2 * sizeof(G_context.tx_info.m_hash) + 1;
     pairs[0].value = (char *) app_mem_alloc(hex_hash_length);

@@ -6,7 +6,7 @@ from ragger.backend.interface import BackendInterface
 from ragger.navigator import Navigator
 from ragger.navigator.instruction import NavInsID
 
-from application_client.canton_command_sender import BoilerplateCommandSender, Errors
+from application_client.canton_command_sender import CantonCommandSender, Errors
 from application_client.canton_response_unpacker import unpack_get_public_key_response
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
@@ -20,7 +20,7 @@ def test_get_public_key_no_confirm(backend: BackendInterface) -> None:
         "m/44'/6767'/2147483647'/0'/0'/0'/0'/0'/0'",
     ]
     for path in path_list:
-        client = BoilerplateCommandSender(backend)
+        client = CantonCommandSender(backend)
         response = client.get_public_key(path=path).data
         _, public_key, _, chain_code = unpack_get_public_key_response(response)
 
@@ -31,7 +31,7 @@ def test_get_public_key_no_confirm(backend: BackendInterface) -> None:
 
 # In this test we check that the GET_PUBLIC_KEY works in confirmation mode
 def test_get_public_key_confirm_accepted(backend: BackendInterface, navigator: Navigator, device) -> None:
-    client = BoilerplateCommandSender(backend)
+    client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
 
     if 'nano' in device.name:
@@ -65,7 +65,7 @@ def test_get_public_key_confirm_accepted(backend: BackendInterface, navigator: N
 
 # In this test we check that the GET_PUBLIC_KEY in confirmation mode replies an error if the user refuses
 def test_get_public_key_confirm_refused(backend: BackendInterface, navigator: Navigator, device) -> None:
-    client = BoilerplateCommandSender(backend)
+    client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
 
     if 'nano' in device.name:
