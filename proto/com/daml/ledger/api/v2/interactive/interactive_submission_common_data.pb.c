@@ -6,6 +6,7 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(com_daml_ledger_api_v2_interactive_GlobalKey,
-        com_daml_ledger_api_v2_interactive_GlobalKey,
-        4)
+PB_BIND(com_daml_ledger_api_v2_interactive_GlobalKey, com_daml_ledger_api_v2_interactive_GlobalKey, 4)
+
+
+
