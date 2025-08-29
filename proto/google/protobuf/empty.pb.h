@@ -17,27 +17,26 @@
      service Foo {
        rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
      } */
-typedef struct _google_protobuf_Empty {
+typedef struct _google_protobuf_Empty { 
     char dummy_field;
 } google_protobuf_Empty;
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define google_protobuf_Empty_init_default \
-    { 0 }
-#define google_protobuf_Empty_init_zero \
-    { 0 }
+#define google_protobuf_Empty_init_default       {0}
+#define google_protobuf_Empty_init_zero          {0}
 
 /* Field tags (for use in manual encoding/decoding) */
 
 /* Struct field encoding specification for nanopb */
-#define google_protobuf_Empty_FIELDLIST(X, a)
+#define google_protobuf_Empty_FIELDLIST(X, a) \
 
 #define google_protobuf_Empty_CALLBACK NULL
-#define google_protobuf_Empty_DEFAULT  NULL
+#define google_protobuf_Empty_DEFAULT NULL
 
 extern const pb_msgdesc_t google_protobuf_Empty_msg;
 
@@ -45,7 +44,7 @@ extern const pb_msgdesc_t google_protobuf_Empty_msg;
 #define google_protobuf_Empty_fields &google_protobuf_Empty_msg
 
 /* Maximum encoded size of messages (where known) */
-#define google_protobuf_Empty_size 0
+#define google_protobuf_Empty_size               0
 
 #ifdef __cplusplus
 } /* extern "C" */

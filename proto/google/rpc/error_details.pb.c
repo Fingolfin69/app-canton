@@ -8,30 +8,47 @@
 
 PB_BIND(google_rpc_ErrorInfo, google_rpc_ErrorInfo, 2)
 
+
 PB_BIND(google_rpc_ErrorInfo_MetadataEntry, google_rpc_ErrorInfo_MetadataEntry, 2)
+
 
 PB_BIND(google_rpc_RetryInfo, google_rpc_RetryInfo, AUTO)
 
+
 PB_BIND(google_rpc_DebugInfo, google_rpc_DebugInfo, 2)
+
 
 PB_BIND(google_rpc_QuotaFailure, google_rpc_QuotaFailure, AUTO)
 
+
 PB_BIND(google_rpc_QuotaFailure_Violation, google_rpc_QuotaFailure_Violation, 2)
+
 
 PB_BIND(google_rpc_PreconditionFailure, google_rpc_PreconditionFailure, AUTO)
 
+
 PB_BIND(google_rpc_PreconditionFailure_Violation, google_rpc_PreconditionFailure_Violation, 2)
+
 
 PB_BIND(google_rpc_BadRequest, google_rpc_BadRequest, AUTO)
 
+
 PB_BIND(google_rpc_BadRequest_FieldViolation, google_rpc_BadRequest_FieldViolation, 2)
+
 
 PB_BIND(google_rpc_RequestInfo, google_rpc_RequestInfo, 2)
 
+
 PB_BIND(google_rpc_ResourceInfo, google_rpc_ResourceInfo, 2)
+
 
 PB_BIND(google_rpc_Help, google_rpc_Help, AUTO)
 
+
 PB_BIND(google_rpc_Help_Link, google_rpc_Help_Link, 2)
 
+
 PB_BIND(google_rpc_LocalizedMessage, google_rpc_LocalizedMessage, 2)
+
+
+

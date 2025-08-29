@@ -7,3 +7,6 @@
 #endif
 
 PB_BIND(com_daml_ledger_api_v2_Completion, com_daml_ledger_api_v2_Completion, 2)
+
+
+

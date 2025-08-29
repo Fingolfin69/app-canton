@@ -8,32 +8,42 @@
 
 PB_BIND(com_daml_ledger_api_v2_Filters, com_daml_ledger_api_v2_Filters, AUTO)
 
+
 PB_BIND(com_daml_ledger_api_v2_CumulativeFilter, com_daml_ledger_api_v2_CumulativeFilter, 2)
+
 
 PB_BIND(com_daml_ledger_api_v2_WildcardFilter, com_daml_ledger_api_v2_WildcardFilter, AUTO)
 
+
 PB_BIND(com_daml_ledger_api_v2_InterfaceFilter, com_daml_ledger_api_v2_InterfaceFilter, 2)
+
 
 PB_BIND(com_daml_ledger_api_v2_TemplateFilter, com_daml_ledger_api_v2_TemplateFilter, 2)
 
+
 PB_BIND(com_daml_ledger_api_v2_TransactionFilter, com_daml_ledger_api_v2_TransactionFilter, AUTO)
 
-PB_BIND(com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry,
-        com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry,
-        2)
+
+PB_BIND(com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry, com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry, 2)
+
 
 PB_BIND(com_daml_ledger_api_v2_EventFormat, com_daml_ledger_api_v2_EventFormat, AUTO)
 
-PB_BIND(com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry,
-        com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry,
-        2)
+
+PB_BIND(com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry, com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry, 2)
+
 
 PB_BIND(com_daml_ledger_api_v2_TransactionFormat, com_daml_ledger_api_v2_TransactionFormat, AUTO)
 
+
 PB_BIND(com_daml_ledger_api_v2_TopologyFormat, com_daml_ledger_api_v2_TopologyFormat, AUTO)
 
-PB_BIND(com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat,
-        com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat,
-        AUTO)
+
+PB_BIND(com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat, com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat, AUTO)
+
 
 PB_BIND(com_daml_ledger_api_v2_UpdateFormat, com_daml_ledger_api_v2_UpdateFormat, AUTO)
+
+
+
+

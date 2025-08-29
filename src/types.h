@@ -22,15 +22,11 @@ typedef enum {
  * Enumeration with parsing state.
  */
 typedef enum {
-    STATE_NONE,                                   /// No state
-    STATE_EXPECTING_MORE,                         /// Expecting more data (for chunked APDU)
-    STATE_RECEIVING_DAML_TX_PART,                 /// Receiving part of DAML transaction
-    STATE_RECEIVING_DAML_NODES,                   /// Receiving DAML nodes
-    STATE_RECEIVING_METADATA,                     /// Receiving metadata
-    STATE_RECEIVING_METADATA_INPUT_CONTRACTS,     /// Receiving input contracts
-    STATE_RECEIVING_PREPARED_SUBMISSION_DETAILS,  /// Receiving prepared submission details
-    STATE_PARSED,                                 /// All transaction data parsed
-    STATE_APPROVED                                /// Transaction data approved
+    STATE_NONE,            /// No state
+    STATE_EXPECTING_MORE,  /// Expecting more data (for chunked APDU)
+    STATE_MSG_COMPLETE,    /// Message completely received, more expected
+    STATE_PARSED,          /// All transaction data parsed
+    STATE_APPROVED         /// Transaction data approved
 } state_e;
 
 /**
@@ -46,7 +42,6 @@ typedef enum {
     SIGN_UNTYPED_VERSIONED_MESSAGE = 1,
     SIGN_PREPARED_TRANSACTION = 2,
 } signing_type_e;
-
 /**
  * Structure for public key context information.
  */
@@ -63,7 +58,7 @@ typedef struct {
     size_t raw_tx_len;                    /// length of raw transaction
 
     transaction_parts_ctx_t tx_parts_ctx;  /// transaction parts context
-    ByteWriter hash_buf;          // Dynamicly allocated buffer for incremental hash calculation
+    ByteWriter hash_buf;          // Dynamically allocated buffer for incremental hash calculation
     uint8_t partial_tx_hash[32];  // Incomplete tx hash
     uint8_t partial_md_hash[32];  // Incomplete md hash
     int32_t

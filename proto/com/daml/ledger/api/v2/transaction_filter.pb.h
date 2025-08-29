@@ -13,131 +13,128 @@
 /* Enum definitions */
 /* Event shape for Transactions.
  Shapes are exclusive and only one of them can be defined in queries. */
-typedef enum _com_daml_ledger_api_v2_TransactionShape {
+typedef enum _com_daml_ledger_api_v2_TransactionShape { 
     /* Following official proto3 convention, not intended for actual use. */
-    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_UNSPECIFIED = 0,
+    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_UNSPECIFIED = 0, 
     /* Transaction shape that is sufficient to maintain an accurate ACS view.
- The field witness_parties in events are populated as stakeholders, transaction filter will apply
- accordingly. This translates to create and archive events. */
-    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_ACS_DELTA = 1,
+ The field witness_parties in events are populated as stakeholders, transaction filter will apply accordingly.
+ This translates to create and archive events. */
+    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_ACS_DELTA = 1, 
     /* Transaction shape that allows maintaining an ACS and also conveys detailed information about
  all exercises.
- The field witness_parties in events are populated as cumulative informees, transaction filter will
- apply accordingly. This translates to create, consuming exercise and non-consuming exercise. */
-    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_LEDGER_EFFECTS = 2
+ The field witness_parties in events are populated as cumulative informees, transaction filter will apply accordingly.
+ This translates to create, consuming exercise and non-consuming exercise. */
+    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_LEDGER_EFFECTS = 2 
 } com_daml_ledger_api_v2_TransactionShape;
 
 /* Struct definitions */
 /* The union of a set of template filters, interface filters, or a wildcard. */
-typedef struct _com_daml_ledger_api_v2_Filters {
-    /* Every filter in the cumulative list expands the scope of the resulting stream. Each
- interface, template or wildcard filter means additional events that will match the query. The
- impact of include_interface_view and include_created_event_blob fields in the filters will also be
- accumulated. A template or an interface SHOULD NOT appear twice in the accumulative field. A
- wildcard filter SHOULD NOT be defined more than once in the accumulative field. Optional, if no
- ``CumulativeFilter`` defined, the default of a single ``WildcardFilter`` with
+typedef struct _com_daml_ledger_api_v2_Filters { 
+    /* Every filter in the cumulative list expands the scope of the resulting stream. Each interface,
+ template or wildcard filter means additional events that will match the query.
+ The impact of include_interface_view and include_created_event_blob fields in the filters will
+ also be accumulated.
+ A template or an interface SHOULD NOT appear twice in the accumulative field.
+ A wildcard filter SHOULD NOT be defined more than once in the accumulative field.
+ Optional, if no ``CumulativeFilter`` defined, the default of a single ``WildcardFilter`` with
  include_created_event_blob unset is used. */
-    pb_callback_t cumulative;
+    pb_callback_t cumulative; 
 } com_daml_ledger_api_v2_Filters;
 
-typedef struct _com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat {
-    pb_callback_t parties;
+typedef struct _com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat { 
+    pb_callback_t parties; 
 } com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat;
 
 /* A format that specifies what events to include in Daml transactions
  and what data to compute and include for them. */
-typedef struct _com_daml_ledger_api_v2_EventFormat {
+typedef struct _com_daml_ledger_api_v2_EventFormat { 
     /* Required */
-    pb_callback_t filters_by_party;
+    pb_callback_t filters_by_party; 
     /* What transaction shape to use for interpreting the filters of the event format.
  Required */
     bool has_filters_for_any_party;
-    com_daml_ledger_api_v2_Filters filters_for_any_party;
-    bool verbose;
+    com_daml_ledger_api_v2_Filters filters_for_any_party; 
+    bool verbose; 
 } com_daml_ledger_api_v2_EventFormat;
 
 /* A format specifying which topology transactions to include and how to render them. */
-typedef struct _com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry {
+typedef struct _com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry { 
     /* Include participant authorization topology events in streams.
  Optional, if unset no participant authorization topology events are emitted in the stream. */
-    char key[1024];
+    char key[1024]; 
     bool has_value;
-    com_daml_ledger_api_v2_Filters value;
+    com_daml_ledger_api_v2_Filters value; 
 } com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry;
 
 /* This filter matches contracts that implement a specific interface. */
-typedef struct _com_daml_ledger_api_v2_InterfaceFilter {
+typedef struct _com_daml_ledger_api_v2_InterfaceFilter { 
     /* The interface that a matching contract must implement.
  The ``interface_id`` needs to be valid: corresponding interface should be defined in
  one of the available packages at the time of the query.
  Both package-name and package-id reference formats for the identifier are supported.
- Note: The package-id reference identifier format is deprecated. We plan to end support for this
- format in version 3.4.
+ Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
 
  Required */
     bool has_interface_id;
-    com_daml_ledger_api_v2_Identifier interface_id;
+    com_daml_ledger_api_v2_Identifier interface_id; 
     /* Whether to include the interface view on the contract in the returned ``CreatedEvent``.
  Use this to access contract data in a uniform manner in your API client.
  Optional */
-    bool include_interface_view;
+    bool include_interface_view; 
     /* Whether to include a ``created_event_blob`` in the returned ``CreatedEvent``.
  Use this to access the contract create event payload in your API client
  for submitting it as a disclosed contract with future commands.
  Optional */
-    bool include_created_event_blob;
+    bool include_created_event_blob; 
 } com_daml_ledger_api_v2_InterfaceFilter;
 
 /* This filter matches contracts of a specific template. */
-typedef struct _com_daml_ledger_api_v2_TemplateFilter {
+typedef struct _com_daml_ledger_api_v2_TemplateFilter { 
     /* A template for which the payload should be included in the response.
  The ``template_id`` needs to be valid: corresponding template should be defined in
  one of the available packages at the time of the query.
  Both package-name and package-id reference formats for the identifier are supported.
- Note: The package-id reference identifier format is deprecated. We plan to end support for this
- format in version 3.4.
+ Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
 
  Required */
     bool has_template_id;
-    com_daml_ledger_api_v2_Identifier template_id;
+    com_daml_ledger_api_v2_Identifier template_id; 
     /* Whether to include a ``created_event_blob`` in the returned ``CreatedEvent``.
  Use this to access the contract event payload in your API client
  for submitting it as a disclosed contract with future commands.
  Optional */
-    bool include_created_event_blob;
+    bool include_created_event_blob; 
 } com_daml_ledger_api_v2_TemplateFilter;
 
 /* A format specifying what updates to include and how to render them. */
-typedef struct _com_daml_ledger_api_v2_TopologyFormat {
+typedef struct _com_daml_ledger_api_v2_TopologyFormat { 
     /* Include Daml transactions in streams.
  Optional, if unset, no transactions are emitted in the stream. */
     bool has_include_participant_authorization_events;
-    com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat
-        include_participant_authorization_events;
+    com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat include_participant_authorization_events; 
 } com_daml_ledger_api_v2_TopologyFormat;
 
 /* Provided for backwards compatibility, it will be removed in the Canton version 3.4.0.
  Used both for filtering create and archive events as well as for filtering transaction trees. */
-typedef struct _com_daml_ledger_api_v2_TransactionFilter {
+typedef struct _com_daml_ledger_api_v2_TransactionFilter { 
     /* Each key must be a valid PartyIdString (as described in ``value.proto``).
  The interpretation of the filter depends on the transaction-shape being filtered:
 
- 1. For **transaction trees** (used in GetUpdateTreesResponse for backwards compatibility) all party
- keys used as wildcard filters, and all subtrees whose root has one of the listed parties as an
- informee are returned. If there are ``CumulativeFilter``s, those will control returned
- ``CreatedEvent`` fields where applicable, but will not be used for template/interface filtering.
- 2. For **ledger-effects** create and exercise events are returned, for which the witnesses include
- at least one of the listed parties and match the per-party filter.
- 3. For **transaction and active-contract-set streams** create and archive events are returned for
- all contracts whose stakeholders include at least one of the listed parties and match the per-party
- filter.
+ 1. For **transaction trees** (used in GetUpdateTreesResponse for backwards compatibility) all party keys used as
+    wildcard filters, and all subtrees whose root has one of the listed parties as an informee are returned.
+    If there are ``CumulativeFilter``s, those will control returned ``CreatedEvent`` fields where applicable, but will
+    not be used for template/interface filtering.
+ 2. For **ledger-effects** create and exercise events are returned, for which the witnesses include at least one of
+    the listed parties and match the per-party filter.
+ 3. For **transaction and active-contract-set streams** create and archive events are returned for all contracts whose
+    stakeholders include at least one of the listed parties and match the per-party filter.
 
  Required */
-    pb_callback_t filters_by_party;
-    /* Wildcard filters that apply to all the parties existing on the participant. The
- interpretation of the filters is the same with the per-party filter as described above. */
+    pb_callback_t filters_by_party; 
+    /* Wildcard filters that apply to all the parties existing on the participant. The interpretation of the filters is the same
+ with the per-party filter as described above. */
     bool has_filters_for_any_party;
-    com_daml_ledger_api_v2_Filters filters_for_any_party;
+    com_daml_ledger_api_v2_Filters filters_for_any_party; 
 } com_daml_ledger_api_v2_TransactionFilter;
 
 /* A format for events which defines both which events should be included
@@ -145,36 +142,36 @@ typedef struct _com_daml_ledger_api_v2_TransactionFilter {
 
  Note that some of the filtering behavior depends on the `TransactionShape`,
  which is expected to be specified alongside usages of `EventFormat`. */
-typedef struct _com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry {
+typedef struct _com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry { 
     /* Each key must be a valid PartyIdString (as described in ``value.proto``).
  The interpretation of the filter depends on the transaction-shape being filtered:
 
- 1. For **ledger-effects** create and exercise events are returned, for which the witnesses include
- at least one of the listed parties and match the per-party filter.
- 2. For **transaction and active-contract-set streams** create and archive events are returned for
- all contracts whose stakeholders include at least one of the listed parties and match the per-party
- filter.
+ 1. For **ledger-effects** create and exercise events are returned, for which the witnesses include at least one of
+    the listed parties and match the per-party filter.
+ 2. For **transaction and active-contract-set streams** create and archive events are returned for all contracts whose
+    stakeholders include at least one of the listed parties and match the per-party filter.
 
  Optional */
-    char key[1024];
-    /* Wildcard filters that apply to all the parties existing on the participant. The
- interpretation of the filters is the same with the per-party filter as described above. Optional */
+    char key[1024]; 
+    /* Wildcard filters that apply to all the parties existing on the participant. The interpretation of the filters is the same
+ with the per-party filter as described above.
+ Optional */
     bool has_value;
-    com_daml_ledger_api_v2_Filters value;
+    com_daml_ledger_api_v2_Filters value; 
 } com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry;
 
 /* This filter matches all templates. */
-typedef struct _com_daml_ledger_api_v2_WildcardFilter {
+typedef struct _com_daml_ledger_api_v2_WildcardFilter { 
     /* Whether to include a ``created_event_blob`` in the returned ``CreatedEvent``.
  Use this to access the contract create event payload in your API client
  for submitting it as a disclosed contract with future commands.
  Optional */
-    bool include_created_event_blob;
+    bool include_created_event_blob; 
 } com_daml_ledger_api_v2_WildcardFilter;
 
 /* A filter that matches all contracts that are either an instance of one of
  the ``template_filters`` or that match one of the ``interface_filters``. */
-typedef struct _com_daml_ledger_api_v2_CumulativeFilter {
+typedef struct _com_daml_ledger_api_v2_CumulativeFilter { 
     /* A wildcard filter that matches all templates
  Optional */
     pb_size_t which_identifier_filter;
@@ -182,279 +179,189 @@ typedef struct _com_daml_ledger_api_v2_CumulativeFilter {
         com_daml_ledger_api_v2_WildcardFilter wildcard_filter;
         com_daml_ledger_api_v2_InterfaceFilter interface_filter;
         com_daml_ledger_api_v2_TemplateFilter template_filter;
-    } identifier_filter;
+    } identifier_filter; 
 } com_daml_ledger_api_v2_CumulativeFilter;
 
-/* A format specifying which participant authorization topology transactions to include and how to
- * render them. */
-typedef struct _com_daml_ledger_api_v2_TransactionFormat {
+/* A format specifying which participant authorization topology transactions to include and how to render them. */
+typedef struct _com_daml_ledger_api_v2_TransactionFormat { 
     /* List of parties for which the topology transactions should be sent.
  Empty means: for all parties. */
     bool has_event_format;
-    com_daml_ledger_api_v2_EventFormat event_format;
-    com_daml_ledger_api_v2_TransactionShape transaction_shape;
+    com_daml_ledger_api_v2_EventFormat event_format; 
+    com_daml_ledger_api_v2_TransactionShape transaction_shape; 
 } com_daml_ledger_api_v2_TransactionFormat;
 
-typedef struct _com_daml_ledger_api_v2_UpdateFormat {
+typedef struct _com_daml_ledger_api_v2_UpdateFormat { 
     bool has_include_transactions;
-    com_daml_ledger_api_v2_TransactionFormat include_transactions;
+    com_daml_ledger_api_v2_TransactionFormat include_transactions; 
     bool has_include_reassignments;
-    com_daml_ledger_api_v2_EventFormat include_reassignments;
+    com_daml_ledger_api_v2_EventFormat include_reassignments; 
     bool has_include_topology_events;
-    com_daml_ledger_api_v2_TopologyFormat include_topology_events;
+    com_daml_ledger_api_v2_TopologyFormat include_topology_events; 
 } com_daml_ledger_api_v2_UpdateFormat;
 
+
 /* Helper constants for enums */
-#define _com_daml_ledger_api_v2_TransactionShape_MIN \
-    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_UNSPECIFIED
-#define _com_daml_ledger_api_v2_TransactionShape_MAX \
-    com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_LEDGER_EFFECTS
-#define _com_daml_ledger_api_v2_TransactionShape_ARRAYSIZE                                                                 \
-    ((com_daml_ledger_api_v2_TransactionShape) (com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_LEDGER_EFFECTS + \
-                                                1))
+#define _com_daml_ledger_api_v2_TransactionShape_MIN com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_UNSPECIFIED
+#define _com_daml_ledger_api_v2_TransactionShape_MAX com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_LEDGER_EFFECTS
+#define _com_daml_ledger_api_v2_TransactionShape_ARRAYSIZE ((com_daml_ledger_api_v2_TransactionShape)(com_daml_ledger_api_v2_TransactionShape_TRANSACTION_SHAPE_LEDGER_EFFECTS+1))
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define com_daml_ledger_api_v2_Filters_init_default \
-    {                                               \
-        { {NULL}, NULL }                            \
-    }
-#define com_daml_ledger_api_v2_CumulativeFilter_init_default   \
-    {                                                          \
-        0, {                                                   \
-            com_daml_ledger_api_v2_WildcardFilter_init_default \
-        }                                                      \
-    }
-#define com_daml_ledger_api_v2_WildcardFilter_init_default \
-    { 0 }
-#define com_daml_ledger_api_v2_InterfaceFilter_init_default \
-    { false, com_daml_ledger_api_v2_Identifier_init_default, 0, 0 }
-#define com_daml_ledger_api_v2_TemplateFilter_init_default \
-    { false, com_daml_ledger_api_v2_Identifier_init_default, 0 }
-#define com_daml_ledger_api_v2_TransactionFilter_init_default \
-    { {{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_default }
-#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_init_default \
-    { "", false, com_daml_ledger_api_v2_Filters_init_default }
-#define com_daml_ledger_api_v2_EventFormat_init_default \
-    { {{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_default, 0 }
-#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_init_default \
-    { "", false, com_daml_ledger_api_v2_Filters_init_default }
-#define com_daml_ledger_api_v2_TransactionFormat_init_default   \
-    {                                                           \
-        false, com_daml_ledger_api_v2_EventFormat_init_default, \
-            _com_daml_ledger_api_v2_TransactionShape_MIN        \
-    }
-#define com_daml_ledger_api_v2_TopologyFormat_init_default \
-    { false, com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_default }
-#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_default \
-    {                                                                              \
-        { {NULL}, NULL }                                                           \
-    }
-#define com_daml_ledger_api_v2_UpdateFormat_init_default                     \
-    {                                                                        \
-        false, com_daml_ledger_api_v2_TransactionFormat_init_default, false, \
-            com_daml_ledger_api_v2_EventFormat_init_default, false,          \
-            com_daml_ledger_api_v2_TopologyFormat_init_default               \
-    }
-#define com_daml_ledger_api_v2_Filters_init_zero \
-    {                                            \
-        { {NULL}, NULL }                         \
-    }
-#define com_daml_ledger_api_v2_CumulativeFilter_init_zero   \
-    {                                                       \
-        0, {                                                \
-            com_daml_ledger_api_v2_WildcardFilter_init_zero \
-        }                                                   \
-    }
-#define com_daml_ledger_api_v2_WildcardFilter_init_zero \
-    { 0 }
-#define com_daml_ledger_api_v2_InterfaceFilter_init_zero \
-    { false, com_daml_ledger_api_v2_Identifier_init_zero, 0, 0 }
-#define com_daml_ledger_api_v2_TemplateFilter_init_zero \
-    { false, com_daml_ledger_api_v2_Identifier_init_zero, 0 }
-#define com_daml_ledger_api_v2_TransactionFilter_init_zero \
-    { {{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_zero }
-#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_init_zero \
-    { "", false, com_daml_ledger_api_v2_Filters_init_zero }
-#define com_daml_ledger_api_v2_EventFormat_init_zero \
-    { {{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_zero, 0 }
-#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_init_zero \
-    { "", false, com_daml_ledger_api_v2_Filters_init_zero }
-#define com_daml_ledger_api_v2_TransactionFormat_init_zero   \
-    {                                                        \
-        false, com_daml_ledger_api_v2_EventFormat_init_zero, \
-            _com_daml_ledger_api_v2_TransactionShape_MIN     \
-    }
-#define com_daml_ledger_api_v2_TopologyFormat_init_zero \
-    { false, com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_zero }
-#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_zero \
-    {                                                                           \
-        { {NULL}, NULL }                                                        \
-    }
-#define com_daml_ledger_api_v2_UpdateFormat_init_zero                     \
-    {                                                                     \
-        false, com_daml_ledger_api_v2_TransactionFormat_init_zero, false, \
-            com_daml_ledger_api_v2_EventFormat_init_zero, false,          \
-            com_daml_ledger_api_v2_TopologyFormat_init_zero               \
-    }
+#define com_daml_ledger_api_v2_Filters_init_default {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_CumulativeFilter_init_default {0, {com_daml_ledger_api_v2_WildcardFilter_init_default}}
+#define com_daml_ledger_api_v2_WildcardFilter_init_default {0}
+#define com_daml_ledger_api_v2_InterfaceFilter_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, 0, 0}
+#define com_daml_ledger_api_v2_TemplateFilter_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, 0}
+#define com_daml_ledger_api_v2_TransactionFilter_init_default {{{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_default}
+#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_init_default {"", false, com_daml_ledger_api_v2_Filters_init_default}
+#define com_daml_ledger_api_v2_EventFormat_init_default {{{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_default, 0}
+#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_init_default {"", false, com_daml_ledger_api_v2_Filters_init_default}
+#define com_daml_ledger_api_v2_TransactionFormat_init_default {false, com_daml_ledger_api_v2_EventFormat_init_default, _com_daml_ledger_api_v2_TransactionShape_MIN}
+#define com_daml_ledger_api_v2_TopologyFormat_init_default {false, com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_default}
+#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_default {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_UpdateFormat_init_default {false, com_daml_ledger_api_v2_TransactionFormat_init_default, false, com_daml_ledger_api_v2_EventFormat_init_default, false, com_daml_ledger_api_v2_TopologyFormat_init_default}
+#define com_daml_ledger_api_v2_Filters_init_zero {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_CumulativeFilter_init_zero {0, {com_daml_ledger_api_v2_WildcardFilter_init_zero}}
+#define com_daml_ledger_api_v2_WildcardFilter_init_zero {0}
+#define com_daml_ledger_api_v2_InterfaceFilter_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, 0, 0}
+#define com_daml_ledger_api_v2_TemplateFilter_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, 0}
+#define com_daml_ledger_api_v2_TransactionFilter_init_zero {{{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_zero}
+#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_init_zero {"", false, com_daml_ledger_api_v2_Filters_init_zero}
+#define com_daml_ledger_api_v2_EventFormat_init_zero {{{NULL}, NULL}, false, com_daml_ledger_api_v2_Filters_init_zero, 0}
+#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_init_zero {"", false, com_daml_ledger_api_v2_Filters_init_zero}
+#define com_daml_ledger_api_v2_TransactionFormat_init_zero {false, com_daml_ledger_api_v2_EventFormat_init_zero, _com_daml_ledger_api_v2_TransactionShape_MIN}
+#define com_daml_ledger_api_v2_TopologyFormat_init_zero {false, com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_zero}
+#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_init_zero {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_UpdateFormat_init_zero {false, com_daml_ledger_api_v2_TransactionFormat_init_zero, false, com_daml_ledger_api_v2_EventFormat_init_zero, false, com_daml_ledger_api_v2_TopologyFormat_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define com_daml_ledger_api_v2_Filters_cumulative_tag                                      1
-#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_parties_tag          1
-#define com_daml_ledger_api_v2_EventFormat_filters_by_party_tag                            1
-#define com_daml_ledger_api_v2_EventFormat_filters_for_any_party_tag                       2
-#define com_daml_ledger_api_v2_EventFormat_verbose_tag                                     3
-#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_key_tag                     1
-#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_value_tag                   2
-#define com_daml_ledger_api_v2_InterfaceFilter_interface_id_tag                            1
-#define com_daml_ledger_api_v2_InterfaceFilter_include_interface_view_tag                  2
-#define com_daml_ledger_api_v2_InterfaceFilter_include_created_event_blob_tag              3
-#define com_daml_ledger_api_v2_TemplateFilter_template_id_tag                              1
-#define com_daml_ledger_api_v2_TemplateFilter_include_created_event_blob_tag               2
+#define com_daml_ledger_api_v2_Filters_cumulative_tag 1
+#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_parties_tag 1
+#define com_daml_ledger_api_v2_EventFormat_filters_by_party_tag 1
+#define com_daml_ledger_api_v2_EventFormat_filters_for_any_party_tag 2
+#define com_daml_ledger_api_v2_EventFormat_verbose_tag 3
+#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_key_tag 1
+#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_value_tag 2
+#define com_daml_ledger_api_v2_InterfaceFilter_interface_id_tag 1
+#define com_daml_ledger_api_v2_InterfaceFilter_include_interface_view_tag 2
+#define com_daml_ledger_api_v2_InterfaceFilter_include_created_event_blob_tag 3
+#define com_daml_ledger_api_v2_TemplateFilter_template_id_tag 1
+#define com_daml_ledger_api_v2_TemplateFilter_include_created_event_blob_tag 2
 #define com_daml_ledger_api_v2_TopologyFormat_include_participant_authorization_events_tag 1
-#define com_daml_ledger_api_v2_TransactionFilter_filters_by_party_tag                      1
-#define com_daml_ledger_api_v2_TransactionFilter_filters_for_any_party_tag                 2
-#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_key_tag               1
-#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_value_tag             2
-#define com_daml_ledger_api_v2_WildcardFilter_include_created_event_blob_tag               1
-#define com_daml_ledger_api_v2_CumulativeFilter_wildcard_filter_tag                        1
-#define com_daml_ledger_api_v2_CumulativeFilter_interface_filter_tag                       2
-#define com_daml_ledger_api_v2_CumulativeFilter_template_filter_tag                        3
-#define com_daml_ledger_api_v2_TransactionFormat_event_format_tag                          1
-#define com_daml_ledger_api_v2_TransactionFormat_transaction_shape_tag                     2
-#define com_daml_ledger_api_v2_UpdateFormat_include_transactions_tag                       1
-#define com_daml_ledger_api_v2_UpdateFormat_include_reassignments_tag                      2
-#define com_daml_ledger_api_v2_UpdateFormat_include_topology_events_tag                    3
+#define com_daml_ledger_api_v2_TransactionFilter_filters_by_party_tag 1
+#define com_daml_ledger_api_v2_TransactionFilter_filters_for_any_party_tag 2
+#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_key_tag 1
+#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_value_tag 2
+#define com_daml_ledger_api_v2_WildcardFilter_include_created_event_blob_tag 1
+#define com_daml_ledger_api_v2_CumulativeFilter_wildcard_filter_tag 1
+#define com_daml_ledger_api_v2_CumulativeFilter_interface_filter_tag 2
+#define com_daml_ledger_api_v2_CumulativeFilter_template_filter_tag 3
+#define com_daml_ledger_api_v2_TransactionFormat_event_format_tag 1
+#define com_daml_ledger_api_v2_TransactionFormat_transaction_shape_tag 2
+#define com_daml_ledger_api_v2_UpdateFormat_include_transactions_tag 1
+#define com_daml_ledger_api_v2_UpdateFormat_include_reassignments_tag 2
+#define com_daml_ledger_api_v2_UpdateFormat_include_topology_events_tag 3
 
 /* Struct field encoding specification for nanopb */
 #define com_daml_ledger_api_v2_Filters_FIELDLIST(X, a) \
-    X(a, CALLBACK, REPEATED, MESSAGE, cumulative, 1)
-#define com_daml_ledger_api_v2_Filters_CALLBACK           pb_default_field_callback
-#define com_daml_ledger_api_v2_Filters_DEFAULT            NULL
+X(a, CALLBACK, REPEATED, MESSAGE,  cumulative,        1)
+#define com_daml_ledger_api_v2_Filters_CALLBACK pb_default_field_callback
+#define com_daml_ledger_api_v2_Filters_DEFAULT NULL
 #define com_daml_ledger_api_v2_Filters_cumulative_MSGTYPE com_daml_ledger_api_v2_CumulativeFilter
 
-#define com_daml_ledger_api_v2_CumulativeFilter_FIELDLIST(X, a)                  \
-    X(a,                                                                         \
-      STATIC,                                                                    \
-      ONEOF,                                                                     \
-      MESSAGE,                                                                   \
-      (identifier_filter, wildcard_filter, identifier_filter.wildcard_filter),   \
-      1)                                                                         \
-    X(a,                                                                         \
-      STATIC,                                                                    \
-      ONEOF,                                                                     \
-      MESSAGE,                                                                   \
-      (identifier_filter, interface_filter, identifier_filter.interface_filter), \
-      2)                                                                         \
-    X(a,                                                                         \
-      STATIC,                                                                    \
-      ONEOF,                                                                     \
-      MESSAGE,                                                                   \
-      (identifier_filter, template_filter, identifier_filter.template_filter),   \
-      3)
+#define com_daml_ledger_api_v2_CumulativeFilter_FIELDLIST(X, a) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (identifier_filter,wildcard_filter,identifier_filter.wildcard_filter),   1) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (identifier_filter,interface_filter,identifier_filter.interface_filter),   2) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (identifier_filter,template_filter,identifier_filter.template_filter),   3)
 #define com_daml_ledger_api_v2_CumulativeFilter_CALLBACK NULL
-#define com_daml_ledger_api_v2_CumulativeFilter_DEFAULT  NULL
-#define com_daml_ledger_api_v2_CumulativeFilter_identifier_filter_wildcard_filter_MSGTYPE \
-    com_daml_ledger_api_v2_WildcardFilter
-#define com_daml_ledger_api_v2_CumulativeFilter_identifier_filter_interface_filter_MSGTYPE \
-    com_daml_ledger_api_v2_InterfaceFilter
-#define com_daml_ledger_api_v2_CumulativeFilter_identifier_filter_template_filter_MSGTYPE \
-    com_daml_ledger_api_v2_TemplateFilter
+#define com_daml_ledger_api_v2_CumulativeFilter_DEFAULT NULL
+#define com_daml_ledger_api_v2_CumulativeFilter_identifier_filter_wildcard_filter_MSGTYPE com_daml_ledger_api_v2_WildcardFilter
+#define com_daml_ledger_api_v2_CumulativeFilter_identifier_filter_interface_filter_MSGTYPE com_daml_ledger_api_v2_InterfaceFilter
+#define com_daml_ledger_api_v2_CumulativeFilter_identifier_filter_template_filter_MSGTYPE com_daml_ledger_api_v2_TemplateFilter
 
 #define com_daml_ledger_api_v2_WildcardFilter_FIELDLIST(X, a) \
-    X(a, STATIC, SINGULAR, BOOL, include_created_event_blob, 1)
+X(a, STATIC,   SINGULAR, BOOL,     include_created_event_blob,   1)
 #define com_daml_ledger_api_v2_WildcardFilter_CALLBACK NULL
-#define com_daml_ledger_api_v2_WildcardFilter_DEFAULT  NULL
+#define com_daml_ledger_api_v2_WildcardFilter_DEFAULT NULL
 
 #define com_daml_ledger_api_v2_InterfaceFilter_FIELDLIST(X, a) \
-    X(a, STATIC, OPTIONAL, MESSAGE, interface_id, 1)           \
-    X(a, STATIC, SINGULAR, BOOL, include_interface_view, 2)    \
-    X(a, STATIC, SINGULAR, BOOL, include_created_event_blob, 3)
+X(a, STATIC,   OPTIONAL, MESSAGE,  interface_id,      1) \
+X(a, STATIC,   SINGULAR, BOOL,     include_interface_view,   2) \
+X(a, STATIC,   SINGULAR, BOOL,     include_created_event_blob,   3)
 #define com_daml_ledger_api_v2_InterfaceFilter_CALLBACK NULL
-#define com_daml_ledger_api_v2_InterfaceFilter_DEFAULT  NULL
-#define com_daml_ledger_api_v2_InterfaceFilter_interface_id_MSGTYPE \
-    com_daml_ledger_api_v2_Identifier
+#define com_daml_ledger_api_v2_InterfaceFilter_DEFAULT NULL
+#define com_daml_ledger_api_v2_InterfaceFilter_interface_id_MSGTYPE com_daml_ledger_api_v2_Identifier
 
 #define com_daml_ledger_api_v2_TemplateFilter_FIELDLIST(X, a) \
-    X(a, STATIC, OPTIONAL, MESSAGE, template_id, 1)           \
-    X(a, STATIC, SINGULAR, BOOL, include_created_event_blob, 2)
-#define com_daml_ledger_api_v2_TemplateFilter_CALLBACK            NULL
-#define com_daml_ledger_api_v2_TemplateFilter_DEFAULT             NULL
+X(a, STATIC,   OPTIONAL, MESSAGE,  template_id,       1) \
+X(a, STATIC,   SINGULAR, BOOL,     include_created_event_blob,   2)
+#define com_daml_ledger_api_v2_TemplateFilter_CALLBACK NULL
+#define com_daml_ledger_api_v2_TemplateFilter_DEFAULT NULL
 #define com_daml_ledger_api_v2_TemplateFilter_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
 
 #define com_daml_ledger_api_v2_TransactionFilter_FIELDLIST(X, a) \
-    X(a, CALLBACK, REPEATED, MESSAGE, filters_by_party, 1)       \
-    X(a, STATIC, OPTIONAL, MESSAGE, filters_for_any_party, 2)
+X(a, CALLBACK, REPEATED, MESSAGE,  filters_by_party,   1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  filters_for_any_party,   2)
 #define com_daml_ledger_api_v2_TransactionFilter_CALLBACK pb_default_field_callback
-#define com_daml_ledger_api_v2_TransactionFilter_DEFAULT  NULL
-#define com_daml_ledger_api_v2_TransactionFilter_filters_by_party_MSGTYPE \
-    com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry
-#define com_daml_ledger_api_v2_TransactionFilter_filters_for_any_party_MSGTYPE \
-    com_daml_ledger_api_v2_Filters
+#define com_daml_ledger_api_v2_TransactionFilter_DEFAULT NULL
+#define com_daml_ledger_api_v2_TransactionFilter_filters_by_party_MSGTYPE com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry
+#define com_daml_ledger_api_v2_TransactionFilter_filters_for_any_party_MSGTYPE com_daml_ledger_api_v2_Filters
 
 #define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_FIELDLIST(X, a) \
-    X(a, STATIC, SINGULAR, STRING, key, 1)                                           \
-    X(a, STATIC, OPTIONAL, MESSAGE, value, 2)
+X(a, STATIC,   SINGULAR, STRING,   key,               1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
 #define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_CALLBACK NULL
-#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_DEFAULT  NULL
-#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_value_MSGTYPE \
-    com_daml_ledger_api_v2_Filters
+#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_DEFAULT NULL
+#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_value_MSGTYPE com_daml_ledger_api_v2_Filters
 
-#define com_daml_ledger_api_v2_EventFormat_FIELDLIST(X, a)    \
-    X(a, CALLBACK, REPEATED, MESSAGE, filters_by_party, 1)    \
-    X(a, STATIC, OPTIONAL, MESSAGE, filters_for_any_party, 2) \
-    X(a, STATIC, SINGULAR, BOOL, verbose, 3)
+#define com_daml_ledger_api_v2_EventFormat_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, MESSAGE,  filters_by_party,   1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  filters_for_any_party,   2) \
+X(a, STATIC,   SINGULAR, BOOL,     verbose,           3)
 #define com_daml_ledger_api_v2_EventFormat_CALLBACK pb_default_field_callback
-#define com_daml_ledger_api_v2_EventFormat_DEFAULT  NULL
-#define com_daml_ledger_api_v2_EventFormat_filters_by_party_MSGTYPE \
-    com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry
-#define com_daml_ledger_api_v2_EventFormat_filters_for_any_party_MSGTYPE \
-    com_daml_ledger_api_v2_Filters
+#define com_daml_ledger_api_v2_EventFormat_DEFAULT NULL
+#define com_daml_ledger_api_v2_EventFormat_filters_by_party_MSGTYPE com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry
+#define com_daml_ledger_api_v2_EventFormat_filters_for_any_party_MSGTYPE com_daml_ledger_api_v2_Filters
 
 #define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_FIELDLIST(X, a) \
-    X(a, STATIC, SINGULAR, STRING, key, 1)                                     \
-    X(a, STATIC, OPTIONAL, MESSAGE, value, 2)
+X(a, STATIC,   SINGULAR, STRING,   key,               1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
 #define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_CALLBACK NULL
-#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_DEFAULT  NULL
-#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_value_MSGTYPE \
-    com_daml_ledger_api_v2_Filters
+#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_DEFAULT NULL
+#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_value_MSGTYPE com_daml_ledger_api_v2_Filters
 
 #define com_daml_ledger_api_v2_TransactionFormat_FIELDLIST(X, a) \
-    X(a, STATIC, OPTIONAL, MESSAGE, event_format, 1)             \
-    X(a, STATIC, SINGULAR, UENUM, transaction_shape, 2)
+X(a, STATIC,   OPTIONAL, MESSAGE,  event_format,      1) \
+X(a, STATIC,   SINGULAR, UENUM,    transaction_shape,   2)
 #define com_daml_ledger_api_v2_TransactionFormat_CALLBACK NULL
-#define com_daml_ledger_api_v2_TransactionFormat_DEFAULT  NULL
-#define com_daml_ledger_api_v2_TransactionFormat_event_format_MSGTYPE \
-    com_daml_ledger_api_v2_EventFormat
+#define com_daml_ledger_api_v2_TransactionFormat_DEFAULT NULL
+#define com_daml_ledger_api_v2_TransactionFormat_event_format_MSGTYPE com_daml_ledger_api_v2_EventFormat
 
 #define com_daml_ledger_api_v2_TopologyFormat_FIELDLIST(X, a) \
-    X(a, STATIC, OPTIONAL, MESSAGE, include_participant_authorization_events, 1)
+X(a, STATIC,   OPTIONAL, MESSAGE,  include_participant_authorization_events,   1)
 #define com_daml_ledger_api_v2_TopologyFormat_CALLBACK NULL
-#define com_daml_ledger_api_v2_TopologyFormat_DEFAULT  NULL
-#define com_daml_ledger_api_v2_TopologyFormat_include_participant_authorization_events_MSGTYPE \
-    com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat
+#define com_daml_ledger_api_v2_TopologyFormat_DEFAULT NULL
+#define com_daml_ledger_api_v2_TopologyFormat_include_participant_authorization_events_MSGTYPE com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat
 
 #define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_FIELDLIST(X, a) \
-    X(a, CALLBACK, REPEATED, STRING, parties, 1)
-#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_CALLBACK \
-    pb_default_field_callback
+X(a, CALLBACK, REPEATED, STRING,   parties,           1)
+#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_DEFAULT NULL
 
-#define com_daml_ledger_api_v2_UpdateFormat_FIELDLIST(X, a)   \
-    X(a, STATIC, OPTIONAL, MESSAGE, include_transactions, 1)  \
-    X(a, STATIC, OPTIONAL, MESSAGE, include_reassignments, 2) \
-    X(a, STATIC, OPTIONAL, MESSAGE, include_topology_events, 3)
+#define com_daml_ledger_api_v2_UpdateFormat_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  include_transactions,   1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  include_reassignments,   2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  include_topology_events,   3)
 #define com_daml_ledger_api_v2_UpdateFormat_CALLBACK NULL
-#define com_daml_ledger_api_v2_UpdateFormat_DEFAULT  NULL
-#define com_daml_ledger_api_v2_UpdateFormat_include_transactions_MSGTYPE \
-    com_daml_ledger_api_v2_TransactionFormat
-#define com_daml_ledger_api_v2_UpdateFormat_include_reassignments_MSGTYPE \
-    com_daml_ledger_api_v2_EventFormat
-#define com_daml_ledger_api_v2_UpdateFormat_include_topology_events_MSGTYPE \
-    com_daml_ledger_api_v2_TopologyFormat
+#define com_daml_ledger_api_v2_UpdateFormat_DEFAULT NULL
+#define com_daml_ledger_api_v2_UpdateFormat_include_transactions_MSGTYPE com_daml_ledger_api_v2_TransactionFormat
+#define com_daml_ledger_api_v2_UpdateFormat_include_reassignments_MSGTYPE com_daml_ledger_api_v2_EventFormat
+#define com_daml_ledger_api_v2_UpdateFormat_include_topology_events_MSGTYPE com_daml_ledger_api_v2_TopologyFormat
 
 extern const pb_msgdesc_t com_daml_ledger_api_v2_Filters_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_CumulativeFilter_msg;
@@ -471,41 +378,34 @@ extern const pb_msgdesc_t com_daml_ledger_api_v2_ParticipantAuthorizationTopolog
 extern const pb_msgdesc_t com_daml_ledger_api_v2_UpdateFormat_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define com_daml_ledger_api_v2_Filters_fields          &com_daml_ledger_api_v2_Filters_msg
+#define com_daml_ledger_api_v2_Filters_fields &com_daml_ledger_api_v2_Filters_msg
 #define com_daml_ledger_api_v2_CumulativeFilter_fields &com_daml_ledger_api_v2_CumulativeFilter_msg
-#define com_daml_ledger_api_v2_WildcardFilter_fields   &com_daml_ledger_api_v2_WildcardFilter_msg
-#define com_daml_ledger_api_v2_InterfaceFilter_fields  &com_daml_ledger_api_v2_InterfaceFilter_msg
-#define com_daml_ledger_api_v2_TemplateFilter_fields   &com_daml_ledger_api_v2_TemplateFilter_msg
-#define com_daml_ledger_api_v2_TransactionFilter_fields \
-    &com_daml_ledger_api_v2_TransactionFilter_msg
-#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_fields \
-    &com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_msg
+#define com_daml_ledger_api_v2_WildcardFilter_fields &com_daml_ledger_api_v2_WildcardFilter_msg
+#define com_daml_ledger_api_v2_InterfaceFilter_fields &com_daml_ledger_api_v2_InterfaceFilter_msg
+#define com_daml_ledger_api_v2_TemplateFilter_fields &com_daml_ledger_api_v2_TemplateFilter_msg
+#define com_daml_ledger_api_v2_TransactionFilter_fields &com_daml_ledger_api_v2_TransactionFilter_msg
+#define com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_fields &com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_msg
 #define com_daml_ledger_api_v2_EventFormat_fields &com_daml_ledger_api_v2_EventFormat_msg
-#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_fields \
-    &com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_msg
-#define com_daml_ledger_api_v2_TransactionFormat_fields \
-    &com_daml_ledger_api_v2_TransactionFormat_msg
+#define com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_fields &com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_msg
+#define com_daml_ledger_api_v2_TransactionFormat_fields &com_daml_ledger_api_v2_TransactionFormat_msg
 #define com_daml_ledger_api_v2_TopologyFormat_fields &com_daml_ledger_api_v2_TopologyFormat_msg
-#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_fields \
-    &com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_msg
+#define com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_fields &com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_msg
 #define com_daml_ledger_api_v2_UpdateFormat_fields &com_daml_ledger_api_v2_UpdateFormat_msg
 
 /* Maximum encoded size of messages (where known) */
 /* com_daml_ledger_api_v2_Filters_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_TransactionFilter_size depends on runtime parameters */
-/* com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_size depends on runtime parameters
- */
+/* com_daml_ledger_api_v2_TransactionFilter_FiltersByPartyEntry_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_EventFormat_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_EventFormat_FiltersByPartyEntry_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_TransactionFormat_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_TopologyFormat_size depends on runtime parameters */
-/* com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_size depends on runtime parameters
- */
+/* com_daml_ledger_api_v2_ParticipantAuthorizationTopologyFormat_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_UpdateFormat_size depends on runtime parameters */
 #define com_daml_ledger_api_v2_CumulativeFilter_size 3088
-#define com_daml_ledger_api_v2_InterfaceFilter_size  3085
-#define com_daml_ledger_api_v2_TemplateFilter_size   3083
-#define com_daml_ledger_api_v2_WildcardFilter_size   2
+#define com_daml_ledger_api_v2_InterfaceFilter_size 3085
+#define com_daml_ledger_api_v2_TemplateFilter_size 3083
+#define com_daml_ledger_api_v2_WildcardFilter_size 2
 
 #ifdef __cplusplus
 } /* extern "C" */

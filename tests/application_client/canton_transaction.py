@@ -73,47 +73,57 @@ class Transaction:
         return base64.b64decode(data["prepared_transaction_hash"])
 
     @classmethod
-    def serialize_from_json_into_tx_parts(self, json_file: str) -> (bytes, list[bytes], bytes, list[bytes], bytes):
-        with open(json_file, "r") as file:
+    def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes], bytes]:
+        with open(json_file, "r", encoding="utf-8") as file:
             json_tx = json.load(file)
 
-        daml_tx = json_tx["prepared_transaction"]["transaction"]
-        nodes = daml_tx.pop("nodes", [])
-        nodes_pb = []
+        daml_tx_data, nodes_pb = cls._process_daml_transaction(json_tx["prepared_transaction"]["transaction"])
+        metadata_data, input_contracts_pb = cls._process_metadata(json_tx["prepared_transaction"]["metadata"])
+        prep_sub_resp_data = cls._process_prep_submission_response(json_tx)
 
+        return (daml_tx_data, nodes_pb, metadata_data, input_contracts_pb, prep_sub_resp_data)
+
+    @classmethod
+    def _process_daml_transaction(cls, daml_tx: dict) -> tuple[bytes, list[bytes]]:
+        """Process DAML transaction and its nodes."""
+        nodes = daml_tx.pop("nodes", [])
         daml_tx["nodes_count"] = len(nodes)
+
         daml_tx_pb = DamlTransaction()
         Parse(json.dumps(daml_tx), daml_tx_pb)
 
+        nodes_pb = []
         for node in nodes:
             node_pb = DamlTransaction.Node()
             Parse(json.dumps(node), node_pb)
             nodes_pb.append(node_pb.SerializeToString())
 
+        return daml_tx_pb.SerializeToString(), nodes_pb
 
-        metadata = json_tx["prepared_transaction"]["metadata"]
+    @classmethod
+    def _process_metadata(cls, metadata: dict) -> tuple[bytes, list[bytes]]:
+        """Process metadata and input contracts."""
         input_contracts = metadata.pop("inputContracts", [])
-        input_contracts_pb = []
-
         metadata["input_contracts_count"] = len(input_contracts)
+
         metadata_pb = Metadata()
         Parse(json.dumps(metadata), metadata_pb)
 
+        input_contracts_pb = []
         for contract in input_contracts:
             contract_pb = Metadata.InputContract()
             Parse(json.dumps(contract), contract_pb)
             input_contracts_pb.append(contract_pb.SerializeToString())
 
+        return metadata_pb.SerializeToString(), input_contracts_pb
 
-        prep_sub_resp = json_tx
+    @classmethod
+    def _process_prep_submission_response(cls, json_tx: dict) -> bytes:
+        """Process preparation submission response."""
+        prep_sub_resp = json_tx.copy()
         del prep_sub_resp["prepared_transaction"]
+
         prep_sub_resp_pb = PrepareSubmissionResponse()
         Parse(json.dumps(prep_sub_resp), prep_sub_resp_pb)
 
-        return (
-            daml_tx_pb.SerializeToString(),
-            nodes_pb,
-            metadata_pb.SerializeToString(),
-            input_contracts_pb,
-            prep_sub_resp_pb.SerializeToString()
-        )
+        return prep_sub_resp_pb.SerializeToString()
