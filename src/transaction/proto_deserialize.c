@@ -105,3 +105,27 @@ parser_status_e proto_deserialize_prepared_submission_details(buffer_t *buf,
 
     return PARSING_OK;
 }
+
+void release_daml_tx(transaction_ctx_t *tx_ctx) {
+    pb_release(com_daml_ledger_api_v2_interactive_DamlTransaction_fields,
+               &tx_ctx->tx_parts_ctx.daml_transaction);
+}
+
+void release_node(transaction_ctx_t *tx_ctx) {
+    pb_release(com_daml_ledger_api_v2_interactive_DamlTransaction_Node_fields,
+               &tx_ctx->tx_parts_ctx.node);
+}
+
+void release_metadata(transaction_ctx_t *tx_ctx) {
+    pb_release(com_daml_ledger_api_v2_interactive_Metadata_fields, &tx_ctx->tx_parts_ctx.metadata);
+}
+
+void release_input_contract(transaction_ctx_t *tx_ctx) {
+    pb_release(com_daml_ledger_api_v2_interactive_Metadata_InputContract_fields,
+               &tx_ctx->tx_parts_ctx.input_contract);
+}
+
+void release_prepared_submission_details(transaction_ctx_t *tx_ctx) {
+    pb_release(com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_fields,
+               &tx_ctx->tx_parts_ctx.prepared_submission_details);
+}

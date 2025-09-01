@@ -41,7 +41,7 @@ int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res = hash_transaction(&G_context.tx_info.hash_buf,
+            int res = hash_transaction(&G_context.tx_info.hasher,
                                        &G_context.tx_info.tx_parts_ctx.daml_transaction);
 
             if (res != 0) {
@@ -62,9 +62,11 @@ int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res = hash_node(&G_context.tx_info.hash_buf,
+            int res = hash_node(&G_context.tx_info.hasher,
                                 &G_context.tx_info.tx_parts_ctx.daml_transaction,
                                 &G_context.tx_info.tx_parts_ctx.node);
+
+            release_node(&G_context.tx_info);
 
             if (res != 0) {
                 PRINTF("Failed to hash DAML Node part: %d\n", res);
@@ -79,8 +81,9 @@ int process_prepared_tx_part(buffer_t *buf) {
             }
         } break;
         case RECEIVING_METADATA: {
-            int res = finalize_hash_transaction(&G_context.tx_info.hash_buf,
+            int res = finalize_hash_transaction(&G_context.tx_info.hasher,
                                                 G_context.tx_info.partial_tx_hash);
+            release_daml_tx(&G_context.tx_info);
 
             if (res != 0) {
                 PRINTF("Failed to finalize DAML transaction hash: %d\n", res);
@@ -94,8 +97,10 @@ int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            res = hash_metadata(&G_context.tx_info.hash_buf,
-                                &G_context.tx_info.tx_parts_ctx.metadata);
+            res =
+                hash_metadata(&G_context.tx_info.hasher, &G_context.tx_info.tx_parts_ctx.metadata);
+
+            release_metadata(&G_context.tx_info);
 
             if (res != 0) {
                 PRINTF("Failed to hash Metadata part: %d\n", res);
@@ -116,8 +121,10 @@ int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res = hash_input_contract(&G_context.tx_info.hash_buf,
+            int res = hash_input_contract(&G_context.tx_info.hasher,
                                           &G_context.tx_info.tx_parts_ctx.input_contract);
+
+            release_input_contract(&G_context.tx_info);
 
             if (res != 0) {
                 PRINTF("Failed to hash Input Contract part: %d\n", res);
@@ -132,7 +139,7 @@ int process_prepared_tx_part(buffer_t *buf) {
             }
         } break;
         case RECEIVING_PREPARED_SUBMISSION_DETAILS: {
-            int res = finalize_hash_metadata(&G_context.tx_info.hash_buf,
+            int res = finalize_hash_metadata(&G_context.tx_info.hasher,
                                              G_context.tx_info.partial_md_hash);
 
             if (res != 0) {
@@ -142,6 +149,10 @@ int process_prepared_tx_part(buffer_t *buf) {
 
             parser_status_e status =
                 proto_deserialize_prepared_submission_details(buf, &G_context.tx_info);
+
+            // It's safe to release prepared submission details even if we use it later,
+            // because it's only deallocates dynamicly allocated fields.
+            release_prepared_submission_details(&G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Prepared Submission Details part: %d\n", status);
