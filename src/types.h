@@ -58,9 +58,9 @@ typedef struct {
     size_t raw_tx_len;                    /// length of raw transaction
 
     transaction_parts_ctx_t tx_parts_ctx;  /// transaction parts context
-    ByteWriter hash_buf;          // Dynamically allocated buffer for incremental hash calculation
-    uint8_t partial_tx_hash[32];  // Incomplete tx hash
-    uint8_t partial_md_hash[32];  // Incomplete md hash
+    HashWriter hasher;                     // Dynamically allocated hasher
+    uint8_t partial_tx_hash[32];           // Incomplete tx hash
+    uint8_t partial_md_hash[32];           // Incomplete md hash
     int32_t
         recv_node_idx;  // Index of the current entity being processed ('Node' or 'InputContract')
 
