@@ -11,6 +11,7 @@ from application_client.canton_response_unpacker import unpack_get_public_key_re
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
+
 # In this test we check that the GET_PUBLIC_KEY works in non-confirmation mode
 def test_get_public_key_no_confirm(backend: BackendInterface) -> None:
     path_list = [
@@ -34,13 +35,12 @@ def test_get_public_key_confirm_accepted(backend: BackendInterface, navigator: N
     client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
 
-    if 'nano' in device.name:
+    if "nano" in device.name:
         nav_ins = NavInsID.RIGHT_CLICK
         confirm_ins = [NavInsID.BOTH_CLICK]
     else:
         nav_ins = NavInsID.SWIPE_CENTER_TO_LEFT
         confirm_ins = [NavInsID.USE_CASE_CHOICE_CONFIRM]
-
 
     with client.get_public_key_with_confirmation(path=path):
         navigator.navigate_until_text_and_compare(
@@ -48,7 +48,7 @@ def test_get_public_key_confirm_accepted(backend: BackendInterface, navigator: N
             validation_instructions=confirm_ins,
             text="Approve",
             path=ROOT_SCREENSHOT_PATH,
-            test_case_name="test_get_public_key_confirm_accepted"
+            test_case_name="test_get_public_key_confirm_accepted",
         )
 
     response = client.get_async_response().data
@@ -68,12 +68,15 @@ def test_get_public_key_confirm_refused(backend: BackendInterface, navigator: Na
     client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
 
-    if 'nano' in device.name:
+    if "nano" in device.name:
         nav_ins = NavInsID.RIGHT_CLICK
         confirm_ins = [NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK]
     else:
         nav_ins = NavInsID.SWIPE_CENTER_TO_LEFT
-        confirm_ins = [NavInsID.USE_CASE_CHOICE_REJECT, NavInsID.USE_CASE_CHOICE_CONFIRM]
+        confirm_ins = [
+            NavInsID.USE_CASE_CHOICE_REJECT,
+            NavInsID.USE_CASE_CHOICE_CONFIRM,
+        ]
 
     with pytest.raises(ExceptionRAPDU) as e:
         with client.get_public_key_with_confirmation(path=path):
@@ -82,7 +85,7 @@ def test_get_public_key_confirm_refused(backend: BackendInterface, navigator: Na
                 validation_instructions=confirm_ins,
                 text="Approve",
                 path=ROOT_SCREENSHOT_PATH,
-                test_case_name="test_get_public_key_confirm_refused"
+                test_case_name="test_get_public_key_confirm_refused",
             )
 
     # Assert that we have received a refusal

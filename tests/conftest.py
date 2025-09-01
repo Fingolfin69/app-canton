@@ -1,4 +1,3 @@
-
 ###########################
 ### CONFIGURATION START ###
 ###########################
@@ -16,4 +15,4 @@ sys.path.append(f"{Path(__file__).parent.parent.resolve()}/proto")
 #########################
 
 # Pull all features from the base ragger conftest using the overridden configuration
-pytest_plugins = ("ragger.conftest.base_conftest", )
+pytest_plugins = ("ragger.conftest.base_conftest",)

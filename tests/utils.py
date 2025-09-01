@@ -3,11 +3,13 @@ from typing import List
 import re
 from nacl.signing import VerifyKey
 
+
 def verify_signature(from_public_key: bytes, message: bytes, signature: bytes):
     print("Sig len :", len(signature))
     assert len(signature) == 64, "signature size incorrect"
     verify_key = VerifyKey(from_public_key)
     verify_key.verify(message, signature)
+
 
 def verify_name(name: str) -> None:
     """Verify the app name, based on defines in Makefile
@@ -51,7 +53,7 @@ def verify_version(version: str) -> None:
 
 
 def _read_makefile() -> List[str]:
-    """Read lines from the parent Makefile """
+    """Read lines from the parent Makefile"""
 
     parent = Path(__file__).parent.parent.resolve()
     makefile = f"{parent}/Makefile"

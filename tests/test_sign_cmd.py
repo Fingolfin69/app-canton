@@ -90,3 +90,43 @@ def test_sign_tx_ping(
     response = client.get_async_response().data
     _, der_sig, _ = unpack_sign_tx_response(response)
     verify_signature(public_key, tx_hash, der_sig)
+
+
+def test_sign_topology_tx(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
+    # Use the app interface instead of raw interface
+    client = CantonCommandSender(backend)
+    path = "m/44'/6767'/0'/0'/0'"
+
+    namespace_delegation_tx = (
+        "0a7e080110011a780a760a443132323062366665623630366665373264653936303634613333323232613962356335386361"
+        "363135323662356161623761613231366537646236636437363336343037122c10031a20ff2d9c046d1fdf68e65ecd36278"
+        "eb8ead12aa38ef5b323769baa5df9216f85d820012a02010430011801101e"
+    )
+
+    party_to_key_tx = (
+        "0a8401080110021a7e82017b0a49626f623a3a31323230623666656236303666653732646539363036346133333232326139"
+        "623563353863613631353236623561616237616132313665376462366364373633363430371801222c10031a20ff2d9c046d"
+        "1fdf68e65ecd36278eb8ead12aa38ef5b323769baa5df9216f85d820012a0201043001101e"
+    )
+
+    party_to_participant_tx = (
+        "0aae01080110011aa7014aa4010a49626f623a3a313232306236666562363036666537326465393630363461333332323261"
+        "396235633538636136313532366235616162376161323136653764623663643736333634303710011a550a51706172746963"
+        "6970616e743a3a31323230313235366361636138616135343236343436643262633461313632393163343862373537326238"
+        "616262306431623365656136336364323939363732316362321002101e"
+    )
+
+    txs = [namespace_delegation_tx, party_to_key_tx, party_to_participant_tx]
+
+    rapdu = client.get_public_key(path=path)
+    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
+
+    hashes = [Transaction.compute_topology_transaction_hash(bytes.fromhex(tx)) for tx in txs]
+    multi_hash = Transaction.compute_multi_transaction_hash(hashes)
+
+    with client.sign_topology_tx(path=path, transactions=[bytes.fromhex(tx) for tx in txs]):
+        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_topology_tx")
+
+    response = client.get_async_response().data
+    _, der_sig, _ = unpack_sign_tx_response(response)
+    verify_signature(public_key, multi_hash, der_sig)

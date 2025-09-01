@@ -92,7 +92,7 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
     add_hash(h);
 
     if(G_context.state == STATE_PARSED) {
-        // Allocate storage for a concantenated string of all hashes + their lengths
+        // Allocate storage for a concatenated string of all hashes + their lengths
         size_t len = hash_count * HASH_LEN + hash_count * 4 + 4; // Each hash prefixed by its length (4 bytes) + 4 bytes for count
         uint8_t* concat = app_mem_alloc(len);
         ByteWriter bw;
@@ -101,7 +101,7 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
         // Sort hashes
         qsort(tx_hashes, hash_count, HASH_LEN, compare_hashes_hex);
         for (size_t i = 0; i < hash_count; i++) {
-            // Concantenate each hash, prefixed them with their length (always 34)
+            // Concatenate each hash, prefixed them with their length (always 34)
             bw_put_u32_be(&bw, HASH_LEN);
             bw_put(&bw, tx_hashes[i], HASH_LEN);
         }
