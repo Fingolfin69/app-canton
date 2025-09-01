@@ -2,17 +2,13 @@
 #define HASH_H
 
 #include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
+#include "bytewriter.h"
 
 typedef com_daml_ledger_api_v2_interactive_DamlTransaction DamlTransaction;
 typedef com_daml_ledger_api_v2_interactive_DamlTransaction_Node Node;
 typedef com_daml_ledger_api_v2_interactive_Metadata Metadata;
 typedef com_daml_ledger_api_v2_interactive_Metadata_InputContract InputContract;
 typedef com_daml_ledger_api_v2_interactive_PreparedTransaction PreparedTransaction;
-
-typedef struct {
-    uint8_t *base, *ptr, *end;
-    bool overflow;
-} ByteWriter;
 
 int hash_transaction(ByteWriter *bw, const DamlTransaction *tx);
 int hash_node(ByteWriter *bw, const DamlTransaction *tx, const Node *node);
