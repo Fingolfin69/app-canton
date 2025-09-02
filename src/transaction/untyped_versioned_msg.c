@@ -21,7 +21,7 @@
 #include <string.h>   // memmove
 #include <stdlib.h>   // qsort
 
-#include "mem.h" 
+#include "mem.h"
 #include "os.h"
 #include "cx.h"
 #include "ledger_assert.h"
@@ -34,10 +34,10 @@
 #include "sw.h"
 #include "bytewriter.h"
 
-#define HASH_LEN 34
-#define HEX_LEN (HASH_LEN * 2 + 1)
-#define MAX_HASHES 3  // Adjust as needed
-#define PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE ((uint8_t) 11)
+#define HASH_LEN                                     34
+#define HEX_LEN                                      (HASH_LEN * 2 + 1)
+#define MAX_HASHES                                   3  // Adjust as needed
+#define PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE       ((uint8_t) 11)
 #define PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE ((uint8_t) 55)
 
 static uint8_t (*tx_hashes)[HASH_LEN] = NULL;
@@ -68,19 +68,19 @@ static void add_hash(const uint8_t hash[HASH_LEN]) {
 }
 
 static int compare_hashes_hex(const void *a, const void *b) {
-    const uint8_t *hash_a = (const uint8_t *)a;
-    const uint8_t *hash_b = (const uint8_t *)b;
+    const uint8_t *hash_a = (const uint8_t *) a;
+    const uint8_t *hash_b = (const uint8_t *) b;
 
     char hex_a[HEX_LEN];
     char hex_b[HEX_LEN];
 
 #pragma GCC diagnostic ignored "-Wformat"
     snprintf(hex_a, sizeof(hex_a), "%.*h", HASH_LEN, hash_a);
-    snprintf(hex_b, sizeof(hex_b), "%.*h", HASH_LEN, hash_b);   
+    snprintf(hex_b, sizeof(hex_b), "%.*h", HASH_LEN, hash_b);
     return strcmp(hex_a, hex_b);
 }
 
-void process_untyped_versioned_msg_tx_init(void){
+void process_untyped_versioned_msg_tx_init(void) {
     init_hash_storage();
 }
 
@@ -91,13 +91,14 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
     canton_hash(PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE, buf->ptr, buf->size, h);
     add_hash(h);
 
-    if(G_context.state == STATE_PARSED) {
+    if (G_context.state == STATE_PARSED) {
         // Allocate storage for a concatenated string of all hashes + their lengths
-        size_t len = hash_count * HASH_LEN + hash_count * 4 + 4; // Each hash prefixed by its length (4 bytes) + 4 bytes for count
-        uint8_t* concat = app_mem_alloc(len);
+        size_t len = hash_count * HASH_LEN + hash_count * 4 +
+                     4;  // Each hash prefixed by its length (4 bytes) + 4 bytes for count
+        uint8_t *concat = app_mem_alloc(len);
         ByteWriter bw;
-        bw_init(&bw, concat,len);
-        bw_put_u32_be(&bw, hash_count); // Prefix with number of hashes
+        bw_init(&bw, concat, len);
+        bw_put_u32_be(&bw, hash_count);  // Prefix with number of hashes
         // Sort hashes
         qsort(tx_hashes, hash_count, HASH_LEN, compare_hashes_hex);
         for (size_t i = 0; i < hash_count; i++) {
@@ -106,7 +107,11 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
             bw_put(&bw, tx_hashes[i], HASH_LEN);
         }
         // Compute final hash
-        canton_hash(PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE, concat, len, G_context.tx_info.m_hash);
+        canton_hash(PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE,
+                    concat,
+                    len,
+                    G_context.tx_info.m_hash);
+        G_context.tx_info.m_hash_len = HASH_LEN;
         PRINTF("Final untyped versioned message hash: %.*H\n", HASH_LEN, G_context.tx_info.m_hash);
         app_mem_free(concat);
         cleanup_hash_storage();
