@@ -157,16 +157,14 @@ static int process_sign_transaction_hash(buffer_t *buffer, uint8_t out[32]) {
         return SW_BAD_STATE;
     }
 
-    if (buffer->size != 32) {
-        PRINTF("Invalid hash length: expected 32, got %d\n", buffer->size);
+    // Hash length should either be 32 bytes (SHA-256) or 34 bytes (2 prefix bytes + SHA-256)
+    if (buffer->size != 32 && buffer->size != 34) {
+        PRINTF("Invalid hash length: expected 32 or 34, got %d\n", buffer->size);
         return SW_WRONG_DATA_LENGTH;
     }
 
-    memcpy(out, buffer->ptr, 32);
+    memcpy(out, buffer->ptr, buffer->size);
+    G_context.tx_info.m_hash_len = (uint8_t) buffer->size;
 
     return 0;
 }
-
-// static int process_sign_untyped_versioned_message(buffer_t *buf, uint8_t out[32], bool last) {
-
-// }

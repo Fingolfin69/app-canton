@@ -43,7 +43,7 @@ static int crypto_sign_message(void) {
                                                                 G_context.bip32_path_len,
                                                                 CX_SHA512,
                                                                 G_context.tx_info.m_hash,
-                                                                sizeof(G_context.tx_info.m_hash),
+                                                                G_context.tx_info.m_hash_len,
                                                                 G_context.tx_info.signature,
                                                                 &sig_len,
                                                                 NULL,

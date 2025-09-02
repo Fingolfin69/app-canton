@@ -17,7 +17,7 @@ from utils import verify_signature
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
-def test_sign_tx_hash(
+def test_sign_tx_hash_32(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
     # Use the app interface instead of raw interface
@@ -32,12 +32,33 @@ def test_sign_tx_hash(
     )
 
     with client.sign_tx(path=path, transaction=tx_hash, p1=P1SignType.P1_SIGN_HASH):
-        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_tx_hash")
+        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_tx_hash_32")
 
     response = client.get_async_response().data
     _, der_sig, _ = unpack_sign_tx_response(response)
     verify_signature(public_key, tx_hash, der_sig)
 
+
+def test_sign_tx_hash_34(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
+    # Use the app interface instead of raw interface
+    client = CantonCommandSender(backend)
+    path = "m/44'/6767'/0'/0'/0'"
+
+    rapdu = client.get_public_key(path=path)
+    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
+
+    tx_hash = b"\x00\x01" + Transaction.get_hash_from_json(
+        "tests/tx_examples/external_sign_ping.json"
+    )
+
+    with client.sign_tx(path=path, transaction=tx_hash, p1=P1SignType.P1_SIGN_HASH):
+        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_tx_hash_34")
+
+    response = client.get_async_response().data
+    _, der_sig, _ = unpack_sign_tx_response(response)
+    verify_signature(public_key, tx_hash, der_sig)
 
 # In this test se send to the device a transaction to sign and validate it on screen
 # This test is mostly the same as the previous one but with different values.

@@ -153,6 +153,7 @@ int process_prepared_tx_part(buffer_t *buf) {
                 res = finalize_hash(G_context.tx_info.partial_tx_hash,
                                     G_context.tx_info.partial_md_hash,
                                     G_context.tx_info.m_hash);
+                G_context.tx_info.m_hash_len = 32;
                 if (res != 0) {
                     PRINTF("Failed to compute transaction hash: %d\n", res);
                     return SW_TX_HASH_FAIL;
@@ -161,9 +162,9 @@ int process_prepared_tx_part(buffer_t *buf) {
                 if (memcmp(G_context.tx_info.m_hash,
                            G_context.tx_info.tx_parts_ctx.prepared_submission_details
                                .prepared_transaction_hash.bytes,
-                           sizeof(G_context.tx_info.m_hash)) != 0) {
+                           G_context.tx_info.m_hash_len) != 0) {
                     PRINTF("Transaction hash mismatch: computed %.*H, expected %.*H\n",
-                           32,
+                           G_context.tx_info.m_hash_len,
                            G_context.tx_info.m_hash,
                            32,
                            G_context.tx_info.tx_parts_ctx.prepared_submission_details
