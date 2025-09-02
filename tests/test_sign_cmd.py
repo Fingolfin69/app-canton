@@ -66,6 +66,8 @@ def test_sign_tx_hash_34(
 def test_sign_tx_ping(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
+    tx_json = "tests/tx_examples/external_sign_ping.json"
+
     # Use the app interface instead of raw interface
     client = CantonCommandSender(backend)
     path: str = "m/44'/6767'/0'/0'/0'"
@@ -73,13 +75,36 @@ def test_sign_tx_ping(
     rapdu = client.get_public_key(path=path)
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
-    (ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) = Transaction.serialize_from_json_into_tx_parts(
-        "tests/tx_examples/external_sign_ping.json"
-    )
+    (ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) = Transaction.serialize_from_json_into_tx_parts(tx_json)
 
-    tx_hash = Transaction.get_hash_from_json(
-        "tests/tx_examples/external_sign_ping.json"
-    )
+    tx_hash = Transaction.get_hash_from_json(tx_json)
+    print(f"Transaction hash: {tx_hash.hex()}")
+    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts) + len(ser_misc)
+    print(f"Serialized transaction length: {total_len} bytes")
+
+    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) as response:
+        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)
+
+    response = client.get_async_response().data
+    _, der_sig, _ = unpack_sign_tx_response(response)
+    verify_signature(public_key, tx_hash, der_sig)
+
+
+def test_sign_tx_token_transfer(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
+    tx_json = "tests/tx_examples/token_transfer.json"
+
+    # Use the app interface instead of raw interface
+    client = CantonCommandSender(backend)
+    path: str = "m/44'/6767'/0'/0'/0'"
+
+    rapdu = client.get_public_key(path=path)
+    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
+
+    (ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) = Transaction.serialize_from_json_into_tx_parts(tx_json)
+
+    tx_hash = Transaction.get_hash_from_json(tx_json)
     print(f"Transaction hash: {tx_hash.hex()}")
     total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts) + len(ser_misc)
     print(f"Serialized transaction length: {total_len} bytes")

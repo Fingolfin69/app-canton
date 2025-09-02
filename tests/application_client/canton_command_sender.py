@@ -198,6 +198,8 @@ class CantonCommandSender:
 
         self._send_message_chunks(messages[:-1], p1, data_type)
 
+        print(f"Sending last {data_type} chunk {len(messages)} of {len(messages)}")
+
         # Send final chunk with MSG_END flag
         self.backend.exchange(
             cla=CLA,

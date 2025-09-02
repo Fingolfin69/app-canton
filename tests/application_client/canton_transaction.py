@@ -174,11 +174,16 @@ class Transaction:
         daml_tx_pb = DamlTransaction()
         Parse(json.dumps(daml_tx), daml_tx_pb)
 
-        nodes_pb = []
+        nodes_pb = [None] * len(nodes)
+
+        # We have to send nodes in reverse order for every node tree.
+        # ATM we have only one tree, so we can just reverse the list.
         for node in nodes:
+            node_id = int(node.get('nodeId', node.get('node_id')))
             node_pb = DamlTransaction.Node()
             Parse(json.dumps(node), node_pb)
-            nodes_pb.append(node_pb.SerializeToString())
+            pos = len(nodes) - 1 - node_id
+            nodes_pb[pos] = node_pb.SerializeToString()
 
         return daml_tx_pb.SerializeToString(), nodes_pb
 
@@ -193,6 +198,9 @@ class Transaction:
 
         input_contracts_pb = []
         for contract in input_contracts:
+            # Remove eventBlob field if exists, they are not used in hash computation
+            # and can be trimmed to decrease msg size
+            contract.pop("eventBlob", None)
             contract_pb = Metadata.InputContract()
             Parse(json.dumps(contract), contract_pb)
             input_contracts_pb.append(contract_pb.SerializeToString())
