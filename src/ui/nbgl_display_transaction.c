@@ -64,7 +64,7 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
     PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
 
     // Setup data to display
-    size_t hex_hash_length = 2 * sizeof(G_context.tx_info.m_hash) + 1;
+    size_t hex_hash_length = 2 * G_context.tx_info.m_hash_len + 1;
     pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
     LEDGER_ASSERT(pairs[0].value != NULL, "Memory full");
     pairs[0].item = "Transaction hash";
@@ -72,7 +72,7 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
     snprintf((char *) pairs[0].value,
              hex_hash_length,
              "%.*H",
-             sizeof(G_context.tx_info.m_hash),
+             G_context.tx_info.m_hash_len,
              G_context.tx_info.m_hash);
 
     // Setup list
