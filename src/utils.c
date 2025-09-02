@@ -24,13 +24,11 @@
 #include "os.h"
 #include "cx.h"
 
-void canton_fingerprint_with_purpose(uint8_t purpose,
-                                     const uint8_t *data,
-                                     size_t data_len,
-                                     uint8_t out[32]) {
+void canton_fingerprint(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[32]) {
     cx_sha256_t ctx;
+    uint8_t purpose_be[] = {0, 0, 0, purpose};
     CX_ASSERT(cx_sha256_init_no_throw(&ctx));
-    CX_ASSERT(cx_hash_update((cx_hash_t *) &ctx, &purpose, 1));
+    CX_ASSERT(cx_hash_update((cx_hash_t *) &ctx, purpose_be, sizeof(purpose_be)));
     if (data_len > 0) {
         CX_ASSERT(cx_hash_update((cx_hash_t *) &ctx, data, data_len));
     }

@@ -13,7 +13,4 @@
  * @param[in]  data_len  Length of input buffer
  * @param[out] out       32-byte output buffer for the digest
  */
-void canton_fingerprint_with_purpose(uint8_t purpose,
-                                     const uint8_t *data,
-                                     size_t data_len,
-                                     uint8_t out[32]);
+void canton_fingerprint(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[32]);
