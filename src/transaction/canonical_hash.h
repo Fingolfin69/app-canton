@@ -1,5 +1,4 @@
-#ifndef CANONICAL_HASH_H
-#define CANONICAL_HASH_H
+#pragma once
 
 #include "cx.h"
 
@@ -18,5 +17,3 @@ int hash_input_contract(HashWriter *hw, const InputContract *c);
 int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]);
 
 int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t out[32]);
-
-#endif  // CANONICAL_HASH_H
