@@ -99,7 +99,7 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
         ByteWriter bw;
         bw_init(&bw, concat, len);
         bw_put_u32_be(&bw, hash_count);  // Prefix with number of hashes
-        // Sort hashes
+        // Sort hashes lexicographically in hex format
         qsort(tx_hashes, hash_count, HASH_LEN, compare_hashes_hex);
         for (size_t i = 0; i < hash_count; i++) {
             // Concatenate each hash, prefixed them with their length (always 34)
