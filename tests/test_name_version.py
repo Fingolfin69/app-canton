@@ -1,9 +1,12 @@
 from ragger.backend.interface import BackendInterface
 
 from application_client.canton_command_sender import CantonCommandSender
-from application_client.canton_response_unpacker import unpack_get_app_and_version_response
+from application_client.canton_response_unpacker import (
+    unpack_get_app_and_version_response,
+)
 
 from utils import verify_version, verify_name
+
 
 # Test a specific APDU asking BOLOS (and not the app) the name and version of the current app
 def test_get_app_and_version(backend: BackendInterface) -> None:

@@ -34,13 +34,14 @@
 #include "validate.h"
 #include "canonical_hash.h"
 #include "prepared_transaction.h"
+#include "untyped_versioned_msg.h"
 
 static int process_tx_chunk(buffer_t *cdata,
                             signing_type_e type,
                             bool first,
                             bool more,
                             bool msg_end);
-static int process_sign_transaction_hash(buffer_t *buffer, uint8_t out[32]);
+static int process_transaction_hash(buffer_t *buffer);
 
 buffer_t buf = {.ptr = NULL, .size = 0, .offset = 0};
 
@@ -66,10 +67,10 @@ int handler_sign_tx(buffer_t *cdata, signing_type_e type, bool first, bool more,
                 result = process_prepared_tx_part(&buf);
                 break;
             case SIGN_HASH:
-                result = process_sign_transaction_hash(&buf, G_context.tx_info.m_hash);
+                result = process_transaction_hash(&buf);
                 break;
             case SIGN_UNTYPED_VERSIONED_MESSAGE:
-                // Not implemented yet
+                result = process_untyped_versioned_msg_tx(&buf);
                 break;
             default:
                 PRINTF("Unsupported signing type: %d\n", G_context.signing_type);
@@ -101,6 +102,8 @@ static int process_tx_chunk(buffer_t *cdata,
 
         if (type == SIGN_PREPARED_TRANSACTION) {
             process_prepared_tx_init();
+        } else if (type == SIGN_UNTYPED_VERSIONED_MESSAGE) {
+            process_untyped_versioned_msg_tx_init();
         }
 
         if (!buffer_read_u8(cdata, &G_context.bip32_path_len) ||
@@ -151,7 +154,7 @@ static int process_tx_chunk(buffer_t *cdata,
     return 0;
 }
 
-static int process_sign_transaction_hash(buffer_t *buffer, uint8_t out[32]) {
+static int process_transaction_hash(buffer_t *buffer) {
     if (G_context.state != STATE_PARSED) {
         PRINTF("Invalid state: expected STATE_PARSED, got %d\n", G_context.state);
         return SW_BAD_STATE;
@@ -163,7 +166,7 @@ static int process_sign_transaction_hash(buffer_t *buffer, uint8_t out[32]) {
         return SW_WRONG_DATA_LENGTH;
     }
 
-    memcpy(out, buffer->ptr, buffer->size);
+    memcpy(G_context.tx_info.m_hash, buffer->ptr, buffer->size);
     G_context.tx_info.m_hash_len = (uint8_t) buffer->size;
 
     return 0;
