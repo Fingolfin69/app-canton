@@ -163,6 +163,9 @@ Signs topology transactions using `PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE` (11) 
 
 Signs a structured Canton transaction with multiple components sent in sequence.
 
+As the components, this command uses parts of `PreparedSubmissionResponse` [protobuf message](https://github.com/digital-asset/canton/blob/main/community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive/interactive_submission_service.proto),
+split in the way described in [SPLIT_TRANSACTION.md](./SPLIT_TRANSACTION.md).
+
 ```shell
 -> E0 06 02 03 15 058000002C80001A6F800000008000000080000000  // BIP32 path (P2_FIRST | P2_MORE)
 <= 9000
@@ -202,7 +205,9 @@ Signs a structured Canton transaction with multiple components sent in sequence.
 5. Input contracts (zero or more)
 6. Prepared submission details
 
-Each component (except the path) ends with `P2_MSG_END` to signal completion of that data type.
+For more details on the transmission sequence of components, see [#Sending order](./SPLIT_TRANSACTION.md#sending-order)
+
+Each component (**except the path**) ends with `P2_MSG_END` to signal completion of that data type.
 
 #### Response Format
 
