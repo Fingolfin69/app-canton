@@ -149,7 +149,6 @@ class CantonCommandSender:
         nodes: list[bytes],
         metadata: bytes,
         input_contracts: list[bytes],
-        prepared_submission_details: bytes,
     ) -> Generator[None, None, None]:
         print(f"Signing transaction (in parts) with path: {path}")
         p1 = P1SignType.P1_SIGN_PREPARED_TRANSACTION
@@ -173,41 +172,41 @@ class CantonCommandSender:
             self._send_data_chunks(node_data, p1, f"Node {node_id}")
 
         # Send metadata
-        self._send_data_chunks(metadata, p1, "Metadata")
+        final_chunk = None
+        # Skip sending last chunk if Metadata is last message
+        more_contracts = len(input_contracts) != 0
+        final_chunk = self._send_data_chunks(metadata, p1, "Metadata", more_contracts)
 
         # Send input contracts
         print(f"Sending {len(input_contracts)} InputContracts")
-        for contract_data in input_contracts:
-            self._send_data_chunks(contract_data, p1, "InputContract")
-
-        # Send prepared submission details and get response
-        ps_messages = split_message(prepared_submission_details, MAX_APDU_LEN)
-        print(f"Sending {len(ps_messages)} chunks of PreparedSubmission details data")
-
-        self._send_message_chunks(ps_messages[:-1], p1, "PreparedSubmission")
+        for i, contract_data in enumerate(input_contracts):
+            last_contract = i == len(input_contracts) - 1
+            final_chunk = self._send_data_chunks(contract_data, p1, "InputContract", not last_contract)
 
         with self.backend.exchange_async(
-            cla=CLA, ins=InsType.SIGN_TX, p1=p1, p2=P2.P2_MSG_END, data=ps_messages[-1]
+            cla=CLA, ins=InsType.SIGN_TX, p1=p1, p2=P2.P2_MSG_END, data=final_chunk
         ) as response:
             yield response
 
-    def _send_data_chunks(self, data: bytes, p1: int, data_type: str) -> None:
+    def _send_data_chunks(self, data: bytes, p1: int, data_type: str, send_last_chunk=True) -> Optional[bytes]:
         """Send data in chunks with appropriate messaging."""
         messages = split_message(data, MAX_APDU_LEN)
         print(f"Sending {len(messages)} chunks of {data_type} data")
 
         self._send_message_chunks(messages[:-1], p1, data_type)
 
-        print(f"Sending last {data_type} chunk {len(messages)} of {len(messages)}")
-
-        # Send final chunk with MSG_END flag
-        self.backend.exchange(
-            cla=CLA,
-            ins=InsType.SIGN_TX,
-            p1=p1,
-            p2=P2.P2_MORE | P2.P2_MSG_END,
-            data=messages[-1],
-        )
+        if send_last_chunk:
+            print(f"Sending last {data_type} chunk {len(messages)} of {len(messages)}")
+            # Send final chunk with MSG_END flag
+            self.backend.exchange(
+                cla=CLA,
+                ins=InsType.SIGN_TX,
+                p1=p1,
+                p2=P2.P2_MORE | P2.P2_MSG_END,
+                data=messages[-1],
+            )
+        else:
+            return messages[-1]
 
     def _send_message_chunks(self, messages: list[bytes], p1: int, data_type: str) -> None:
         """Send intermediate message chunks (all but the last one)."""

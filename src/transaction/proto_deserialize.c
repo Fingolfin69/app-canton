@@ -90,22 +90,6 @@ parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_prepared_submission_details(buffer_t *buf,
-                                                              transaction_ctx_t *tx_ctx) {
-    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
-
-    PRINTF("Decoding prepared submission details from buffer of size %d bytes\n", buf->size);
-
-    if (!pb_decode(&stream,
-                   com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_fields,
-                   &tx_ctx->tx_parts_ctx.prepared_submission_details)) {
-        PRINTF("Failed to decode prepared submission details: %s\n", PB_GET_ERROR(&stream));
-        return VALUE_PARSING_ERROR;
-    }
-
-    return PARSING_OK;
-}
-
 void release_daml_tx(transaction_ctx_t *tx_ctx) {
     pb_release(com_daml_ledger_api_v2_interactive_DamlTransaction_fields,
                &tx_ctx->tx_parts_ctx.daml_transaction);
@@ -123,9 +107,4 @@ void release_metadata(transaction_ctx_t *tx_ctx) {
 void release_input_contract(transaction_ctx_t *tx_ctx) {
     pb_release(com_daml_ledger_api_v2_interactive_Metadata_InputContract_fields,
                &tx_ctx->tx_parts_ctx.input_contract);
-}
-
-void release_prepared_submission_details(transaction_ctx_t *tx_ctx) {
-    pb_release(com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_fields,
-               &tx_ctx->tx_parts_ctx.prepared_submission_details);
 }

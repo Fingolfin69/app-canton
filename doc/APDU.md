@@ -163,7 +163,7 @@ Signs topology transactions using `PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE` (11) 
 
 Signs a structured Canton transaction with multiple components sent in sequence.
 
-As the components, this command uses parts of `PreparedSubmissionResponse` [protobuf message](https://github.com/digital-asset/canton/blob/main/community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive/interactive_submission_service.proto),
+As the components, this command uses parts of `PreparedTransaction` [protobuf message](https://github.com/digital-asset/canton/blob/main/community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive/interactive_submission_service.proto),
 split in the way described in [SPLIT_TRANSACTION.md](./SPLIT_TRANSACTION.md).
 
 ```shell
@@ -187,12 +187,7 @@ split in the way described in [SPLIT_TRANSACTION.md](./SPLIT_TRANSACTION.md).
 
 // Input Contracts (multiple contracts, each ending with P2_MSG_END)
 -> E0 06 02 02 FF [255 bytes contract 0 data]                   // Contract 0 chunk (P2_MORE)
--> E0 06 02 06 80 [128 bytes contract 0 data]                   // Final contract 0 chunk (P2_MORE | P2_MSG_END)
-<= 9000
-
-// Prepared Submission Details (final component)
--> E0 06 02 02 FF [255 bytes prepared submission]               // Prepared submission chunk (P2_MORE)
--> E0 06 02 04 80 [128 bytes prepared submission]               // Final chunk (P2_MSG_END)
+-> E0 06 02 06 80 [128 bytes contract 0 data]                   // Final contract 0 chunk (P2_MSG_END)
 <= [der_sig_len] [DER signature] [v] 9000
 ```
 
@@ -203,7 +198,6 @@ split in the way described in [SPLIT_TRANSACTION.md](./SPLIT_TRANSACTION.md).
 3. Transaction nodes (one or more)
 4. Metadata
 5. Input contracts (zero or more)
-6. Prepared submission details
 
 For more details on the transmission sequence of components, see [#Sending order](./SPLIT_TRANSACTION.md#sending-order)
 

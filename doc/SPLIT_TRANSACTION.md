@@ -2,16 +2,15 @@
 
 ## Description
 
-Due to the limited RAM available on the devices, it is not feasible to parse and compute the hash of the entire `PrepareSubmissionResponse` protobuf message at once.
+Due to the limited RAM available on the devices, it is not feasible to parse and compute the hash of the entire  protobuf message at once.
 Therefore, the message is divided into smaller protobuf components to enable efficient processing.
 
-The protobuf message `PrepareSubmissionResponse` is divided into the following components ([see original schema here](https://github.com/digital-asset/canton/blob/main/community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive/interactive_submission_service.proto)):
+The protobuf message `PreparedTransaction` is divided into the following components ([see original schema here](https://github.com/digital-asset/canton/blob/main/community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive/interactive_submission_service.proto)):
 
 1. DAML transaction data, excluding the node list (`DamlTransaction` in the schema)
 2. One or more transaction nodes (`DamlTransaction.Node` in the schema)
 3. Metadata, excluding the input contract list (`Metadata` in the schema)
 4. Zero or more input contracts (`Metadata.InputContract` in the schema)
-5. Prepared submission details (`PrepareSubmissionResponse` in the schema, excluding the `PreparedTransaction` field)
 
 
 ## Splitting into components
@@ -66,18 +65,6 @@ The resulting `Metadata` message proto:
     }
 ```
 
-### Update `PrepareSubmissionResponse`
-
-From the `PrepareSubmissionResponse`, the `prepared_transaction` field must be removed, as its contents have already been extracted into separate components above.
-
-```proto
-    message PrepareSubmissionResponse {
-        bytes prepared_transaction_hash = 1;
-        HashingSchemeVersion hashing_scheme_version = 2;
-        optional string hashing_details = 3;
-    }
-```
-
 ### Reference Patch
 
 As a more formal description of these modifications, a patch is also provided and can be found [HERE](../proto/split_nodes.patch).
@@ -93,7 +80,6 @@ The transmission order is as follows:
 2. One or more `DamlTransaction.Node` (see below; these must be ordered in a specific way)
 3. `Metadata`
 4. Zero or more `Metadata.InputContract` (in the same order as in the original list)
-5. `PrepareSubmissionResponse`
 
 ### Special Case: Ordering of `DamlTransaction.Node` Messages
 

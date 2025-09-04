@@ -81,20 +81,18 @@ class Transaction:
         return base64.b64decode(data["prepared_transaction_hash"])
 
     @classmethod
-    def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes], bytes]:
+    def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes]]:
         with open(json_file, "r", encoding="utf-8") as file:
             json_tx = json.load(file)
 
         daml_tx_data, nodes_pb = cls._process_daml_transaction(json_tx["prepared_transaction"]["transaction"])
         metadata_data, input_contracts_pb = cls._process_metadata(json_tx["prepared_transaction"]["metadata"])
-        prep_sub_resp_data = cls._process_prep_submission_response(json_tx)
 
         return (
             daml_tx_data,
             nodes_pb,
             metadata_data,
-            input_contracts_pb,
-            prep_sub_resp_data,
+            input_contracts_pb
         )
 
     @classmethod
@@ -206,14 +204,3 @@ class Transaction:
             input_contracts_pb.append(contract_pb.SerializeToString())
 
         return metadata_pb.SerializeToString(), input_contracts_pb
-
-    @classmethod
-    def _process_prep_submission_response(cls, json_tx: dict) -> bytes:
-        """Process preparation submission response."""
-        prep_sub_resp = json_tx.copy()
-        del prep_sub_resp["prepared_transaction"]
-
-        prep_sub_resp_pb = PrepareSubmissionResponse()
-        Parse(json.dumps(prep_sub_resp), prep_sub_resp_pb)
-
-        return prep_sub_resp_pb.SerializeToString()

@@ -9,7 +9,6 @@ typedef com_daml_ledger_api_v2_interactive_DamlTransaction DamlTransaction;
 typedef com_daml_ledger_api_v2_interactive_DamlTransaction_Node Node;
 typedef com_daml_ledger_api_v2_interactive_Metadata Metadata;
 typedef com_daml_ledger_api_v2_interactive_Metadata_InputContract InputContract;
-typedef com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse PrepareSubmissionResponse;
 
 #define PARTY_ID_LEN 131  // 2*32 + 2 + 2*32 + 1 hex(pubkey)::hex(fingerprint) + null terminator
 
@@ -29,9 +28,8 @@ typedef enum {
  */
 typedef struct {
     union {
-        DamlTransaction daml_transaction;                       /// DAML transaction
-        Metadata metadata;                                      /// metadata of the transaction
-        PrepareSubmissionResponse prepared_submission_details;  /// prepared transaction
+        DamlTransaction daml_transaction;  /// DAML transaction
+        Metadata metadata;                 /// metadata of the transaction
     };
 
     union {

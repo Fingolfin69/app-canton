@@ -75,14 +75,14 @@ def test_sign_tx_ping(
     rapdu = client.get_public_key(path=path)
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
-    (ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) = Transaction.serialize_from_json_into_tx_parts(tx_json)
+    (ser_tx, ser_nodes, ser_meta, ser_contracts) = Transaction.serialize_from_json_into_tx_parts(tx_json)
 
     tx_hash = Transaction.get_hash_from_json(tx_json)
     print(f"Transaction hash: {tx_hash.hex()}")
-    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts) + len(ser_misc)
+    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts)
     print(f"Serialized transaction length: {total_len} bytes")
 
-    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) as response:
+    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts) as response:
         scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)
 
     response = client.get_async_response().data
@@ -102,14 +102,14 @@ def test_sign_tx_token_transfer(
     rapdu = client.get_public_key(path=path)
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
-    (ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) = Transaction.serialize_from_json_into_tx_parts(tx_json)
+    (ser_tx, ser_nodes, ser_meta, ser_contracts) = Transaction.serialize_from_json_into_tx_parts(tx_json)
 
     tx_hash = Transaction.get_hash_from_json(tx_json)
     print(f"Transaction hash: {tx_hash.hex()}")
-    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts) + len(ser_misc)
+    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts)
     print(f"Serialized transaction length: {total_len} bytes")
 
-    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts, ser_misc) as response:
+    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts) as response:
         scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)
 
     response = client.get_async_response().data
