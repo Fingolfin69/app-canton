@@ -25,17 +25,17 @@ Remove the `eventBlob` field from `InputContract`.
 Next, the `DamlTransaction` message contained within the `PreparedTransaction` message is divided.
 Since the `nodes` field occupies the most space, it is reasonable to separate each node into an individual `DamlTransaction.Nodes` message.
 
-To achieve this, the `nodes` field is removed and a new field `nodes_count` of type `int32` is added at the end.
+To achieve this, the `nodes` field is replaced with a new field `nodes_count` of type `int32`.
 The `nodes_count` field stores the number of nodes that were previously contained in the removed `nodes` field.
 
 As a result, after this modification, the updated version of `DamlTransaction` is defined as follows:
 
 ```proto
-    message DamlTransaction {
+    message DeviceDamlTransaction {
         string version = 1;
         repeated string roots = 2;
-        repeated NodeSeed node_seeds = 3;
-        int32 nodes_count = 4;
+        int32 nodes_count = 3; // <<=== REPLACED HERE
+        repeated NodeSeed node_seeds = 4;
     }
 ```
 
@@ -47,10 +47,10 @@ The `DamlTransaction.Node`s that were previously part of the removed `nodes` fie
 The similar approach is applied to the `Metadata` message.
 The `input_contracts` field is replaced with a new field `input_contracts_count` which stores number of elements that were previously contained in the `input_contracts` field.
 
-The resulting `Metadata` message proto:
+The resulting `DeviceMetadata` message proto:
 
 ```proto
-    message Metadata {
+    message DeviceMetadata {
         reserved 1;
 
         SubmitterInfo submitter_info = 2;
@@ -65,9 +65,9 @@ The resulting `Metadata` message proto:
     }
 ```
 
-### Reference Patch
+### Device proto file
 
-As a more formal description of these modifications, a patch is also provided and can be found [HERE](../proto/split_nodes.patch).
+As a more formal description of these modifications, a device proto file is also provided and can be found [HERE](../proto/device.proto).
 
 
 ## Sending Order
@@ -76,19 +76,19 @@ The resulting components (protobuf messages) are framed and transmitted to the d
 
 The transmission order is as follows:
 
-1. `DamlTransaction`
-2. One or more `DamlTransaction.Node` (see below; these must be ordered in a specific way)
-3. `Metadata`
-4. Zero or more `Metadata.InputContract` (in the same order as in the original list)
+1. `DeviceDamlTransaction`
+2. One or more `DeviceDamlTransaction.Node` (see below; these must be ordered in a specific way)
+3. `DeviceMetadata`
+4. Zero or more `DeviceMetadata.InputContract` (in the same order as in the original list)
 
-### Special Case: Ordering of `DamlTransaction.Node` Messages
+### Special Case: Ordering of `DeviceDamlTransaction.Node` Messages
 
 Since the nodes in Canton are organized in a tree structure, the hash of a node cannot be computed until the hashes of all its children have been computed recursively.
-Therefore, for each root node (roots are specified in the `roots` field of `DamlTransaction`), which represents a tree, the leaf nodes of that tree **shall be transmitted first**, followed by their parents, and so on, up to the root node.
+Therefore, for each root node (roots are specified in the `roots` field of `DeviceDamlTransaction`), which represents a tree, the leaf nodes of that tree **shall be transmitted first**, followed by their parents, and so on, up to the root node.
 
-After all nodes of the current root node’s tree have been transmitted, the transmission shall continue with the next root node’s tree as specified in the `roots` field of `DamlTransaction`.
+After all nodes of the current root node’s tree have been transmitted, the transmission shall continue with the next root node’s tree as specified in the `roots` field of `DeviceDamlTransaction`.
 
-For example, consider 2 root nodes in `DamlTransaction.roots` field `["1", "6"]`:
+For example, consider 2 root nodes in `DeviceDamlTransaction.roots` field `["1", "6"]`:
 
 ```ascii
 

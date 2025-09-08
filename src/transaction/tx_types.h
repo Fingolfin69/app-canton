@@ -3,12 +3,12 @@
 #include <stddef.h>  // size_t
 #include <stdint.h>  // uint*_t
 
-#include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
+#include "com/daml/ledger/api/v2/interactive/device.pb.h"
 
-typedef com_daml_ledger_api_v2_interactive_DamlTransaction DamlTransaction;
-typedef com_daml_ledger_api_v2_interactive_DamlTransaction_Node Node;
-typedef com_daml_ledger_api_v2_interactive_Metadata Metadata;
-typedef com_daml_ledger_api_v2_interactive_Metadata_InputContract InputContract;
+typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction DamlTransaction;
+typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node Node;
+typedef com_daml_ledger_api_v2_interactive_DeviceMetadata Metadata;
+typedef com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract InputContract;
 
 #define PARTY_ID_LEN 131  // 2*32 + 2 + 2*32 + 1 hex(pubkey)::hex(fingerprint) + null terminator
 

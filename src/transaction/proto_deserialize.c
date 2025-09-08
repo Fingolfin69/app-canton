@@ -19,7 +19,7 @@
 #include "proto_deserialize.h"
 #include "utils.h"
 #include "types.h"
-#include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
+#include "com/daml/ledger/api/v2/interactive/device.pb.h"
 
 #include "pb_decode.h"
 
@@ -36,7 +36,7 @@ parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_c
     PRINTF("Decoding Daml transaction from buffer of size %d bytes\n", buf->size);
 
     if (!pb_decode(&stream,
-                   com_daml_ledger_api_v2_interactive_DamlTransaction_fields,
+                   com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_fields,
                    &tx_ctx->tx_parts_ctx.daml_transaction)) {
         PRINTF("Failed to decode Daml transaction: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
@@ -51,7 +51,7 @@ parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx)
     PRINTF("Decoding Node from buffer of size %d bytes\n", buf->size);
 
     if (!pb_decode(&stream,
-                   com_daml_ledger_api_v2_interactive_DamlTransaction_Node_fields,
+                   com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
                    &tx_ctx->tx_parts_ctx.node)) {
         PRINTF("Failed to decode Node: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
@@ -66,7 +66,7 @@ parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_
     PRINTF("Decoding Metadata from buffer of size %d bytes\n", buf->size);
 
     if (!pb_decode(&stream,
-                   com_daml_ledger_api_v2_interactive_Metadata_fields,
+                   com_daml_ledger_api_v2_interactive_DeviceMetadata_fields,
                    &tx_ctx->tx_parts_ctx.metadata)) {
         PRINTF("Failed to decode Metadata: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
@@ -81,7 +81,7 @@ parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_
     PRINTF("Decoding Input contract from buffer of size %d bytes\n", buf->size);
 
     if (!pb_decode(&stream,
-                   com_daml_ledger_api_v2_interactive_Metadata_InputContract_fields,
+                   com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,
                    &tx_ctx->tx_parts_ctx.input_contract)) {
         PRINTF("Failed to decode Input contract: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
@@ -91,20 +91,21 @@ parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_
 }
 
 void release_daml_tx(transaction_ctx_t *tx_ctx) {
-    pb_release(com_daml_ledger_api_v2_interactive_DamlTransaction_fields,
+    pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_fields,
                &tx_ctx->tx_parts_ctx.daml_transaction);
 }
 
 void release_node(transaction_ctx_t *tx_ctx) {
-    pb_release(com_daml_ledger_api_v2_interactive_DamlTransaction_Node_fields,
+    pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
                &tx_ctx->tx_parts_ctx.node);
 }
 
 void release_metadata(transaction_ctx_t *tx_ctx) {
-    pb_release(com_daml_ledger_api_v2_interactive_Metadata_fields, &tx_ctx->tx_parts_ctx.metadata);
+    pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_fields,
+               &tx_ctx->tx_parts_ctx.metadata);
 }
 
 void release_input_contract(transaction_ctx_t *tx_ctx) {
-    pb_release(com_daml_ledger_api_v2_interactive_Metadata_InputContract_fields,
+    pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,
                &tx_ctx->tx_parts_ctx.input_contract);
 }

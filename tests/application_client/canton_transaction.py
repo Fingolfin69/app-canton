@@ -9,10 +9,13 @@ from google.protobuf.json_format import Parse
 # pylint: disable=no-name-in-module, import-error
 from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import (
     PrepareSubmissionResponse,
-    DamlTransaction,
-    Metadata,
 )  # type: ignore
 
+# pylint: disable=no-name-in-module, import-error
+from com.daml.ledger.api.v2.interactive.device_pb2 import (
+    DeviceDamlTransaction,
+    DeviceMetadata,
+)  # type: ignore
 
 from .canton_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 
@@ -169,7 +172,7 @@ class Transaction:
         nodes = daml_tx.pop("nodes", [])
         daml_tx["nodes_count"] = len(nodes)
 
-        daml_tx_pb = DamlTransaction()
+        daml_tx_pb = DeviceDamlTransaction()
         Parse(json.dumps(daml_tx), daml_tx_pb)
 
         nodes_pb = [None] * len(nodes)
@@ -178,7 +181,7 @@ class Transaction:
         # ATM we have only one tree, so we can just reverse the list.
         for node in nodes:
             node_id = int(node.get('nodeId', node.get('node_id')))
-            node_pb = DamlTransaction.Node()
+            node_pb = DeviceDamlTransaction.Node()
             Parse(json.dumps(node), node_pb)
             pos = len(nodes) - 1 - node_id
             nodes_pb[pos] = node_pb.SerializeToString()
@@ -191,7 +194,7 @@ class Transaction:
         input_contracts = metadata.pop("inputContracts", [])
         metadata["input_contracts_count"] = len(input_contracts)
 
-        metadata_pb = Metadata()
+        metadata_pb = DeviceMetadata()
         Parse(json.dumps(metadata), metadata_pb)
 
         input_contracts_pb = []
@@ -199,7 +202,7 @@ class Transaction:
             # Remove eventBlob field if exists, they are not used in hash computation
             # and can be trimmed to decrease msg size
             contract.pop("eventBlob", None)
-            contract_pb = Metadata.InputContract()
+            contract_pb = DeviceMetadata.InputContract()
             Parse(json.dumps(contract), contract_pb)
             input_contracts_pb.append(contract_pb.SerializeToString())
 

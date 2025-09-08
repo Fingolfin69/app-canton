@@ -47,7 +47,7 @@ static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0
 
 // Node version and kind oneofs
 #define NODE_VERSION_ONEOF_FIELD which_versioned_node
-#define NODE_V1_TAG              com_daml_ledger_api_v2_interactive_DamlTransaction_Node_v1_tag
+#define NODE_V1_TAG              com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_v1_tag
 #define NODE_V1_KIND_ONEOF_FIELD which_node_type
 #define NODE_V1_CREATE_TAG       com_daml_ledger_api_v2_interactive_transaction_v1_Node_create_tag
 #define NODE_V1_EXERCISE_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_exercise_tag
@@ -55,7 +55,7 @@ static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0
 #define NODE_V1_ROLLBACK_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_rollback_tag
 
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Node Node_V1;
-typedef com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed NodeSeed;
+typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed NodeSeed;
 
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Create Node_Create;
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Exercise Node_Exercise;
