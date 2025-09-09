@@ -8,6 +8,7 @@
 #include "constants.h"
 #include "tx_types.h"
 #include "canonical_hash.h"
+#include "nbgl_use_case.h"  // for nbgl_contentTagValue_t
 
 /**
  * Enumeration with expected INS of APDU commands.
@@ -69,6 +70,10 @@ typedef struct {
     uint8_t signature[MAX_DER_SIG_LEN];  /// transaction signature encoded in DER
     uint8_t signature_len;               /// length of transaction signature
     uint8_t v;                           /// parity of y-coordinate of R in ECDSA signature
+    nbgl_contentTagValue_t* pairs;       // dynamically allocated array for display
+    size_t pairs_count;
+    bool clear_signing_available;  /// whether clearing signing data is allowed
+    char** allocated_strings;      /// allocated strings for display
 } transaction_ctx_t;
 
 /**

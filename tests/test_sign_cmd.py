@@ -110,7 +110,8 @@ def test_sign_tx_token_transfer(
     print(f"Serialized transaction length: {total_len} bytes")
 
     with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts) as response:
-        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)
+        print("Please review the transaction on the device")
+        scenario_navigator.review_approve(path=ROOT_SCREENSHOT_PATH)
 
     response = client.get_async_response().data
     _, der_sig, _ = unpack_sign_tx_response(response)

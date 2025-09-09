@@ -1,7 +1,8 @@
 #pragma once
 
 #include "cx.h"
-
+#include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
+#include "bytewriter.h"
 #include "tx_types.h"
 
 typedef struct {

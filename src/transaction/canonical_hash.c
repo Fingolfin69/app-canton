@@ -25,49 +25,6 @@ static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0
 #define NODE_ENCODING_VERSION  ((uint8_t) 1) /* 0x01 */
 
 /* -------------------------------------------------------------------------- */
-/*  Adaption layer for nanopb oneof names                                      */
-/* -------------------------------------------------------------------------- */
-#define VALUE_ONEOF_FIELD     which_sum
-#define VALUE_UNIT_TAG        com_daml_ledger_api_v2_Value_unit_tag
-#define VALUE_BOOL_TAG        com_daml_ledger_api_v2_Value_bool__tag
-#define VALUE_INT64_TAG       com_daml_ledger_api_v2_Value_int64_tag
-#define VALUE_NUMERIC_TAG     com_daml_ledger_api_v2_Value_numeric_tag
-#define VALUE_TIMESTAMP_TAG   com_daml_ledger_api_v2_Value_timestamp_tag
-#define VALUE_DATE_TAG        com_daml_ledger_api_v2_Value_date_tag
-#define VALUE_PARTY_TAG       com_daml_ledger_api_v2_Value_party_tag
-#define VALUE_TEXT_TAG        com_daml_ledger_api_v2_Value_text_tag
-#define VALUE_CONTRACT_ID_TAG com_daml_ledger_api_v2_Value_contract_id_tag
-#define VALUE_OPTIONAL_TAG    com_daml_ledger_api_v2_Value_optional_tag
-#define VALUE_LIST_TAG        com_daml_ledger_api_v2_Value_list_tag
-#define VALUE_TEXT_MAP_TAG    com_daml_ledger_api_v2_Value_text_map_tag
-#define VALUE_RECORD_TAG      com_daml_ledger_api_v2_Value_record_tag
-#define VALUE_VARIANT_TAG     com_daml_ledger_api_v2_Value_variant_tag
-#define VALUE_ENUM_TAG        com_daml_ledger_api_v2_Value_enum__tag
-#define VALUE_GEN_MAP_TAG     com_daml_ledger_api_v2_Value_gen_map_tag
-
-// Node version and kind oneofs
-#define NODE_VERSION_ONEOF_FIELD which_versioned_node
-#define NODE_V1_TAG              com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_v1_tag
-#define NODE_V1_KIND_ONEOF_FIELD which_node_type
-#define NODE_V1_CREATE_TAG       com_daml_ledger_api_v2_interactive_transaction_v1_Node_create_tag
-#define NODE_V1_EXERCISE_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_exercise_tag
-#define NODE_V1_FETCH_TAG        com_daml_ledger_api_v2_interactive_transaction_v1_Node_fetch_tag
-#define NODE_V1_ROLLBACK_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_rollback_tag
-
-typedef com_daml_ledger_api_v2_interactive_transaction_v1_Node Node_V1;
-typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed NodeSeed;
-
-typedef com_daml_ledger_api_v2_interactive_transaction_v1_Create Node_Create;
-typedef com_daml_ledger_api_v2_interactive_transaction_v1_Exercise Node_Exercise;
-typedef com_daml_ledger_api_v2_interactive_transaction_v1_Fetch Node_Fetch;
-typedef com_daml_ledger_api_v2_interactive_transaction_v1_Rollback Node_Rollback;
-
-typedef com_daml_ledger_api_v2_Value Value;
-typedef com_daml_ledger_api_v2_RecordField RecordField;
-typedef com_daml_ledger_api_v2_GenMap_Entry GenMapEntry;
-typedef com_daml_ledger_api_v2_TextMap_Entry TextMapEntry;
-
-/* -------------------------------------------------------------------------- */
 /*  Error handling                                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -726,30 +683,6 @@ int hash_metadata(HashWriter *hw, const Metadata *md) {
     return 0;
 }
 
-// int hash_input_contract(HashWriter *hw, const InputContract *c) {
-//     encode_int64(hw, c->created_at);
-//
-//     // Encode contract create node in separate buffer and calculate its hash
-//     HashWriter n_hw;
-//     hw_init(&n_hw);
-//     encode_create(&n_hw, &c->v1, NULL, NULL, 0);
-//
-//     uint8_t hash[32];
-//     hw_finalize(&n_hw, hash);
-//
-//     PRINTF("Contract hash: %.*H\n", 32, hash);
-//
-//     encode_hash(hw, hash);
-//
-//     if (is_hash_error()) {
-//         PRINTF("Error hashing input contract: '%s', code: %d\n",
-//                HASH_ERR_INFO.err_msg,
-//                HASH_ERR_INFO.err_code);
-//         return HASH_ERR_INFO.err_code;
-//     }
-//
-//     return 0;
-// }
 
 int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]) {
     hw_finalize(hw, out);

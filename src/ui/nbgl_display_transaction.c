@@ -42,12 +42,12 @@ static nbgl_contentTagValueList_t pairList;
 static void review_choice(bool confirm) {
     // Answer, display a status page and go back to main
     validate_transaction(confirm);
+    app_mem_free((void *) pairs[0].value);
     if (confirm) {
         nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_SIGNED, ui_menu_main);
     } else {
         nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_REJECTED, ui_menu_main);
     }
-    app_mem_free((void *) pairs[0].value);
 }
 
 // Public function to start the transaction review
@@ -61,26 +61,25 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         return io_send_sw(SW_BAD_STATE);
     }
 
-    PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
-
-    // Setup data to display
-    size_t hex_hash_length = 2 * G_context.tx_info.m_hash_len + 1;
-    pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
-    LEDGER_ASSERT(pairs[0].value != NULL, "Memory full");
-    pairs[0].item = "Transaction hash";
-#pragma GCC diagnostic ignored "-Wformat"
-    snprintf((char *) pairs[0].value,
-             hex_hash_length,
-             "%.*H",
-             G_context.tx_info.m_hash_len,
-             G_context.tx_info.m_hash);
-
-    // Setup list
-    pairList.nbMaxLinesForValue = 0;
-    pairList.nbPairs = 1;
-    pairList.pairs = pairs;
-
     if (is_blind_signed) {
+        PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
+        // Setup data to display
+        size_t hex_hash_length = 2 * G_context.tx_info.m_hash_len + 1;
+        pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
+        LEDGER_ASSERT(pairs[0].value != NULL, "Memory full");
+        pairs[0].item = "Transaction hash";
+#pragma GCC diagnostic ignored "-Wformat"
+        snprintf((char *) pairs[0].value,
+                 hex_hash_length,
+                 "%.*H",
+                 G_context.tx_info.m_hash_len,
+                 G_context.tx_info.m_hash);
+
+        // Setup list
+        pairList.nbMaxLinesForValue = 0;
+        pairList.nbPairs = 1;
+        pairList.pairs = pairs;
+
         // Start blind-signing review flow
         nbgl_useCaseReviewBlindSigning(TYPE_TRANSACTION,
                                        &pairList,
@@ -95,6 +94,13 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
                                        NULL,
                                        review_choice);
     } else {
+        pairList.nbPairs = G_context.tx_info.pairs_count;
+        pairList.pairs = G_context.tx_info.pairs;
+
+        for (size_t i = 0; i < pairList.nbPairs; i++) {
+            PRINTF("Pair %d: %s -> %s\n", i, pairList.pairs[i].item, pairList.pairs[i].value);
+        }
+
         // Start review flow
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &pairList,
