@@ -7,7 +7,7 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class OffsetCheckpoint(_message.Message):
-    __slots__ = ["offset", "synchronizer_times"]
+    __slots__ = ("offset", "synchronizer_times")
     OFFSET_FIELD_NUMBER: _ClassVar[int]
     SYNCHRONIZER_TIMES_FIELD_NUMBER: _ClassVar[int]
     offset: int
@@ -15,9 +15,9 @@ class OffsetCheckpoint(_message.Message):
     def __init__(self, offset: _Optional[int] = ..., synchronizer_times: _Optional[_Iterable[_Union[SynchronizerTime, _Mapping]]] = ...) -> None: ...
 
 class SynchronizerTime(_message.Message):
-    __slots__ = ["record_time", "synchronizer_id"]
-    RECORD_TIME_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("synchronizer_id", "record_time")
     SYNCHRONIZER_ID_FIELD_NUMBER: _ClassVar[int]
-    record_time: _timestamp_pb2.Timestamp
+    RECORD_TIME_FIELD_NUMBER: _ClassVar[int]
     synchronizer_id: str
+    record_time: _timestamp_pb2.Timestamp
     def __init__(self, synchronizer_id: _Optional[str] = ..., record_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
