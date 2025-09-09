@@ -2,15 +2,12 @@ import json
 import base64
 import hashlib
 from io import BytesIO
-from typing import Union, List, Tuple, Any
-
-from google.protobuf.json_format import Parse
+from typing import Union, List
 
 # pylint: disable=no-name-in-module, import-error
-from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import PrepareSubmissionResponse # type: ignore
-# pylint: disable=no-name-in-module, import-error
-from com.daml.ledger.api.v2.interactive.device_pb2 import DeviceDamlTransaction # type: ignore
-from com.daml.ledger.api.v2.interactive.device_pb2 import DeviceMetadata # type: ignore
+from split_tx_util import (
+    split_transaction,
+)  # type: ignore
 
 from .canton_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 
@@ -63,35 +60,15 @@ class Transaction:
         return cls(nonce=nonce, to=to, value=value, memo=memo)
 
     @classmethod
-    def serialize_from_json(cls, json_file: str) -> bytes:
-        with open(json_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        prepared_tx = PrepareSubmissionResponse()
-        Parse(json.dumps(data), prepared_tx)
-
-        return prepared_tx.SerializeToString()
-
-    @classmethod
     def get_hash_from_json(cls, json_file: str) -> bytes:
         with open(json_file, "r", encoding="utf-8") as file:
             data = json.load(file)
         return base64.b64decode(data["prepared_transaction_hash"])
 
     @classmethod
-    def serialize_from_json_into_tx_parts(cls, json_file: str) -> Tuple[bytes, List[bytes], bytes, List[bytes]]:
-        with open(json_file, "r", encoding="utf-8") as file:
-            json_tx = json.load(file)
-
-        daml_tx_data, nodes_pb = cls._process_daml_transaction(json_tx["prepared_transaction"]["transaction"])
-        metadata_data, input_contracts_pb = cls._process_metadata(json_tx["prepared_transaction"]["metadata"])
-
-        return (
-            daml_tx_data,
-            nodes_pb,
-            metadata_data,
-            input_contracts_pb
-        )
+    def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes]]:
+        """Read JSON transaction file and serialize into parts."""
+        return split_transaction(json_file)
 
     @classmethod
     def compute_sha256_canton_hash(cls, purpose: int, content: bytes):
@@ -160,45 +137,3 @@ class Transaction:
         print(f"\nConcatenated sorted hashes for multi-transaction hash computation: {combined_hashes.hex()}")
 
         return Transaction.compute_sha256_canton_hash(PURPOSE_MULTI_TOPOLOGY_TRANSACTION, combined_hashes)
-
-    @classmethod
-    def _process_daml_transaction(cls, daml_tx: dict) -> Tuple[Any, List[bytes]]:
-        """Process DAML transaction and its nodes."""
-        nodes = daml_tx.pop("nodes", [])
-        daml_tx["nodes_count"] = len(nodes)
-
-        daml_tx_pb = DeviceDamlTransaction()
-        Parse(json.dumps(daml_tx), daml_tx_pb)
-
-        nodes_pb: List[bytes] = [b""] * len(nodes)
-
-        # We have to send nodes in reverse order for every node tree.
-        # ATM we have only one tree, so we can just reverse the list.
-        for node in nodes:
-            node_id = int(node.get('nodeId', node.get('node_id')))
-            node_pb = DeviceDamlTransaction.Node()
-            Parse(json.dumps(node), node_pb)
-            pos = len(nodes) - 1 - node_id
-            nodes_pb[pos] = node_pb.SerializeToString()
-
-        return daml_tx_pb.SerializeToString(), nodes_pb
-
-    @classmethod
-    def _process_metadata(cls, metadata: dict) -> Tuple[bytes, List[bytes]]:
-        """Process metadata and input contracts."""
-        input_contracts = metadata.pop("inputContracts", [])
-        metadata["input_contracts_count"] = len(input_contracts)
-
-        metadata_pb = DeviceMetadata()
-        Parse(json.dumps(metadata), metadata_pb)
-
-        input_contracts_pb = []
-        for contract in input_contracts:
-            # Remove eventBlob field if exists, they are not used in hash computation
-            # and can be trimmed to decrease msg size
-            contract.pop("eventBlob", None)
-            contract_pb = DeviceMetadata.InputContract()
-            Parse(json.dumps(contract), contract_pb)
-            input_contracts_pb.append(contract_pb.SerializeToString())
-
-        return metadata_pb.SerializeToString(), input_contracts_pb
