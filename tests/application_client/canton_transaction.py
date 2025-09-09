@@ -2,20 +2,15 @@ import json
 import base64
 import hashlib
 from io import BytesIO
-from typing import Union
+from typing import Union, List, Tuple, Any
 
 from google.protobuf.json_format import Parse
 
 # pylint: disable=no-name-in-module, import-error
-from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import (
-    PrepareSubmissionResponse,
-)  # type: ignore
-
+from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import PrepareSubmissionResponse # type: ignore
 # pylint: disable=no-name-in-module, import-error
-from com.daml.ledger.api.v2.interactive.device_pb2 import (
-    DeviceDamlTransaction,
-    DeviceMetadata,
-)  # type: ignore
+from com.daml.ledger.api.v2.interactive.device_pb2 import DeviceDamlTransaction # type: ignore
+from com.daml.ledger.api.v2.interactive.device_pb2 import DeviceMetadata # type: ignore
 
 from .canton_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 
@@ -84,7 +79,7 @@ class Transaction:
         return base64.b64decode(data["prepared_transaction_hash"])
 
     @classmethod
-    def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes]]:
+    def serialize_from_json_into_tx_parts(cls, json_file: str) -> Tuple[bytes, List[bytes], bytes, List[bytes]]:
         with open(json_file, "r", encoding="utf-8") as file:
             json_tx = json.load(file)
 
@@ -135,7 +130,7 @@ class Transaction:
         )
 
     @classmethod
-    def compute_multi_transaction_hash(cls, hashes: list[bytes]) -> bytes:
+    def compute_multi_transaction_hash(cls, hashes: List[bytes]) -> bytes:
         """
         Computes a combined hash for multiple topology transactions.
 
@@ -167,7 +162,7 @@ class Transaction:
         return Transaction.compute_sha256_canton_hash(PURPOSE_MULTI_TOPOLOGY_TRANSACTION, combined_hashes)
 
     @classmethod
-    def _process_daml_transaction(cls, daml_tx: dict) -> tuple[bytes, list[bytes]]:
+    def _process_daml_transaction(cls, daml_tx: dict) -> Tuple[Any, List[bytes]]:
         """Process DAML transaction and its nodes."""
         nodes = daml_tx.pop("nodes", [])
         daml_tx["nodes_count"] = len(nodes)
@@ -175,7 +170,7 @@ class Transaction:
         daml_tx_pb = DeviceDamlTransaction()
         Parse(json.dumps(daml_tx), daml_tx_pb)
 
-        nodes_pb = [None] * len(nodes)
+        nodes_pb: List[bytes] = [b""] * len(nodes)
 
         # We have to send nodes in reverse order for every node tree.
         # ATM we have only one tree, so we can just reverse the list.
@@ -189,7 +184,7 @@ class Transaction:
         return daml_tx_pb.SerializeToString(), nodes_pb
 
     @classmethod
-    def _process_metadata(cls, metadata: dict) -> tuple[bytes, list[bytes]]:
+    def _process_metadata(cls, metadata: dict) -> Tuple[bytes, List[bytes]]:
         """Process metadata and input contracts."""
         input_contracts = metadata.pop("inputContracts", [])
         metadata["input_contracts_count"] = len(input_contracts)

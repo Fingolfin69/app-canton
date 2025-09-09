@@ -116,7 +116,7 @@ class CantonCommandSender:
             yield response
 
     @contextmanager
-    def sign_topology_tx(self, path: str, transactions: list[bytes]) -> Generator[None, None, None]:
+    def sign_topology_tx(self, path: str, transactions: List[bytes]) -> Generator[None, None, None]:
         print(f"Signing topology transaction with path: {path} and {len(transactions)} transactions")
         p1 = P1SignType.P1_SIGN_UNTYPED_VERSIONED_MESSAGE
 
@@ -146,9 +146,9 @@ class CantonCommandSender:
         self,
         path: str,
         daml_transaction: bytes,
-        nodes: list[bytes],
+        nodes: List[bytes],
         metadata: bytes,
-        input_contracts: list[bytes],
+        input_contracts: List[bytes],
     ) -> Generator[None, None, None]:
         print(f"Signing transaction (in parts) with path: {path}")
         p1 = P1SignType.P1_SIGN_PREPARED_TRANSACTION
@@ -183,6 +183,9 @@ class CantonCommandSender:
             last_contract = i == len(input_contracts) - 1
             final_chunk = self._send_data_chunks(contract_data, p1, "InputContract", not last_contract)
 
+        if final_chunk is None:
+            final_chunk = b""
+
         with self.backend.exchange_async(
             cla=CLA, ins=InsType.SIGN_TX, p1=p1, p2=P2.P2_MSG_END, data=final_chunk
         ) as response:
@@ -205,10 +208,11 @@ class CantonCommandSender:
                 p2=P2.P2_MORE | P2.P2_MSG_END,
                 data=messages[-1],
             )
-        else:
-            return messages[-1]
+            return None
 
-    def _send_message_chunks(self, messages: list[bytes], p1: int, data_type: str) -> None:
+        return messages[-1]
+
+    def _send_message_chunks(self, messages: List[bytes], p1: int, data_type: str) -> None:
         """Send intermediate message chunks (all but the last one)."""
         for chunk_id, msg in enumerate(messages, start=1):
             print(f"Sending {data_type} chunk {chunk_id} of {len(messages) + 1}")
