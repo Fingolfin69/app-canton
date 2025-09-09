@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>  // uint*_t
 
 void process_prepared_tx_init();

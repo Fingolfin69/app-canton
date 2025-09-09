@@ -3,11 +3,14 @@
 #include <stddef.h>  // size_t
 #include <stdint.h>  // uint*_t
 
-#include "com/daml/ledger/api/v2/interactive/interactive_submission_service.pb.h"
+#include "com/daml/ledger/api/v2/interactive/device.pb.h"
 
-#define MAX_TX_LEN   2048
+typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction DamlTransaction;
+typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node Node;
+typedef com_daml_ledger_api_v2_interactive_DeviceMetadata Metadata;
+typedef com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract InputContract;
+
 #define PARTY_ID_LEN 131  // 2*32 + 2 + 2*32 + 1 hex(pubkey)::hex(fingerprint) + null terminator
-#define MAX_MEMO_LEN 465  // 510 - ADDRESS_LEN - 2*SIZE(U64) - SIZE(MAX_VARINT)
 
 typedef enum {
     PARSING_OK = 1,
@@ -21,19 +24,16 @@ typedef enum {
 } parser_status_e;
 
 /**
- * Structure for transaction hashing context.
+ * Structure for transaction parts context.
  */
 typedef struct {
     union {
-        com_daml_ledger_api_v2_interactive_DamlTransaction daml_transaction;  /// DAML transaction
-        com_daml_ledger_api_v2_interactive_Metadata metadata;  /// metadata of the transaction
-        com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse
-            prepared_submission_details;  /// prepared transaction
+        DamlTransaction daml_transaction;  /// DAML transaction
+        Metadata metadata;                 /// metadata of the transaction
     };
 
     union {
-        com_daml_ledger_api_v2_interactive_DamlTransaction_Node node;  /// DAML transaction node
-        com_daml_ledger_api_v2_interactive_Metadata_InputContract
-            input_contract;  /// input contract
+        Node node;                     /// DAML transaction node
+        InputContract input_contract;  /// input contract
     };
 } transaction_parts_ctx_t;

@@ -9,10 +9,13 @@ from google.protobuf.json_format import Parse
 # pylint: disable=no-name-in-module, import-error
 from com.daml.ledger.api.v2.interactive.interactive_submission_service_pb2 import (
     PrepareSubmissionResponse,
-    DamlTransaction,
-    Metadata,
 )  # type: ignore
 
+# pylint: disable=no-name-in-module, import-error
+from com.daml.ledger.api.v2.interactive.device_pb2 import (
+    DeviceDamlTransaction,
+    DeviceMetadata,
+)  # type: ignore
 
 from .canton_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 
@@ -81,20 +84,18 @@ class Transaction:
         return base64.b64decode(data["prepared_transaction_hash"])
 
     @classmethod
-    def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes], bytes]:
+    def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes]]:
         with open(json_file, "r", encoding="utf-8") as file:
             json_tx = json.load(file)
 
         daml_tx_data, nodes_pb = cls._process_daml_transaction(json_tx["prepared_transaction"]["transaction"])
         metadata_data, input_contracts_pb = cls._process_metadata(json_tx["prepared_transaction"]["metadata"])
-        prep_sub_resp_data = cls._process_prep_submission_response(json_tx)
 
         return (
             daml_tx_data,
             nodes_pb,
             metadata_data,
-            input_contracts_pb,
-            prep_sub_resp_data,
+            input_contracts_pb
         )
 
     @classmethod
@@ -171,14 +172,19 @@ class Transaction:
         nodes = daml_tx.pop("nodes", [])
         daml_tx["nodes_count"] = len(nodes)
 
-        daml_tx_pb = DamlTransaction()
+        daml_tx_pb = DeviceDamlTransaction()
         Parse(json.dumps(daml_tx), daml_tx_pb)
 
-        nodes_pb = []
+        nodes_pb = [None] * len(nodes)
+
+        # We have to send nodes in reverse order for every node tree.
+        # ATM we have only one tree, so we can just reverse the list.
         for node in nodes:
-            node_pb = DamlTransaction.Node()
+            node_id = int(node.get('nodeId', node.get('node_id')))
+            node_pb = DeviceDamlTransaction.Node()
             Parse(json.dumps(node), node_pb)
-            nodes_pb.append(node_pb.SerializeToString())
+            pos = len(nodes) - 1 - node_id
+            nodes_pb[pos] = node_pb.SerializeToString()
 
         return daml_tx_pb.SerializeToString(), nodes_pb
 
@@ -188,24 +194,16 @@ class Transaction:
         input_contracts = metadata.pop("inputContracts", [])
         metadata["input_contracts_count"] = len(input_contracts)
 
-        metadata_pb = Metadata()
+        metadata_pb = DeviceMetadata()
         Parse(json.dumps(metadata), metadata_pb)
 
         input_contracts_pb = []
         for contract in input_contracts:
-            contract_pb = Metadata.InputContract()
+            # Remove eventBlob field if exists, they are not used in hash computation
+            # and can be trimmed to decrease msg size
+            contract.pop("eventBlob", None)
+            contract_pb = DeviceMetadata.InputContract()
             Parse(json.dumps(contract), contract_pb)
             input_contracts_pb.append(contract_pb.SerializeToString())
 
         return metadata_pb.SerializeToString(), input_contracts_pb
-
-    @classmethod
-    def _process_prep_submission_response(cls, json_tx: dict) -> bytes:
-        """Process preparation submission response."""
-        prep_sub_resp = json_tx.copy()
-        del prep_sub_resp["prepared_transaction"]
-
-        prep_sub_resp_pb = PrepareSubmissionResponse()
-        Parse(json.dumps(prep_sub_resp), prep_sub_resp_pb)
-
-        return prep_sub_resp_pb.SerializeToString()

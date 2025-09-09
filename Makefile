@@ -29,7 +29,7 @@ APPNAME = "Canton"
 
 # Application version
 APPVERSION_M = 2
-APPVERSION_N = 3
+APPVERSION_N = 4
 APPVERSION_P = 0
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
@@ -108,6 +108,8 @@ ifneq ($(DEBUG), 0)
 endif
 
 DEFINES += PB_ENABLE_MALLOC=1
+DEFINES += PB_BUFFER_ONLY=1
+DEFINES += PB_INTERN_STRINGS=1
 
 include vendor/nanopb/extra/nanopb.mk
 

@@ -56,21 +56,8 @@ clone_if_not_exists "https://github.com/digital-asset/daml.git" "sdk/daml-lf/led
 clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive"
 mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledger/api/v2/value.proto"
 
-## Patch proto files
-echo "Applying patches to proto files..."
-if [ -f "split_nodes.patch" ]; then
-  set +e
-  patch -p0 -f < split_nodes.patch
-
-  if [ $? -ne 0 ]; then
-    red "Failed to apply split_nodes.patch. Maybe patch was already applied?"
-  fi
-
-  set -e
-else
-  red "split_nodes.patch not found. Exiting."
-  exit 1
-fi
+# Copy device proto file
+cp -v $ROOT_PATH/device.proto $LEDGER_API_V2_PATH/interactive/
 
 # Create the options file for value.proto
 echo "Creating value.options file..."
@@ -134,23 +121,25 @@ cat > interactive_submission_service.options << 'EOF'
 * anonymous_oneof:true
 com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.prepared_transaction_hash max_size: 32
 com.daml.ledger.api.v2.interactive.PrepareSubmissionResponse.hashing_details type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DamlTransaction.NodeSeed.node_id type:FT_STATIC
-com.daml.ledger.api.v2.interactive.DamlTransaction.version type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DamlTransaction.roots type:FT_POINTER
-# NOTE: For some reason, without `max_count: 10000` nanopb static assertions fail here
-com.daml.ledger.api.v2.interactive.DamlTransaction.nodes type:FT_POINTER max_count: 10000
-com.daml.ledger.api.v2.interactive.DamlTransaction.node_seeds type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DamlTransaction.Node.node_id type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DamlTransaction.NodeSeed type:FT_POINTER
 com.daml.ledger.api.v2.interactive.ExecuteSubmissionRequest.submission_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.ExecuteSubmissionRequest.user_id type:FT_POINTER
-com.daml.ledger.api.v2.interactive.Metadata.synchronizer_id type:FT_POINTER
-com.daml.ledger.api.v2.interactive.Metadata.transaction_uuid type:FT_POINTER
-com.daml.ledger.api.v2.interactive.Metadata.input_contracts type:FT_POINTER
-com.daml.ledger.api.v2.interactive.Metadata.SubmitterInfo.act_as type:FT_POINTER
-com.daml.ledger.api.v2.interactive.Metadata.SubmitterInfo.command_id type:FT_POINTER
-com.daml.ledger.api.v2.interactive.Metadata.InputContract.event_blob type:FT_IGNORE
+EOF
+
+echo "device.options file..."
+cat > device.options << 'EOF'
+* anonymous_oneof:true
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.NodeSeed.node_id type:FT_STATIC
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.roots type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.roots type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.node_seeds type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.Node.node_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.NodeSeed type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceMetadata.synchronizer_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceMetadata.transaction_uuid type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.act_as type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.command_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract.event_blob type:FT_IGNORE
 EOF
 
 # Generate nanopb C/H code for protobuf messages
@@ -216,6 +205,7 @@ generate_nanopb_code "." "google/protobuf/timestamp.proto"
 
 # Generate main interactive submission service
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/interactive_submission_service.proto"
+generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/device.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/interactive_submission_common_data.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/transaction/v1/interactive_submission_data.proto"
 

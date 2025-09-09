@@ -57,15 +57,37 @@ parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_
 parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
- * Deserialize PreparedSubmissionResponse protobuf message in structure.
+ * Release dynamicly allocated memory for DamlTransaction protobuf message.
  *
- * @param[in, out] buf
- *   Pointer to buffer with serialized transaction.
- * @param[out]     tx_ctx
+ * @param[in, out]     tx_ctx
  *   Pointer to transaction context structure.
  *
- * @return PARSING_OK if success, error status otherwise.
+ */
+void release_daml_tx(transaction_ctx_t *tx_ctx);
+
+/**
+ * Release dynamicly allocated memory for DamlTransaction.Node protobuf message.
+ *
+ * @param[in, out]     tx_ctx
+ *   Pointer to transaction context structure.
  *
  */
-parser_status_e proto_deserialize_prepared_submission_details(buffer_t *buf,
-                                                              transaction_ctx_t *tx_ctx);
+void release_node(transaction_ctx_t *tx_ctx);
+
+/**
+ * Release dynamicly allocated memory for Metadata protobuf message.
+ *
+ * @param[in, out]     tx_ctx
+ *   Pointer to transaction context structure.
+ *
+ */
+void release_metadata(transaction_ctx_t *tx_ctx);
+
+/**
+ * Release dynamicly allocated memory for Metadata.InputContract protobuf message.
+ *
+ * @param[in, out]     tx_ctx
+ *   Pointer to transaction context structure.
+ *
+ */
+void release_input_contract(transaction_ctx_t *tx_ctx);

@@ -6,7 +6,6 @@
 #include <string.h>
 
 #include "ledger_assert.h"
-#include "lcx_sha256.h"
 
 #include "pb.h"         // Contains PB_LTYPE macros and basic pb_field_t definitions
 #include "pb_common.h"  // Contains pb_field_
@@ -48,7 +47,7 @@ static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0
 
 // Node version and kind oneofs
 #define NODE_VERSION_ONEOF_FIELD which_versioned_node
-#define NODE_V1_TAG              com_daml_ledger_api_v2_interactive_DamlTransaction_Node_v1_tag
+#define NODE_V1_TAG              com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_v1_tag
 #define NODE_V1_KIND_ONEOF_FIELD which_node_type
 #define NODE_V1_CREATE_TAG       com_daml_ledger_api_v2_interactive_transaction_v1_Node_create_tag
 #define NODE_V1_EXERCISE_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_exercise_tag
@@ -56,7 +55,7 @@ static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0
 #define NODE_V1_ROLLBACK_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_rollback_tag
 
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Node Node_V1;
-typedef com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed NodeSeed;
+typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed NodeSeed;
 
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Create Node_Create;
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Exercise Node_Exercise;
@@ -80,6 +79,9 @@ typedef enum {
     HASH_ERROR_UNSUPPORTED_VALUE = 3,
     HASH_ERROR_UNKNOWN_NODE_VERSION = 4,
     HASH_ERROR_UNKNOWN_NODE_TYPE = 5,
+    HASH_ERROR_FAILED_TO_STORE_NODE_HASH = 6,
+    HASH_ERROR_FAILED_TO_LOAD_NODE_HASH = 7,
+    HASH_ERROR_MAX_NODE_CHILDREN_EXCEEDED = 8,
 } HashError;
 
 typedef struct {
@@ -138,28 +140,122 @@ static int atoint(const char *str) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Node hash store                                               */
+/* -------------------------------------------------------------------------- */
+
+typedef struct {
+    int32_t id;
+    uint8_t hash[32];
+} PrecomputedNodeHash;
+
+static PrecomputedNodeHash G_hashed_nodes_store[MAX_NODE_CHILDREN] = {0};
+static size_t G_hashed_nodes_store_count = 0;
+
+static void init_node_hash_store() {
+    explicit_bzero(G_hashed_nodes_store, sizeof(G_hashed_nodes_store));
+    for (size_t i = 0; i < MAX_NODE_CHILDREN; ++i) {
+        G_hashed_nodes_store[i].id = -1;  // Mark as empty
+    }
+}
+
+static int set_node_hash(const char *node_id, const uint8_t hash[32]) {
+    if (node_id == NULL) {
+        return -1;  // No node_id provided
+    }
+
+    int node_id_num = atoint(node_id);
+
+    memcpy(G_hashed_nodes_store[G_hashed_nodes_store_count].hash, hash, 32);
+    G_hashed_nodes_store[G_hashed_nodes_store_count].id = node_id_num;
+
+    G_hashed_nodes_store_count++;
+    G_hashed_nodes_store_count %= MAX_NODE_CHILDREN;
+
+    return 0;
+}
+
+static int get_node_hash(const char *node_id, uint8_t out[32]) {
+    if (node_id == NULL) {
+        return -1;  // No node_id provided
+    }
+
+    int node_id_num = atoint(node_id);
+
+    for (size_t i = 0; i < MAX_NODE_CHILDREN; ++i) {
+        if (G_hashed_nodes_store[i].id == node_id_num) {
+            memcpy(out, G_hashed_nodes_store[i].hash, 32);
+            return 0;
+        }
+    }
+
+    // Not found
+    return -1;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  HashWriter helper                                                         */
+/* -------------------------------------------------------------------------- */
+
+static inline void hw_init(HashWriter *hw) {
+    CX_ASSERT(cx_sha256_init_no_throw(&hw->ctx));
+}
+
+static inline void hw_put(HashWriter *hw, const void *p, size_t n) {
+    CX_ASSERT(cx_hash_update((cx_hash_t *) &hw->ctx, p, n));
+}
+
+static inline void hw_finalzie(HashWriter *hw, uint8_t out[32]) {
+    CX_ASSERT(cx_hash_final((cx_hash_t *) &hw->ctx, out));
+}
+
+static inline void hw_put_byte(HashWriter *hw, uint8_t b) {
+    hw_put(hw, &b, 1);
+}
+
+// Big‑endian helpers
+static inline void hw_put_u32_be(HashWriter *hw, uint32_t v) {
+    uint8_t t[4] = {(uint8_t) (v >> 24), (uint8_t) (v >> 16), (uint8_t) (v >> 8), (uint8_t) v};
+    hw_put(hw, t, 4);
+}
+static inline void hw_put_u64_be(HashWriter *hw, uint64_t v) {
+    uint8_t t[8] = {(uint8_t) (v >> 56),
+                    (uint8_t) (v >> 48),
+                    (uint8_t) (v >> 40),
+                    (uint8_t) (v >> 32),
+                    (uint8_t) (v >> 24),
+                    (uint8_t) (v >> 16),
+                    (uint8_t) (v >> 8),
+                    (uint8_t) v};
+    hw_put(hw, t, 8);
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Encoders                                                                  */
 /* -------------------------------------------------------------------------- */
 
-static inline void encode_bool(ByteWriter *bw, bool v) {
-    bw_put_byte(bw, v ? 1 : 0);
+static inline void encode_bool(HashWriter *hw, bool v) {
+    hw_put_byte(hw, v ? 1 : 0);
 }
-static inline void encode_int32(ByteWriter *bw, int32_t v) {
-    bw_put_u32_be(bw, (uint32_t) v);
+static inline void encode_int32(HashWriter *hw, int32_t v) {
+    hw_put_u32_be(hw, (uint32_t) v);
 }
-static inline void encode_int64(ByteWriter *bw, int64_t v) {
-    bw_put_u64_be(bw, (uint64_t) v);
+static inline void encode_int64(HashWriter *hw, int64_t v) {
+    hw_put_u64_be(hw, (uint64_t) v);
 }
 
-static void encode_bytes(ByteWriter *bw, const uint8_t *data, int32_t len) {
-    encode_int32(bw, len);
-    bw_put(bw, data, (size_t) len);
+static inline void encode_int64_by_ptr(HashWriter *hw, int64_t *v) {
+    hw_put_u64_be(hw, (uint64_t) *v);
 }
-static void encode_string(ByteWriter *bw, const char *s) {
-    encode_bytes(bw, (const uint8_t *) s, (int32_t) strlen(s));
+
+static void encode_bytes(HashWriter *hw, const uint8_t *data, int32_t len) {
+    encode_int32(hw, len);
+    hw_put(hw, data, (size_t) len);
 }
-static void encode_hash(ByteWriter *bw, const uint8_t h[32]) {
-    bw_put(bw, h, 32);
+static void encode_string(HashWriter *hw, const char *s) {
+    encode_bytes(hw, (const uint8_t *) s, (int32_t) strlen(s));
+}
+static void encode_hash(HashWriter *hw, const uint8_t h[32]) {
+    hw_put(hw, h, 32);
 }
 
 // hex‑decode helper
@@ -169,165 +265,165 @@ static uint8_t hex_val(char c) {
                                                : 10 + c - 'A');
 }
 
-static void encode_hex_string(ByteWriter *bw, const char *hex) {
+static void encode_hex_string(HashWriter *hw, const char *hex) {
     size_t len = strlen(hex);
     if (len % 2 != 0) {
         set_hash_error(HASH_ERROR_INVALID_HASH_STRING, "Hex string must have even length");
         return;
     }
 
-    encode_int32(bw, (int32_t) (len / 2));
+    encode_int32(hw, (int32_t) (len / 2));
     for (size_t i = 0; i < len; i += 2) {
         uint8_t b = (hex_val(hex[i]) << 4) | hex_val(hex[i + 1]);
-        bw_put_byte(bw, b);
+        hw_put_byte(hw, b);
     }
 }
 
 // Generic optional encoder
-typedef void (*EncodeFn)(ByteWriter *, const void *ctx);
-static void encode_optional(ByteWriter *bw, bool present, EncodeFn fn, const void *ctx) {
-    bw_put_byte(bw, present ? 1 : 0);
-    if (present) fn(bw, ctx);
+typedef void (*EncodeFn)(HashWriter *, const void *ctx);
+static void encode_optional(HashWriter *hw, bool present, EncodeFn fn, const void *ctx) {
+    hw_put_byte(hw, present ? 1 : 0);
+    if (present) fn(hw, ctx);
 }
 
 // Generic repeated encoder (contiguous array)
-static void encode_repeated(ByteWriter *bw,
+static void encode_repeated(HashWriter *hw,
                             size_t count,
                             const void *array,
                             size_t elem_sz,
                             EncodeFn fn) {
-    encode_int32(bw, (int32_t) count);
+    encode_int32(hw, (int32_t) count);
     const uint8_t *p = (const uint8_t *) array;
-    for (size_t i = 0; i < count; ++i) fn(bw, p + i * elem_sz);
+    for (size_t i = 0; i < count; ++i) fn(hw, p + i * elem_sz);
 }
 
-static void encode_identifier(ByteWriter *, const Identifier *);
-static void encode_value(ByteWriter *, const Value *);
+static void encode_identifier(HashWriter *, const Identifier *);
+static void encode_value(HashWriter *, const Value *);
 
 // Helper wrappers invoked by encode_repeated
-static void wrap_encode_string(ByteWriter *bw, const void *ctx) {
-    encode_string(bw, *(char *const *) ctx);
+static void wrap_encode_string(HashWriter *hw, const void *ctx) {
+    encode_string(hw, *(char *const *) ctx);
 }
-static void wrap_encode_value(ByteWriter *bw, const void *ctx) {
-    encode_value(bw, (const Value *) ctx);
+static void wrap_encode_value(HashWriter *hw, const void *ctx) {
+    encode_value(hw, (const Value *) ctx);
 }
-static void wrap_encode_identifier(ByteWriter *bw, const void *ctx) {
-    encode_identifier(bw, (const Identifier *) ctx);
-}
-
-static void encode_text_map_entry(ByteWriter *bw, const TextMapEntry *e) {
-    encode_string(bw, e->key);
-    encode_value(bw, e->value);
-}
-static void wrap_encode_text_map_entry(ByteWriter *bw, const void *ctx) {
-    encode_text_map_entry(bw, (const TextMapEntry *) ctx);
+static void wrap_encode_identifier(HashWriter *hw, const void *ctx) {
+    encode_identifier(hw, (const Identifier *) ctx);
 }
 
-static void encode_record_field(ByteWriter *bw, const RecordField *f) {
-    encode_optional(bw, f->label != NULL, (EncodeFn) wrap_encode_string, &f->label);
-    encode_value(bw, f->value);
+static void encode_text_map_entry(HashWriter *hw, const TextMapEntry *e) {
+    encode_string(hw, e->key);
+    encode_value(hw, e->value);
 }
-static void wrap_encode_record_field(ByteWriter *bw, const void *ctx) {
-    encode_record_field(bw, (const RecordField *) ctx);
-}
-
-static void encode_gen_map_entry(ByteWriter *bw, const GenMapEntry *e) {
-    encode_value(bw, e->key);
-    encode_value(bw, e->value);
-}
-static void wrap_encode_gen_map_entry(ByteWriter *bw, const void *ctx) {
-    encode_gen_map_entry(bw, (const GenMapEntry *) ctx);
+static void wrap_encode_text_map_entry(HashWriter *hw, const void *ctx) {
+    encode_text_map_entry(hw, (const TextMapEntry *) ctx);
 }
 
-static void encode_value(ByteWriter *bw, const Value *v) {
+static void encode_record_field(HashWriter *hw, const RecordField *f) {
+    encode_optional(hw, f->label != NULL, (EncodeFn) wrap_encode_string, &f->label);
+    encode_value(hw, f->value);
+}
+static void wrap_encode_record_field(HashWriter *hw, const void *ctx) {
+    encode_record_field(hw, (const RecordField *) ctx);
+}
+
+static void encode_gen_map_entry(HashWriter *hw, const GenMapEntry *e) {
+    encode_value(hw, e->key);
+    encode_value(hw, e->value);
+}
+static void wrap_encode_gen_map_entry(HashWriter *hw, const void *ctx) {
+    encode_gen_map_entry(hw, (const GenMapEntry *) ctx);
+}
+
+static void encode_value(HashWriter *hw, const Value *v) {
     switch (v->VALUE_ONEOF_FIELD) {
         case VALUE_UNIT_TAG:
-            bw_put_byte(bw, 0x00);
+            hw_put_byte(hw, 0x00);
             return;
         case VALUE_BOOL_TAG:
-            bw_put_byte(bw, 0x01);
-            encode_bool(bw, v->bool_);
+            hw_put_byte(hw, 0x01);
+            encode_bool(hw, v->bool_);
             return;
         case VALUE_INT64_TAG:
-            bw_put_byte(bw, 0x02);
-            encode_int64(bw, v->int64);
+            hw_put_byte(hw, 0x02);
+            encode_int64(hw, v->int64);
             return;
         case VALUE_NUMERIC_TAG:
-            bw_put_byte(bw, 0x03);
-            encode_string(bw, v->numeric);
+            hw_put_byte(hw, 0x03);
+            encode_string(hw, v->numeric);
             return;
         case VALUE_TIMESTAMP_TAG:
-            bw_put_byte(bw, 0x04);
-            encode_int64(bw, v->timestamp);
+            hw_put_byte(hw, 0x04);
+            encode_int64(hw, v->timestamp);
             return;
         case VALUE_DATE_TAG:
-            bw_put_byte(bw, 0x05);
-            encode_int32(bw, v->date);
+            hw_put_byte(hw, 0x05);
+            encode_int32(hw, v->date);
             return;
         case VALUE_PARTY_TAG:
-            bw_put_byte(bw, 0x06);
-            encode_string(bw, v->party);
+            hw_put_byte(hw, 0x06);
+            encode_string(hw, v->party);
             return;
         case VALUE_TEXT_TAG:
-            bw_put_byte(bw, 0x07);
-            encode_string(bw, v->text);
+            hw_put_byte(hw, 0x07);
+            encode_string(hw, v->text);
             return;
         case VALUE_CONTRACT_ID_TAG:
-            bw_put_byte(bw, 0x08);
-            encode_hex_string(bw, v->contract_id);
+            hw_put_byte(hw, 0x08);
+            encode_hex_string(hw, v->contract_id);
             return;
         case VALUE_OPTIONAL_TAG:
-            bw_put_byte(bw, 0x09);
-            encode_optional(bw,
+            hw_put_byte(hw, 0x09);
+            encode_optional(hw,
                             v->optional.value != NULL,
                             (EncodeFn) encode_value,
-                            &v->optional.value);
+                            v->optional.value);
             return;
         case VALUE_LIST_TAG:
-            bw_put_byte(bw, 0x0A);
-            encode_repeated(bw,
+            hw_put_byte(hw, 0x0A);
+            encode_repeated(hw,
                             v->list.elements_count,
                             v->list.elements,
                             sizeof(Value),
                             wrap_encode_value);
             return;
         case VALUE_TEXT_MAP_TAG:
-            bw_put_byte(bw, 0x0B);
-            encode_repeated(bw,
+            hw_put_byte(hw, 0x0B);
+            encode_repeated(hw,
                             v->text_map.entries_count,
                             v->text_map.entries,
                             sizeof(TextMapEntry),
                             wrap_encode_text_map_entry);
             return;
         case VALUE_RECORD_TAG:
-            bw_put_byte(bw, 0x0C);
-            encode_optional(bw,
+            hw_put_byte(hw, 0x0C);
+            encode_optional(hw,
                             v->record.has_record_id,
                             wrap_encode_identifier,
                             &v->record.record_id);
-            encode_repeated(bw,
+            encode_repeated(hw,
                             v->record.fields_count,
                             v->record.fields,
                             sizeof(RecordField),
                             wrap_encode_record_field);
             return;
         case VALUE_VARIANT_TAG:
-            bw_put_byte(bw, 0x0D);
-            encode_optional(bw,
+            hw_put_byte(hw, 0x0D);
+            encode_optional(hw,
                             v->variant.has_variant_id,
                             wrap_encode_identifier,
                             &v->variant.variant_id);
-            encode_string(bw, v->variant.constructor);
-            encode_value(bw, v->variant.value);
+            encode_string(hw, v->variant.constructor);
+            encode_value(hw, v->variant.value);
             return;
         case VALUE_ENUM_TAG:
-            bw_put_byte(bw, 0x0E);
-            encode_optional(bw, v->enum_.has_enum_id, wrap_encode_identifier, &v->enum_.enum_id);
-            encode_string(bw, v->enum_.constructor);
+            hw_put_byte(hw, 0x0E);
+            encode_optional(hw, v->enum_.has_enum_id, wrap_encode_identifier, &v->enum_.enum_id);
+            encode_string(hw, v->enum_.constructor);
             return;
         case VALUE_GEN_MAP_TAG:
-            bw_put_byte(bw, 0x0F);
-            encode_repeated(bw,
+            hw_put_byte(hw, 0x0F);
+            encode_repeated(hw,
                             v->gen_map.entries_count,
                             v->gen_map.entries,
                             sizeof(GenMapEntry),
@@ -338,25 +434,25 @@ static void encode_value(ByteWriter *bw, const Value *v) {
     }
 }
 
-static void split_dot_and_encode(ByteWriter *bw, const char *dotstr) {
+static void split_dot_and_encode(HashWriter *hw, const char *dotstr) {
     size_t parts = 1;
     for (const char *p = dotstr; *p; ++p)
         if (*p == '.') ++parts;
-    encode_int32(bw, (int32_t) parts);
+    encode_int32(hw, (int32_t) parts);
     const char *start = dotstr;
     while (true) {
         const char *dot = strchr(start, '.');
         size_t len = dot ? (size_t) (dot - start) : strlen(start);
-        encode_int32(bw, (int32_t) len);
-        bw_put(bw, start, len);
+        encode_int32(hw, (int32_t) len);
+        hw_put(hw, start, len);
         if (!dot) break;
         start = dot + 1;
     }
 }
-static void encode_identifier(ByteWriter *bw, const Identifier *id) {
-    encode_string(bw, id->package_id);
-    split_dot_and_encode(bw, id->module_name);
-    split_dot_and_encode(bw, id->entity_name);
+static void encode_identifier(HashWriter *hw, const Identifier *id) {
+    encode_string(hw, id->package_id);
+    split_dot_and_encode(hw, id->module_name);
+    split_dot_and_encode(hw, id->entity_name);
 }
 
 static const uint8_t *find_seed(const char *node_id, const NodeSeed *seeds, size_t n) {
@@ -373,66 +469,109 @@ static const uint8_t *find_seed(const char *node_id, const NodeSeed *seeds, size
     return NULL;
 }
 
-static void encode_create(ByteWriter *bw,
+static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *ids) {
+    encode_int32(hw, (int32_t) count);
+
+    for (size_t i = 0; i < count; ++i) {
+        uint8_t hash[32];
+        if (get_node_hash(ids[i], hash) != 0) {
+            LEDGER_ASSERT(false, "Node id hash not found in store");
+            set_hash_error(HASH_ERROR_FAILED_TO_LOAD_NODE_HASH, "Node id hash not found in store");
+            return;
+        };
+        hw_put(hw, hash, 32);
+    }
+}
+
+static void encode_create(HashWriter *hw,
                           const Node_Create *c,
                           const char *node_id,
                           const NodeSeed *seeds,
                           size_t n_seeds) {
-    bw_put_byte(bw, NODE_ENCODING_VERSION);
-    encode_string(bw, c->lf_version);
-    bw_put_byte(bw, 0x00);
+    hw_put_byte(hw, NODE_ENCODING_VERSION);
+    encode_string(hw, c->lf_version);
+    hw_put_byte(hw, 0x00);
     const uint8_t *seed = find_seed(node_id, seeds, n_seeds);
-    encode_optional(bw, seed != NULL, (EncodeFn) encode_hash, seed);
-    encode_hex_string(bw, c->contract_id);
-    encode_string(bw, c->package_name);
-    encode_identifier(bw, &c->template_id);
-    encode_value(bw, &c->argument);
-    encode_repeated(bw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
-    encode_repeated(bw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
+    encode_optional(hw, seed != NULL, (EncodeFn) encode_hash, seed);
+    encode_hex_string(hw, c->contract_id);
+    encode_string(hw, c->package_name);
+    encode_identifier(hw, &c->template_id);
+    encode_value(hw, &c->argument);
+    encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
+    encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }
 
-static void encode_exercise(ByteWriter *bw,
+static void encode_exercise(HashWriter *hw,
                             const Node_Exercise *e,
                             const char *node_id,
-                            const DamlTransaction *tx,
                             const NodeSeed *seeds,
                             size_t n_seeds) {
-    (void) bw;
-    (void) e;
-    (void) node_id;
-    (void) tx;
-    (void) seeds;
-    (void) n_seeds;
+    hw_put_byte(hw, NODE_ENCODING_VERSION);
+    encode_string(hw, e->lf_version);
+    hw_put_byte(hw, 0x01);
 
-    LEDGER_ASSERT(false, "TODO");
+    // NOTE: Seed always present for exercise nodes
+    const uint8_t *seed = find_seed(node_id, seeds, n_seeds);
+    LEDGER_ASSERT(seed != NULL, "Missing seed for exercise node");
+    encode_hash(hw, seed);
+    encode_hex_string(hw, e->contract_id);
+    encode_string(hw, e->package_name);
+    LEDGER_ASSERT(e->has_template_id, "Missing template_id in exercise node");
+    encode_identifier(hw, &e->template_id);
+    encode_repeated(hw, e->signatories_count, e->signatories, sizeof(char *), wrap_encode_string);
+    encode_repeated(hw, e->stakeholders_count, e->stakeholders, sizeof(char *), wrap_encode_string);
+    encode_repeated(hw,
+                    e->acting_parties_count,
+                    e->acting_parties,
+                    sizeof(char *),
+                    wrap_encode_string);
+    encode_optional(hw, e->interface_id != NULL, wrap_encode_identifier, e->interface_id);
+    encode_string(hw, e->choice_id);
+    LEDGER_ASSERT(e->has_chosen_value, "Missing chosen_value in exercise node");
+    encode_value(hw, &e->chosen_value);
+    encode_bool(hw, e->consuming);
+    encode_optional(hw, e->has_exercise_result, (EncodeFn) encode_value, &e->exercise_result);
+    encode_repeated(hw,
+                    e->choice_observers_count,
+                    e->choice_observers,
+                    sizeof(char *),
+                    wrap_encode_string);
+
+    if (e->children_count > MAX_NODE_CHILDREN) {
+        set_hash_error(HASH_ERROR_MAX_NODE_CHILDREN_EXCEEDED, "Too many node children");
+        return;
+    }
+    encode_repeated_node_ids(hw, e->children_count, e->children);
 }
 
-static void encode_fetch(ByteWriter *bw, const Node_Fetch *f) {
-    (void) bw;
-    (void) f;
-
-    LEDGER_ASSERT(false, "TODO");
+static void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
+    hw_put_byte(hw, NODE_ENCODING_VERSION);
+    encode_string(hw, f->lf_version);
+    hw_put_byte(hw, 0x02);
+    encode_hex_string(hw, f->contract_id);
+    encode_string(hw, f->package_name);
+    encode_identifier(hw, &f->template_id);
+    encode_repeated(hw, f->signatories_count, f->signatories, sizeof(char *), wrap_encode_string);
+    encode_repeated(hw, f->stakeholders_count, f->stakeholders, sizeof(char *), wrap_encode_string);
+    encode_optional(hw, f->interface_id != NULL, wrap_encode_identifier, f->interface_id);
+    encode_repeated(hw,
+                    f->acting_parties_count,
+                    f->acting_parties,
+                    sizeof(char *),
+                    wrap_encode_string);
 }
 
-static void encode_rollback(ByteWriter *bw,
-                            const Node_Rollback *r,
-                            const DamlTransaction *tx,
-                            const NodeSeed *seeds,
-                            size_t n_seeds) {
-    (void) bw;
-    (void) r;
-    (void) tx;
-    (void) seeds;
-    (void) n_seeds;
-
-    LEDGER_ASSERT(false, "TODO");
+static void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
+    hw_put_byte(hw, NODE_ENCODING_VERSION);
+    hw_put_byte(hw, 0x03);
+    if (r->children_count > MAX_NODE_CHILDREN) {
+        set_hash_error(HASH_ERROR_MAX_NODE_CHILDREN_EXCEEDED, "Too many node children");
+        return;
+    }
+    encode_repeated_node_ids(hw, r->children_count, r->children);
 }
 
-static void encode_node(ByteWriter *bw,
-                        const Node *node,
-                        const DamlTransaction *tx,
-                        const NodeSeed *seeds,
-                        size_t n_seeds) {
+static void encode_node(HashWriter *hw, const Node *node, const NodeSeed *seeds, size_t n_seeds) {
     if (node->NODE_VERSION_ONEOF_FIELD != NODE_V1_TAG) {
         set_hash_error(HASH_ERROR_UNKNOWN_NODE_VERSION, "Unsupported Node version");
         return;
@@ -441,16 +580,16 @@ static void encode_node(ByteWriter *bw,
     const Node_V1 *v = &node->v1;
     switch (v->NODE_V1_KIND_ONEOF_FIELD) {
         case NODE_V1_CREATE_TAG:
-            encode_create(bw, &v->create, node->node_id, seeds, n_seeds);
+            encode_create(hw, &v->create, node->node_id, seeds, n_seeds);
             break;
         case NODE_V1_EXERCISE_TAG:
-            encode_exercise(bw, &v->exercise, node->node_id, tx, seeds, n_seeds);
+            encode_exercise(hw, &v->exercise, node->node_id, seeds, n_seeds);
             break;
         case NODE_V1_FETCH_TAG:
-            encode_fetch(bw, &v->fetch);
+            encode_fetch(hw, &v->fetch);
             break;
         case NODE_V1_ROLLBACK_TAG:
-            encode_rollback(bw, &v->rollback, tx, seeds, n_seeds);
+            encode_rollback(hw, &v->rollback);
             break;
         default:
             set_hash_error(HASH_ERROR_UNKNOWN_NODE_TYPE, "Unknown Node.V1 which_* tag");
@@ -458,70 +597,81 @@ static void encode_node(ByteWriter *bw,
 }
 
 // Hash a referenced node‑id and write the 32‑byte digest
-static void encode_node_id_hash(ByteWriter *bw,
+static void encode_node_id_hash(HashWriter *hw,
                                 const Node *node,
-                                const DamlTransaction *tx,
+                                bool is_root_node,
                                 const NodeSeed *seeds,
                                 size_t n_seeds) {
-    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
-    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
-
-    ByteWriter n_bw;
-    bw_init(&n_bw, scratch, MAX_ENCODED_NODE_LEN);
-    encode_node(&n_bw, node, tx, seeds, n_seeds);
-
+    HashWriter n_hw;
+    hw_init(&n_hw);
+    encode_node(&n_hw, node, seeds, n_seeds);
     uint8_t h[32];
-    cx_sha256_hash(scratch, bw_size(&n_bw), h);
-    bw_put(bw, h, 32);
+    hw_finalzie(&n_hw, h);
 
-    app_mem_free(scratch);
+    if (is_root_node) {
+        hw_put(hw, h, 32);
+    } else {
+        // Store node hash
+        if (set_node_hash(node->node_id, h) != 0) {
+            set_hash_error(HASH_ERROR_FAILED_TO_STORE_NODE_HASH, "Failed to memoize node id hash");
+        }
+    }
 
-    PRINTF("Node id hash: %.*H\n", 32, h);
+    PRINTF("Node id %s hash: %.*H\n", node->node_id, 32, h);
 }
 
-static void encode_metadata(ByteWriter *bw, const Metadata *m) {
-    bw_put_byte(bw, 0x01);
-    encode_repeated(bw,
+static void encode_metadata(HashWriter *hw, const Metadata *m) {
+    hw_put_byte(hw, 0x01);
+    encode_repeated(hw,
                     m->submitter_info.act_as_count,
                     m->submitter_info.act_as,
                     sizeof(char *),
                     wrap_encode_string);
-    encode_string(bw, m->submitter_info.command_id);
-    encode_string(bw, m->transaction_uuid);
-    encode_int32(bw, m->mediator_group);
-    encode_string(bw, m->synchronizer_id);
-    encode_optional(bw,
+    encode_string(hw, m->submitter_info.command_id);
+    encode_string(hw, m->transaction_uuid);
+    encode_int32(hw, m->mediator_group);
+    encode_string(hw, m->synchronizer_id);
+    encode_optional(hw,
                     m->has_min_ledger_effective_time,
-                    (EncodeFn) encode_int64,
+                    (EncodeFn) encode_int64_by_ptr,
                     &m->min_ledger_effective_time);
-    encode_optional(bw,
+    encode_optional(hw,
                     m->has_max_ledger_effective_time,
-                    (EncodeFn) encode_int64,
+                    (EncodeFn) encode_int64_by_ptr,
                     &m->max_ledger_effective_time);
-    encode_int64(bw, m->preparation_time);
-    encode_int32(bw, m->input_contracts_count);
+
+    encode_int64(hw, m->preparation_time);
+    encode_int32(hw, m->input_contracts_count);
 }
 
-int hash_transaction(ByteWriter *bw, const DamlTransaction *tx) {
+int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
     // Reset error state
     clear_hash_error();
+    init_node_hash_store();
 
-    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_TX_LEN);
-    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for transaction");
+    hw_init(hw);
+    hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
 
-    bw_init(bw, scratch, MAX_ENCODED_TX_LEN);
-    bw_put(bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
-
-    encode_string(bw, tx->version);
+    encode_string(hw, tx->version);
     // Encode nodes count
-    encode_int32(bw, (int32_t) tx->roots_count);
+    encode_int32(hw, (int32_t) tx->roots_count);
 
     return 0;
 }
 
 // Hash a referenced node‑id and write the 32‑byte digest
-int hash_node(ByteWriter *bw, const DamlTransaction *tx, const Node *node) {
-    encode_node_id_hash(bw, node, tx, tx->node_seeds, tx->node_seeds_count);
+int hash_node(HashWriter *hw, const DamlTransaction *tx, const Node *node) {
+    bool is_root_node = false;
+
+    for (size_t i = 0; i < tx->roots_count; ++i) {
+        if (tx->roots[i] != NULL && node->node_id != NULL &&
+            strcmp(tx->roots[i], node->node_id) == 0) {
+            is_root_node = true;
+            break;
+        }
+    }
+
+    encode_node_id_hash(hw, node, is_root_node, tx->node_seeds, tx->node_seeds_count);
 
     if (is_hash_error()) {
         PRINTF("Error hashing node: '%s', code: %d\n",
@@ -533,23 +683,18 @@ int hash_node(ByteWriter *bw, const DamlTransaction *tx, const Node *node) {
     return 0;
 }
 
-int finalize_hash_transaction(ByteWriter *bw, uint8_t out[32]) {
-    cx_sha256_hash(bw->base, bw_size(bw), out);
-
-    app_mem_free(bw->base);
+int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]) {
+    hw_finalzie(hw, out);
 
     PRINTF("TX hash: %.*H\n", 32, out);
 
     return 0;
 }
 
-int hash_metadata(ByteWriter *bw, const Metadata *md) {
-    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_METADATA_LEN);
-    LEDGER_ASSERT(scratch != NULL, "Failed to allocate buf for metadata hash");
-
-    bw_init(bw, scratch, MAX_ENCODED_METADATA_LEN);
-    bw_put(bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
-    encode_metadata(bw, md);
+int hash_metadata(HashWriter *hw, const Metadata *md) {
+    hw_init(hw);
+    hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+    encode_metadata(hw, md);
 
     if (is_hash_error()) {
         PRINTF("Error hashing metadata: '%s', code: %d\n",
@@ -561,23 +706,20 @@ int hash_metadata(ByteWriter *bw, const Metadata *md) {
     return 0;
 }
 
-int hash_input_contract(ByteWriter *bw, const InputContract *c) {
-    encode_int64(bw, c->created_at);
+int hash_input_contract(HashWriter *hw, const InputContract *c) {
+    encode_int64(hw, c->created_at);
 
     // Encode contract create node in separate buffer and calculate its hash
-    uint8_t *scratch = app_mem_alloc(MAX_ENCODED_NODE_LEN);
-    LEDGER_ASSERT(scratch != NULL, "Failed to allocate scratch buf for node id");
-
-    ByteWriter n_bw;
-    bw_init(&n_bw, scratch, MAX_ENCODED_NODE_LEN);
-    encode_create(&n_bw, &c->v1, NULL, NULL, 0);
+    HashWriter n_hw;
+    hw_init(&n_hw);
+    encode_create(&n_hw, &c->v1, NULL, NULL, 0);
 
     uint8_t hash[32];
-    cx_sha256_hash(scratch, bw_size(&n_bw), hash);
+    hw_finalzie(&n_hw, hash);
 
-    app_mem_free(scratch);
+    PRINTF("Contract hash: %.*H\n", 32, hash);
 
-    encode_hash(bw, hash);
+    encode_hash(hw, hash);
 
     if (is_hash_error()) {
         PRINTF("Error hashing input contract: '%s', code: %d\n",
@@ -589,10 +731,8 @@ int hash_input_contract(ByteWriter *bw, const InputContract *c) {
     return 0;
 }
 
-int finalize_hash_metadata(ByteWriter *bw, uint8_t out[32]) {
-    cx_sha256_hash(bw->base, bw_size(bw), out);
-
-    app_mem_free(bw->base);
+int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]) {
+    hw_finalzie(hw, out);
 
     PRINTF("Metadata hash: %.*H\n", 32, out);
 
@@ -600,16 +740,15 @@ int finalize_hash_metadata(ByteWriter *bw, uint8_t out[32]) {
 }
 
 int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t out[32]) {
-    uint8_t buf[4 + 1 + 32 + 32];
-    ByteWriter bw;
+    HashWriter hw;
 
-    bw_init(&bw, buf, sizeof(buf));
-    bw_put(&bw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
-    bw_put_byte(&bw, HASHING_SCHEME_VERSION);
-    bw_put(&bw, tx_hash, 32);
-    bw_put(&bw, md_hash, 32);
+    hw_init(&hw);
+    hw_put(&hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+    hw_put_byte(&hw, HASHING_SCHEME_VERSION);
+    hw_put(&hw, tx_hash, 32);
+    hw_put(&hw, md_hash, 32);
 
-    cx_sha256_hash(buf, sizeof(buf), out);
+    hw_finalzie(&hw, out);
 
     return 0;
 }

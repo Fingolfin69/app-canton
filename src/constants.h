@@ -23,7 +23,12 @@
 /**
  * Maximum transaction length (bytes).
  */
-#define MAX_TRANSACTION_LEN 2048
+#define MAX_TRANSACTION_LEN (1024 * 7)
+
+/**
+ * Maximum number of child nodes per transaction node.
+ */
+#define MAX_NODE_CHILDREN 8
 
 /**
  * Maximum signature length (bytes).
@@ -34,18 +39,3 @@
  * Exponent used to convert mBOL to BOL unit (N BOL = N * 10^3 mBOL).
  */
 #define EXPONENT_SMALLEST_UNIT 3
-
-/**
- * Maximum length of a encoded TX (without metadata and list of nodes) (bytes).
- */
-#define MAX_ENCODED_TX_LEN 2048
-
-/**
- * Maximum length of a encoded Node (bytes).
- */
-#define MAX_ENCODED_NODE_LEN 2048
-
-/**
- * Maximum length of a encoded TX metadata (bytes).
- */
-#define MAX_ENCODED_METADATA_LEN 1024
