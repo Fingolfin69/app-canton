@@ -30,7 +30,7 @@
 #include "tx_types.h"
 
 bool party_id_from_pubkey(const uint8_t public_key[static 32], uint8_t *out, size_t out_len) {
-    uint8_t tmp[32] = {0};
+    uint8_t tmp[34] = {0};
 
     LEDGER_ASSERT(out != NULL, "NULL out");
 
@@ -38,10 +38,10 @@ bool party_id_from_pubkey(const uint8_t public_key[static 32], uint8_t *out, siz
         return false;
     }
 
-    canton_fingerprint(0x0C, public_key, 32, tmp);
+    canton_hash(0x0C, public_key, 32, tmp);
 // Format party id as hex(public_key) : hex(sha256(hash purpose (12) || public_key))
 #pragma GCC diagnostic ignored "-Wformat"
-    snprintf((char *) out, out_len, "ldg::%.*h", 32, tmp);
+    snprintf((char *) out, out_len, "ldg::%.*h", sizeof(tmp), tmp);
 
     return true;
 }
