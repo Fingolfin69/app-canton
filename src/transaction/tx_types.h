@@ -10,7 +10,7 @@ typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node Node;
 typedef com_daml_ledger_api_v2_interactive_DeviceMetadata Metadata;
 typedef com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract InputContract;
 
-#define PARTY_ID_LEN 131  // 2*32 + 2 + 2*32 + 1 hex(pubkey)::hex(fingerprint) + null terminator
+#define PARTY_ID_LEN 74  // 3 + 2 + 2*34 + 1 = 74 ldg::hex(fingerprint) + null terminator
 
 typedef enum {
     PARSING_OK = 1,
