@@ -34,6 +34,7 @@
 #include "validate.h"
 #include "tx_types.h"
 #include "menu.h"
+#include "utils.h"
 
 static nbgl_contentTagValue_t pairs[1];
 static nbgl_contentTagValueList_t pairList;
@@ -68,8 +69,7 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
         LEDGER_ASSERT(pairs[0].value != NULL, "Memory full");
         pairs[0].item = "Transaction hash";
-#pragma GCC diagnostic ignored "-Wformat"
-        snprintf((char *) pairs[0].value,
+        SNPRINTF((char *) pairs[0].value,
                  hex_hash_length,
                  "%.*H",
                  G_context.tx_info.m_hash_len,
@@ -84,7 +84,7 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         nbgl_useCaseReviewBlindSigning(TYPE_TRANSACTION,
                                        &pairList,
                                        &ICON_APP_CANTON,
-                                       "Review transaction",
+                                       "Review transaction hash",
                                        NULL,
 #ifdef SCREEN_SIZE_WALLET
                                        "Accept risk and sign\ntransaction?",
@@ -97,21 +97,19 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
         pairList.nbPairs = G_context.tx_info.pairs_count;
         pairList.pairs = G_context.tx_info.pairs;
 
+        PRINTF("Pair count: %d\n", pairList.nbPairs);
+        // Print all pairs for debugging
         for (size_t i = 0; i < pairList.nbPairs; i++) {
-            PRINTF("Pair %d: %s -> %s\n", i, pairList.pairs[i].item, pairList.pairs[i].value);
+            PRINTF("Pair %d: %s: %s\n", i, pairList.pairs[i].item, pairList.pairs[i].value);
         }
 
         // Start review flow
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &pairList,
                            &ICON_APP_CANTON,
-                           "Review transaction",
+                           G_context.tx_info.review_title,
                            NULL,
-#ifdef SCREEN_SIZE_WALLET
-                           "Sign transaction",
-#else
-                           NULL,
-#endif
+                           G_context.tx_info.review_finish,
                            review_choice);
     }
     return 0;

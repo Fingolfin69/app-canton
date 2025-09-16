@@ -10,11 +10,16 @@
         "tuple": "c",
         "type_traits": "c",
         "utility": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "hash_map": "c",
+        "hash_set": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "sstream": "c"
     },
     "ledgerDevTools.appSettings": {
         "selectedUseCase": "debug",
-        "selectedDevice": "Stax",
+        "selectedDevice": "Nano X",
         "selectedVariant": "BOL",
         "testsList": [
             "test_app_mainmenu",
@@ -26,6 +31,7 @@
             "test_sign_tx_hash_32",
             "test_sign_tx_hash_34",
             "test_sign_tx_ping",
+            "test_sign_tx_token_transfer",
             "test_sign_topology_tx",
             "test_version"
         ],

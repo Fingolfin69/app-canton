@@ -10,7 +10,11 @@ yellow() { echo -e "\e[33m$*\e[0m"; }
 
 ROOT_PATH=$(git rev-parse --show-toplevel)/proto
 LEDGER_API_PROTO_PATH=$ROOT_PATH/canton/community/ledger-api/src/main/protobuf
+COMMUNITY_PROTO_PATH=$ROOT_PATH/canton/community/base/src/main/protobuf
 LAPI_VALUE_PROTO_PATH=$ROOT_PATH/daml/sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2/value.proto
+COMMUNITY_CANTON_PROTO_PATH=$COMMUNITY_PROTO_PATH/com/digitalasset/canton
+PROTOCOL_PROTO_PATH=$COMMUNITY_CANTON_PROTO_PATH/protocol/v30
+CRYPTO_PROTO_PATH=$COMMUNITY_CANTON_PROTO_PATH/crypto/v30
 LEDGER_API_V2_PATH=$LEDGER_API_PROTO_PATH/com/daml/ledger/api/v2
 OUTPUT_DIR="./"
 NANOPB_GENERATOR="../vendor/nanopb/generator/protoc-gen-nanopb"
@@ -41,6 +45,9 @@ clone_if_not_exists() {
     cd ..
   else
     green "$repo_name repository already cloned."
+    cd "$repo_name" && \
+    git sparse-checkout add "$sparse_path"
+    cd ..
   fi
 }
 
@@ -52,8 +59,12 @@ download_if_not_exists "https://raw.githubusercontent.com/googleapis/googleapis/
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/any.proto" "google/protobuf/any.proto"
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/duration.proto" "google/protobuf/duration.proto"
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto" "google/protobuf/timestamp.proto"
+
 clone_if_not_exists "https://github.com/digital-asset/daml.git" "sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2"
 clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive"
+clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/base/src/main/protobuf/com/digitalasset/canton/version/v1"
+clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/base/src/main/protobuf/com/digitalasset/canton/protocol/v30"
+clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/base/src/main/protobuf/com/digitalasset/canton/crypto/v30"
 mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledger/api/v2/value.proto"
 
 # Copy device proto file
@@ -207,6 +218,80 @@ com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.stakeholders ty
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.argument type:FT_IGNORE
 EOF
 
+echo "untyped_versioned_message.options file..."
+cat > untyped_versioned_message.options << 'EOF'
+* anonymous_oneof:true
+com.digitalasset.canton.version.v1.UntypedVersionedMessage.data type:FT_POINTER
+EOF
+
+echo "topology.options file..."
+cat > topology.options << 'EOF'
+# * anonymous_oneof:true
+
+com.digitalasset.canton.protocol.v30.NamespaceDelegation.namespace type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.DecentralizedNamespaceDefinition.decentralized_namespace type:FT_POINTER
+com.digitalasset.canton.protocol.v30.DecentralizedNamespaceDefinition.owners type:FT_POINTER
+com.digitalasset.canton.protocol.v30.DecentralizedNamespaceDefinition.owners max_count:8
+
+com.digitalasset.canton.protocol.v30.OwnerToKeyMapping.member type:FT_POINTER
+com.digitalasset.canton.protocol.v30.OwnerToKeyMapping.public_keys type:FT_POINTER
+com.digitalasset.canton.protocol.v30.OwnerToKeyMapping.public_keys max_count:8
+
+com.digitalasset.canton.protocol.v30.SynchronizerTrustCertificate.participant_uid type:FT_POINTER
+com.digitalasset.canton.protocol.v30.SynchronizerTrustCertificate.synchronizer_id type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.ParticipantSynchronizerPermission.synchronizer_id type:FT_POINTER
+com.digitalasset.canton.protocol.v30.ParticipantSynchronizerPermission.participant_uid type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.PartyHostingLimits.synchronizer_id type:FT_POINTER
+com.digitalasset.canton.protocol.v30.PartyHostingLimits.party type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.VettedPackages.participant_uid type:FT_POINTER
+com.digitalasset.canton.protocol.v30.VettedPackages.package_ids type:FT_POINTER
+com.digitalasset.canton.protocol.v30.VettedPackages.package_ids max_count:8
+com.digitalasset.canton.protocol.v30.VettedPackages.VettedPackage.package_id type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.PartyToParticipant.party type:FT_POINTER
+com.digitalasset.canton.protocol.v30.PartyToParticipant.participants type:FT_POINTER
+com.digitalasset.canton.protocol.v30.PartyToParticipant.participants max_count:8
+com.digitalasset.canton.protocol.v30.PartyToParticipant.HostingParticipant.participant_uid type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.SynchronizerParametersState.synchronizer_id type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.MediatorSynchronizerState.synchronizer_id type:FT_POINTER
+com.digitalasset.canton.protocol.v30.MediatorSynchronizerState.active type:FT_POINTER
+com.digitalasset.canton.protocol.v30.MediatorSynchronizerState.active max_count:8
+com.digitalasset.canton.protocol.v30.MediatorSynchronizerState.observers type:FT_POINTER
+com.digitalasset.canton.protocol.v30.MediatorSynchronizerState.observers max_count:8
+
+com.digitalasset.canton.protocol.v30.SequencerSynchronizerState.synchronizer_id type:FT_POINTER
+com.digitalasset.canton.protocol.v30.SequencerSynchronizerState.active type:FT_POINTER
+com.digitalasset.canton.protocol.v30.SequencerSynchronizerState.active max_count:8
+com.digitalasset.canton.protocol.v30.SequencerSynchronizerState.observers type:FT_POINTER
+com.digitalasset.canton.protocol.v30.SequencerSynchronizerState.observers max_count:8
+
+com.digitalasset.canton.protocol.v30.PartyToKeyMapping.party type:FT_POINTER
+com.digitalasset.canton.protocol.v30.PartyToKeyMapping.signing_keys type:FT_POINTER
+com.digitalasset.canton.protocol.v30.PartyToKeyMapping.signing_keys max_count:8
+
+com.digitalasset.canton.protocol.v30.SynchronizerUpgradeAnnouncement.successor_physical_synchronizer_id type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.SequencerConnectionSuccessor.sequencer_id type:FT_POINTER
+com.digitalasset.canton.protocol.v30.SequencerConnectionSuccessor.synchronizer_id type:FT_POINTER
+com.digitalasset.canton.protocol.v30.SequencerConnectionSuccessor.SequencerConnection.Grpc.endpoints type:FT_POINTER
+com.digitalasset.canton.protocol.v30.SequencerConnectionSuccessor.SequencerConnection.Grpc.endpoints max_count:8
+com.digitalasset.canton.protocol.v30.SequencerConnectionSuccessor.SequencerConnection.Grpc.custom_trust_certificates type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.DynamicSequencingParametersState.synchronizer_id type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.SignedTopologyTransaction.transaction type:FT_POINTER
+
+com.digitalasset.canton.protocol.v30.TopologyTransactionsBroadcast.physical_synchronizer_id type:FT_POINTER
+
+EOF
+
+
 # Generate nanopb C/H code for protobuf messages
 generate_nanopb_code() {
   local include_paths=$1
@@ -218,11 +303,6 @@ generate_nanopb_code() {
   # Extract the base name for the options file
   local base_name=$(basename "$proto_file" .proto)
   local options_file="${base_name}.options"
-
-  # Check if specific options file exists, otherwise use value.options for Value-related protos
-  if [ ! -f "$options_file" ] && [[ "$proto_file" == *"value.proto"* ]]; then
-    options_file="value.options"
-  fi
 
   # Build the protoc command
   local protoc_cmd="$PROTOC --nanopb_out=$OUTPUT_DIR"
@@ -258,6 +338,10 @@ echo "Generating nanopb C/H code from protobuf definitions..."
 sed -i -E 's/\bbool bool\b/bool bool_/g; s/\bEnum enum\b/Enum enum_/g' com/daml/ledger/api/v2/value.proto
 sed -i -E 's/\bbool bool\b/bool bool_/g; s/\bEnum enum\b/Enum enum_/g' com/daml/ledger/api/v2/value_cb.proto
 
+# Remove scalapb annotations from all proto files to avoid nanopb generation issues (we don't use them anyway as we are in C)
+find "$PROTOCOL_PROTO_PATH" "$CRYPTO_PROTO_PATH" -name "*.proto" \
+  -exec sed -i -E '/option \(scalapb\.message\)|import "scalapb\/scalapb.proto";/d' {} +
+
 # Generate value.proto first to ensure all dependencies are available
 generate_nanopb_code "." "com/daml/ledger/api/v2/value.proto"
 generate_nanopb_code "." "com/daml/ledger/api/v2/value_cb.proto"
@@ -276,6 +360,14 @@ generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/d
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/interactive_submission_common_data.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/transaction/v1/interactive_submission_data.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/transaction/v1/interactive_submission_data_cb.proto"
+
+# Generate topology files
+generate_nanopb_code "$COMMUNITY_PROTO_PATH" "$COMMUNITY_CANTON_PROTO_PATH/version/v1/untyped_versioned_message.proto"
+generate_nanopb_code "$COMMUNITY_PROTO_PATH" "$PROTOCOL_PROTO_PATH/traffic_control_parameters.proto"
+generate_nanopb_code "$COMMUNITY_PROTO_PATH" "$PROTOCOL_PROTO_PATH/synchronizer_parameters.proto"
+generate_nanopb_code "$COMMUNITY_PROTO_PATH" "$PROTOCOL_PROTO_PATH/sequencing_parameters.proto"
+generate_nanopb_code "$COMMUNITY_PROTO_PATH" "$PROTOCOL_PROTO_PATH/topology.proto"
+generate_nanopb_code "$COMMUNITY_PROTO_PATH" "$CRYPTO_PROTO_PATH/crypto.proto"
 
 # Generate other ledger API files
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/offset_checkpoint.proto"

@@ -44,6 +44,19 @@ parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx)
 parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
+ * Deserialize TopologyTransaction protobuf message in structure.
+ *
+ * @param[in, out] buf
+ *   Pointer to buffer with serialized transaction.
+ * @param[out]     tx_ctx
+ *   Pointer to transaction context structure.
+ *
+ * @return PARSING_OK if success, error status otherwise.
+ *
+ */
+parser_status_e proto_deserialize_topology_transaction(buffer_t *buf, transaction_ctx_t *tx_ctx);
+
+/**
  * Release dynamically allocated memory for DamlTransaction protobuf message.
  *
  * @param[in, out]     tx_ctx

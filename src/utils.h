@@ -24,3 +24,14 @@ void canton_fingerprint(uint8_t purpose, const uint8_t *data, size_t data_len, u
  * @param[out] out       34-byte output buffer for the prefixed digest
  */
 void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[34]);
+
+/**
+ * @brief Safe snprintf macro that disables -Wformat for the snprintf call.
+ * We have custom formats like %H that would trigger warnings).
+ */
+#define SNPRINTF(str, size, format, ...)                                              \
+    do {                                                                              \
+        _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wformat\"") \
+            snprintf(str, size, format, __VA_ARGS__);                                 \
+        _Pragma("GCC diagnostic pop")                                                 \
+    } while (0)

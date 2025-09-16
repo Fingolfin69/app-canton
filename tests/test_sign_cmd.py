@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 from ragger.backend.interface import BackendInterface
 # from ragger.error import ExceptionRAPDU
 from ragger.navigator.navigation_scenario import NavigateWithScenario
@@ -17,108 +18,119 @@ from utils import verify_signature
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
-def test_sign_tx_hash_32(
-    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+def _sign_and_verify_hash(
+    backend: BackendInterface,
+    scenario_navigator: NavigateWithScenario,
+    tx_hash: bytes,
+    test_name: str,
 ) -> None:
-    # Use the app interface instead of raw interface
     client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
 
     rapdu = client.get_public_key(path=path)
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
+    with client.sign_tx(path=path, transaction=tx_hash, p1=P1SignType.P1_SIGN_HASH):
+        scenario_navigator.review_approve_with_warning(
+            path=ROOT_SCREENSHOT_PATH, test_name=test_name
+        )
+
+    response = client.get_async_response().data
+    _, der_sig, _ = unpack_sign_tx_response(response)
+    verify_signature(public_key, tx_hash, der_sig)
+
+
+def test_sign_hash_32(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
     tx_hash = Transaction.get_hash_from_json(
         "tests/tx_examples/external_sign_ping.json"
     )
-
-    with client.sign_tx(path=path, transaction=tx_hash, p1=P1SignType.P1_SIGN_HASH):
-        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_tx_hash_32")
-
-    response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
-    verify_signature(public_key, tx_hash, der_sig)
+    _sign_and_verify_hash(
+        backend, scenario_navigator, tx_hash, test_name="test_sign_hash_32"
+    )
 
 
-def test_sign_tx_hash_34(
+def test_sign_hash_34(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
-    # Use the app interface instead of raw interface
-    client = CantonCommandSender(backend)
-    path = "m/44'/6767'/0'/0'/0'"
-
-    rapdu = client.get_public_key(path=path)
-    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
-
     tx_hash = b"\x00\x01" + Transaction.get_hash_from_json(
         "tests/tx_examples/external_sign_ping.json"
     )
+    _sign_and_verify_hash(
+        backend, scenario_navigator, tx_hash, test_name="test_sign_hash_34"
+    )
 
-    with client.sign_tx(path=path, transaction=tx_hash, p1=P1SignType.P1_SIGN_HASH):
-        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_tx_hash_34")
-
-    response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
-    verify_signature(public_key, tx_hash, der_sig)
-
-# In this test se send to the device a transaction to sign and validate it on screen
-# This test is mostly the same as the previous one but with different values.
-# In particular the long memo will force the transaction to be sent in multiple chunks
-def test_sign_tx_ping(
-    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+def _sign_and_verify_prepared_transaction(
+    backend: BackendInterface,
+    scenario_navigator: NavigateWithScenario,
+    tx_json: str,
+    custom_screen_text: Optional[str] = None,
+    warning: bool = False,
 ) -> None:
-    tx_json = "tests/tx_examples/external_sign_ping.json"
-
-    # Use the app interface instead of raw interface
     client = CantonCommandSender(backend)
     path: str = "m/44'/6767'/0'/0'/0'"
 
-    rapdu = client.get_public_key(path=path)
-    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
+    _, public_key, _, _ = unpack_get_public_key_response(client.get_public_key(path=path).data)
 
-    (ser_tx, ser_nodes, ser_meta, ser_contracts) = Transaction.serialize_from_json_into_tx_parts(tx_json)
-
+    ser_tx, ser_nodes, ser_meta, ser_contracts = Transaction.serialize_from_json_into_tx_parts(tx_json)
     tx_hash = Transaction.get_hash_from_json(tx_json)
     print(f"Transaction hash: {tx_hash.hex()}")
-    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts)
-    print(f"Serialized transaction length: {total_len} bytes")
+    print(f"Serialized transaction length: {len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts)} bytes")
 
     with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts) as response:
-        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH)
+        if warning:
+            scenario_navigator.review_approve_with_warning(
+                path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text)
+        else:
+            scenario_navigator.review_approve(
+                path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text)
 
     response = client.get_async_response().data
     _, der_sig, _ = unpack_sign_tx_response(response)
     verify_signature(public_key, tx_hash, der_sig)
 
-
-def test_sign_tx_token_transfer(
+def test_sign_ping(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
-    tx_json = "tests/tx_examples/token_transfer.json"
+    _sign_and_verify_prepared_transaction(
+        backend,
+        scenario_navigator,
+        tx_json="tests/tx_examples/external_sign_ping.json",
+        warning=True,
+    )
 
-    # Use the app interface instead of raw interface
-    client = CantonCommandSender(backend)
-    path: str = "m/44'/6767'/0'/0'/0'"
+def test_sign_native_transfer(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
+    _sign_and_verify_prepared_transaction(
+        backend,
+        scenario_navigator,
+        tx_json="tests/tx_examples/native_transfer.json",
+        custom_screen_text="Sign transaction to",
+    )
 
-    rapdu = client.get_public_key(path=path)
-    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
+def test_sign_token_transfer(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
+    _sign_and_verify_prepared_transaction(
+        backend,
+        scenario_navigator,
+        tx_json="tests/tx_examples/token_transfer.json",
+        custom_screen_text="Sign transaction to",
+    )
 
-    (ser_tx, ser_nodes, ser_meta, ser_contracts) = Transaction.serialize_from_json_into_tx_parts(tx_json)
+def test_sign_preapproval_proposal(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
+    _sign_and_verify_prepared_transaction(
+        backend,
+        scenario_navigator,
+        tx_json="tests/tx_examples/preapproval_proposal.json",
+        custom_screen_text="Sign transaction to",
+    )
 
-    tx_hash = Transaction.get_hash_from_json(tx_json)
-    print(f"Transaction hash: {tx_hash.hex()}")
-    total_len = len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts)
-    print(f"Serialized transaction length: {total_len} bytes")
-
-    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts) as response:
-        print("Please review the transaction on the device")
-        scenario_navigator.review_approve(path=ROOT_SCREENSHOT_PATH)
-
-    response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
-    verify_signature(public_key, tx_hash, der_sig)
-
-
-def test_sign_topology_tx(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
+def test_sign_onboarding(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
     # Use the app interface instead of raw interface
     client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
@@ -151,7 +163,7 @@ def test_sign_topology_tx(backend: BackendInterface, scenario_navigator: Navigat
     multi_hash = Transaction.compute_multi_transaction_hash(hashes)
 
     with client.sign_topology_tx(path=path, transactions=[bytes.fromhex(tx) for tx in txs]):
-        scenario_navigator.review_approve_with_warning(path=ROOT_SCREENSHOT_PATH, test_name="test_sign_topology_tx")
+        scenario_navigator.review_approve(path=ROOT_SCREENSHOT_PATH, custom_screen_text="Sign transaction to")
 
     response = client.get_async_response().data
     _, der_sig, _ = unpack_sign_tx_response(response)

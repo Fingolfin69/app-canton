@@ -4,6 +4,8 @@
 #include <stdint.h>  // uint*_t
 
 #include "com/daml/ledger/api/v2/interactive/device.pb.h"
+#include "com/digitalasset/canton/version/v1/untyped_versioned_message.pb.h"
+#include "com/digitalasset/canton/protocol/v30/topology.pb.h"
 
 typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction DamlTransaction;
 typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node Node;
@@ -40,6 +42,17 @@ typedef com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract InputCon
 #define NODE_V1_FETCH_TAG        com_daml_ledger_api_v2_interactive_transaction_v1_Node_fetch_tag
 #define NODE_V1_ROLLBACK_TAG     com_daml_ledger_api_v2_interactive_transaction_v1_Node_rollback_tag
 
+#define TOPOLOGY_MAPPING_NAMESPACE_DELEGATION_TAG \
+    com_digitalasset_canton_protocol_v30_TopologyMapping_namespace_delegation_tag
+#define TOPOLOGY_MAPPING_PARTY_TO_PARTICIPANT_TAG \
+    com_digitalasset_canton_protocol_v30_TopologyMapping_party_to_participant_tag
+#define TOPOLOGY_MAPPING_PARTY_TO_KEY_MAPPING_TAG \
+    com_digitalasset_canton_protocol_v30_TopologyMapping_party_to_key_mapping_tag
+
+typedef com_digitalasset_canton_protocol_v30_NamespaceDelegation NamespaceDelegation;
+typedef com_digitalasset_canton_protocol_v30_PartyToParticipant PartyToParticipant;
+typedef com_digitalasset_canton_protocol_v30_PartyToKeyMapping PartyToKeyMapping;
+
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_Node Node_V1;
 typedef com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed NodeSeed;
 
@@ -53,6 +66,9 @@ typedef com_daml_ledger_api_v2_RecordField RecordField;
 typedef com_daml_ledger_api_v2_GenMap_Entry GenMapEntry;
 typedef com_daml_ledger_api_v2_TextMap_Entry TextMapEntry;
 typedef com_daml_ledger_api_v2_Identifier Identifier;
+
+typedef com_digitalasset_canton_version_v1_UntypedVersionedMessage UntypedVersionedMessage;
+typedef com_digitalasset_canton_protocol_v30_TopologyTransaction TopologyTransaction;
 
 #define PARTY_ID_LEN 74  // 3 + 2 + 2*34 + 1 = 74 ldg::hex(fingerprint) + null terminator
 
@@ -72,12 +88,14 @@ typedef enum {
  */
 typedef struct {
     union {
-        DamlTransaction daml_transaction;  /// DAML transaction
-        Metadata metadata;                 /// metadata of the transaction
+        DamlTransaction daml_transaction;               /// DAML transaction
+        Metadata metadata;                              /// metadata of the transaction
+        UntypedVersionedMessage untyped_versioned_msg;  /// untyped versioned message
     };
 
     union {
-        Node node;                     /// DAML transaction node
-        InputContract input_contract;  /// input contract
+        Node node;                                 /// DAML transaction node
+        InputContract input_contract;              /// input contract
+        TopologyTransaction topology_transaction;  /// topology transaction
     };
 } transaction_parts_ctx_t;
