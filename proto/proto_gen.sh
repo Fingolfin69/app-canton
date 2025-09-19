@@ -64,8 +64,9 @@ echo "Creating value.options file..."
 cat > value.options << 'EOF'
 * anonymous_oneof:true
 # Handle recursive Value fields with pointers to break cycles
-com.daml.ledger.api.v2.RecordField.value type:FT_POINTER
-com.daml.ledger.api.v2.List.elements type:FT_POINTER
+com.daml.ledger.api.v2.Value submsg_callback:true
+com.daml.ledger.api.v2.RecordField.value type:FT_STATIC
+com.daml.ledger.api.v2.List.elements type:FT_CALLBACK
 com.daml.ledger.api.v2.Optional.value type:FT_POINTER
 com.daml.ledger.api.v2.Variant.value type:FT_POINTER
 com.daml.ledger.api.v2.TextMap.Entry.value type:FT_POINTER
@@ -84,7 +85,7 @@ com.daml.ledger.api.v2.Variant.constructor type:FT_POINTER
 com.daml.ledger.api.v2.Enum.constructor type:FT_POINTER
 com.daml.ledger.api.v2.RecordField.label type:FT_POINTER
 com.daml.ledger.api.v2.TextMap.Entry.key type:FT_POINTER
-com.daml.ledger.api.v2.Record.fields type:FT_POINTER
+com.daml.ledger.api.v2.Record.fields type:FT_CALLBACK
 EOF
 
 echo "Creating interactive_submission_data.options file..."
@@ -96,6 +97,7 @@ com.daml.ledger.api.v2.interactive.transaction.v1.Create.contract_id type:FT_POI
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.package_name type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Create.argument type:FT_CALLBACK
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.lf_version type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.contract_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.package_name type:FT_POINTER
@@ -140,6 +142,7 @@ com.daml.ledger.api.v2.interactive.DeviceMetadata.transaction_uuid type:FT_POINT
 com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.act_as type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.command_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract.event_blob type:FT_IGNORE
+com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract submsg_callback:true
 EOF
 
 # Generate nanopb C/H code for protobuf messages

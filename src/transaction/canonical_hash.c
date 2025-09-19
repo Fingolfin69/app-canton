@@ -320,8 +320,8 @@ static void wrap_encode_text_map_entry(HashWriter *hw, const void *ctx) {
 }
 
 static void encode_record_field(HashWriter *hw, const RecordField *f) {
-    encode_optional(hw, f->label != NULL, (EncodeFn) wrap_encode_string, &f->label);
-    encode_value(hw, f->value);
+    //encode_optional(hw, f->label != NULL, (EncodeFn) wrap_encode_string, &f->label);
+    //encode_value(hw, f->value);
 }
 static void wrap_encode_record_field(HashWriter *hw, const void *ctx) {
     encode_record_field(hw, (const RecordField *) ctx);
@@ -380,12 +380,12 @@ static void encode_value(HashWriter *hw, const Value *v) {
                             v->optional.value);
             return;
         case VALUE_LIST_TAG:
-            hw_put_byte(hw, 0x0A);
-            encode_repeated(hw,
-                            v->list.elements_count,
-                            v->list.elements,
-                            sizeof(Value),
-                            wrap_encode_value);
+            //hw_put_byte(hw, 0x0A);
+            //encode_repeated(hw,
+            //                v->list.elements_count,
+            //                v->list.elements,
+            //                sizeof(Value),
+            //                wrap_encode_value);
             return;
         case VALUE_TEXT_MAP_TAG:
             hw_put_byte(hw, 0x0B);
@@ -396,16 +396,16 @@ static void encode_value(HashWriter *hw, const Value *v) {
                             wrap_encode_text_map_entry);
             return;
         case VALUE_RECORD_TAG:
-            hw_put_byte(hw, 0x0C);
-            encode_optional(hw,
-                            v->record.has_record_id,
-                            wrap_encode_identifier,
-                            &v->record.record_id);
-            encode_repeated(hw,
-                            v->record.fields_count,
-                            v->record.fields,
-                            sizeof(RecordField),
-                            wrap_encode_record_field);
+            //hw_put_byte(hw, 0x0C);
+            //encode_optional(hw,
+            //                v->record.has_record_id,
+            //                wrap_encode_identifier,
+            //                &v->record.record_id);
+            //encode_repeated(hw,
+            //                v->record.fields_count,
+            //                v->record.fields,
+            //                sizeof(RecordField),
+            //                wrap_encode_record_field);
             return;
         case VALUE_VARIANT_TAG:
             hw_put_byte(hw, 0x0D);
@@ -496,7 +496,7 @@ static void encode_create(HashWriter *hw,
     encode_hex_string(hw, c->contract_id);
     encode_string(hw, c->package_name);
     encode_identifier(hw, &c->template_id);
-    encode_value(hw, &c->argument);
+    //encode_value(hw, &c->argument);
     encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }

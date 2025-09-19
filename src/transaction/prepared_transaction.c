@@ -55,23 +55,23 @@ int process_prepared_tx_part(buffer_t *buf) {
                            : RECEIVING_DAML_NODES;
         } break;
         case RECEIVING_DAML_NODES: {
-            parser_status_e status = proto_deserialize_node(buf, &G_context.tx_info);
+            //parser_status_e status = proto_deserialize_node(buf, &G_context.tx_info);
 
-            if (status != PARSING_OK) {
-                PRINTF("Failed to parse DAML Node part: %d\n", status);
-                return SW_TX_PARSING_FAIL;
-            }
+            //if (status != PARSING_OK) {
+            //    PRINTF("Failed to parse DAML Node part: %d\n", status);
+            //    return SW_TX_PARSING_FAIL;
+            //}
 
-            int res = hash_node(&G_context.tx_info.hasher,
-                                &G_context.tx_info.tx_parts_ctx.daml_transaction,
-                                &G_context.tx_info.tx_parts_ctx.node);
+            //int res = hash_node(&G_context.tx_info.hasher,
+            //                    &G_context.tx_info.tx_parts_ctx.daml_transaction,
+            //                    &G_context.tx_info.tx_parts_ctx.node);
 
-            release_node(&G_context.tx_info);
+            //release_node(&G_context.tx_info);
 
-            if (res != 0) {
-                PRINTF("Failed to hash DAML Node part: %d\n", res);
-                return SW_TX_HASH_FAIL;
-            }
+            //if (res != 0) {
+            //    PRINTF("Failed to hash DAML Node part: %d\n", res);
+            //    return SW_TX_HASH_FAIL;
+            //}
 
             G_context.tx_info.recv_node_idx++;
 
@@ -124,15 +124,15 @@ int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res = hash_input_contract(&G_context.tx_info.hasher,
-                                          &G_context.tx_info.tx_parts_ctx.input_contract);
+            //int res = hash_input_contract(&G_context.tx_info.hasher,
+            //                              &G_context.tx_info.tx_parts_ctx.input_contract);
 
             release_input_contract(&G_context.tx_info);
 
-            if (res != 0) {
-                PRINTF("Failed to hash Input Contract part: %d\n", res);
-                return SW_TX_HASH_FAIL;
-            }
+            //if (res != 0) {
+            //    PRINTF("Failed to hash Input Contract part: %d\n", res);
+            //    return SW_TX_HASH_FAIL;
+            //}
 
             G_context.tx_info.recv_node_idx++;
 
