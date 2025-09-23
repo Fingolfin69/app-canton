@@ -5,7 +5,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class TraceContext(_message.Message):
-    __slots__ = ("traceparent", "tracestate")
+    __slots__ = ["traceparent", "tracestate"]
     TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
     TRACESTATE_FIELD_NUMBER: _ClassVar[int]
     traceparent: str
