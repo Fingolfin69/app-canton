@@ -58,15 +58,16 @@ mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledge
 
 # Copy device proto file
 cp -v $ROOT_PATH/device.proto $LEDGER_API_V2_PATH/interactive/
+cp -v $ROOT_PATH/interactive_submission_data_cb.proto $LEDGER_API_V2_PATH/interactive/transaction/v1/
+cp -v $ROOT_PATH/value_cb.proto $ROOT_PATH/com/daml/ledger/api/v2/
 
 # Create the options file for value.proto
 echo "Creating value.options file..."
 cat > value.options << 'EOF'
 * anonymous_oneof:true
 # Handle recursive Value fields with pointers to break cycles
-com.daml.ledger.api.v2.Value submsg_callback:true
-com.daml.ledger.api.v2.RecordField.value type:FT_STATIC
-com.daml.ledger.api.v2.List.elements type:FT_CALLBACK
+com.daml.ledger.api.v2.RecordField.value type:FT_POINTER
+com.daml.ledger.api.v2.List.elements type:FT_POINTER
 com.daml.ledger.api.v2.Optional.value type:FT_POINTER
 com.daml.ledger.api.v2.Variant.value type:FT_POINTER
 com.daml.ledger.api.v2.TextMap.Entry.value type:FT_POINTER
@@ -85,7 +86,7 @@ com.daml.ledger.api.v2.Variant.constructor type:FT_POINTER
 com.daml.ledger.api.v2.Enum.constructor type:FT_POINTER
 com.daml.ledger.api.v2.RecordField.label type:FT_POINTER
 com.daml.ledger.api.v2.TextMap.Entry.key type:FT_POINTER
-com.daml.ledger.api.v2.Record.fields type:FT_CALLBACK
+com.daml.ledger.api.v2.Record.fields type:FT_POINTER
 EOF
 
 echo "Creating interactive_submission_data.options file..."
@@ -97,7 +98,6 @@ com.daml.ledger.api.v2.interactive.transaction.v1.Create.contract_id type:FT_POI
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.package_name type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.signatories type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Create.stakeholders type:FT_POINTER
-com.daml.ledger.api.v2.interactive.transaction.v1.Create.argument type:FT_CALLBACK
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.lf_version type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.contract_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.package_name type:FT_POINTER
@@ -143,6 +143,68 @@ com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.act_as type:FT_P
 com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.command_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract.event_blob type:FT_IGNORE
 com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract submsg_callback:true
+EOF
+
+# CALLBACK versions of the options files
+echo "Creating value_cb.options file..."
+cat > value_cb.options << 'EOF'
+* anonymous_oneof:true
+# Handle recursive Value fields with pointers to break cycles
+com.daml.ledger.api.v2.cb.Value submsg_callback:true
+com.daml.ledger.api.v2.cb.RecordField.value type:FT_STATIC
+com.daml.ledger.api.v2.cb.List.elements type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.Optional.value type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.Variant.value type:FT_POINTER
+com.daml.ledger.api.v2.cb.TextMap.Entry.value type:FT_POINTER
+com.daml.ledger.api.v2.cb.TextMap.entries type:FT_POINTER
+com.daml.ledger.api.v2.cb.GenMap.Entry.value type:FT_STATIC
+com.daml.ledger.api.v2.cb.GenMap.Entry.key type:FT_STATIC
+com.daml.ledger.api.v2.cb.GenMap.entries type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.Value.numeric type:FT_POINTER
+com.daml.ledger.api.v2.cb.Value.party type:FT_POINTER
+com.daml.ledger.api.v2.cb.Value.text type:FT_POINTER
+com.daml.ledger.api.v2.cb.Value.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.cb.Identifier.package_id type:FT_POINTER
+com.daml.ledger.api.v2.cb.Identifier.module_name type:FT_POINTER
+com.daml.ledger.api.v2.cb.Identifier.entity_name type:FT_POINTER
+com.daml.ledger.api.v2.cb.Variant.constructor type:FT_POINTER
+com.daml.ledger.api.v2.cb.Enum.constructor type:FT_POINTER
+com.daml.ledger.api.v2.cb.RecordField.label type:FT_POINTER
+com.daml.ledger.api.v2.cb.TextMap.Entry.key type:FT_POINTER
+com.daml.ledger.api.v2.cb.Record.fields type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.Record.record_id type:FT_CALLBACK
+EOF
+
+echo "Creating interactive_submission_data_cb.options file..."
+cat > interactive_submission_data_cb.options << 'EOF'
+* anonymous_oneof:true
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create type:FT_IGNORE
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create.argument type:FT_CALLBACK
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.lf_version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.package_name type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.choice_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.signatories type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.acting_parties type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.children type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.choice_observers type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.lf_version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.package_name type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.signatories type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.acting_parties type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.interface_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.interface_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Rollback.children type:FT_POINTER
+# All expect Create.argument field
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.lf_version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.package_name type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.signatories type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.stakeholders type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.argument type:FT_IGNORE
 EOF
 
 # Generate nanopb C/H code for protobuf messages
@@ -194,9 +256,11 @@ echo "Generating nanopb C/H code from protobuf definitions..."
 
 # Replace "bool" and "enum" field names in value.proto to make sure only C allowed names are used.
 sed -i -E 's/\bbool bool\b/bool bool_/g; s/\bEnum enum\b/Enum enum_/g' com/daml/ledger/api/v2/value.proto
+sed -i -E 's/\bbool bool\b/bool bool_/g; s/\bEnum enum\b/Enum enum_/g' com/daml/ledger/api/v2/value_cb.proto
 
 # Generate value.proto first to ensure all dependencies are available
 generate_nanopb_code "." "com/daml/ledger/api/v2/value.proto"
+generate_nanopb_code "." "com/daml/ledger/api/v2/value_cb.proto"
 
 # Generate essential proto files
 generate_nanopb_code "." "google/protobuf/empty.proto"
@@ -211,6 +275,7 @@ generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/i
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/device.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/interactive_submission_common_data.proto"
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/transaction/v1/interactive_submission_data.proto"
+generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/interactive/transaction/v1/interactive_submission_data_cb.proto"
 
 # Generate other ledger API files
 generate_nanopb_code "$LEDGER_API_PROTO_PATH" "$LEDGER_API_V2_PATH/offset_checkpoint.proto"
