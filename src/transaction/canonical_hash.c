@@ -197,23 +197,13 @@ static int get_node_hash(const char *node_id, uint8_t out[32]) {
 
 void hw_init(HashWriter *hw) {
     CX_ASSERT(cx_sha256_init_no_throw(&hw->ctx));
-    hw->debug = false;
-}
-
-void hw_debug(HashWriter *hw, bool debug) {
-    CX_ASSERT(cx_sha256_init_no_throw(&hw->ctx));
-    hw->debug = debug;
 }
 
 void hw_put(HashWriter *hw, const void *p, size_t n) {
-    if (hw->debug) {
-        PRINTF("MOOSE: %.*H\n", n, p);
-    }
-
     CX_ASSERT(cx_hash_update((cx_hash_t *) &hw->ctx, p, n));
 }
 
-void hw_finalzie(HashWriter *hw, uint8_t out[32]) {
+void hw_finalize(HashWriter *hw, uint8_t out[32]) {
     CX_ASSERT(cx_hash_final((cx_hash_t *) &hw->ctx, out));
 }
 
@@ -636,7 +626,7 @@ static void encode_node_id_hash(HashWriter *hw,
     hw_init(&n_hw);
     encode_node(&n_hw, node, seeds, n_seeds);
     uint8_t h[32];
-    hw_finalzie(&n_hw, h);
+    hw_finalize(&n_hw, h);
 
     if (is_root_node) {
         hw_put(hw, h, 32);
@@ -714,7 +704,7 @@ int hash_node(HashWriter *hw, const DamlTransaction *tx, const Node *node) {
 }
 
 int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]) {
-    hw_finalzie(hw, out);
+    hw_finalize(hw, out);
 
     PRINTF("TX hash: %.*H\n", 32, out);
 
@@ -745,7 +735,7 @@ int hash_metadata(HashWriter *hw, const Metadata *md) {
 //     encode_create(&n_hw, &c->v1, NULL, NULL, 0);
 //
 //     uint8_t hash[32];
-//     hw_finalzie(&n_hw, hash);
+//     hw_finalize(&n_hw, hash);
 //
 //     PRINTF("Contract hash: %.*H\n", 32, hash);
 //
@@ -762,7 +752,7 @@ int hash_metadata(HashWriter *hw, const Metadata *md) {
 // }
 
 int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]) {
-    hw_finalzie(hw, out);
+    hw_finalize(hw, out);
 
     PRINTF("Metadata hash: %.*H\n", 32, out);
 
@@ -778,7 +768,7 @@ int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t 
     hw_put(&hw, tx_hash, 32);
     hw_put(&hw, md_hash, 32);
 
-    hw_finalzie(&hw, out);
+    hw_finalize(&hw, out);
 
     return 0;
 }

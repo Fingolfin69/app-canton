@@ -6,7 +6,6 @@
 
 typedef struct {
     cx_sha256_t ctx;
-    bool debug;
 } HashWriter;
 
 typedef com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateNoArg Node_CreateCbNoArg;
@@ -24,7 +23,7 @@ int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t 
 
 void hw_init(HashWriter *hw);
 void hw_put(HashWriter *hw, const void *p, size_t n);
-void hw_finalzie(HashWriter *hw, uint8_t out[32]);
+void hw_finalize(HashWriter *hw, uint8_t out[32]);
 void hw_put_byte(HashWriter *hw, uint8_t b);
 void hw_put_u32_be(HashWriter *hw, uint32_t v);
 void hw_put_u64_be(HashWriter *hw, uint64_t v);

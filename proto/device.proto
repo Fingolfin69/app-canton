@@ -61,7 +61,7 @@ message DeviceMetadata {
   message InputContract {
     oneof contract {
       // When new versions will be added, they will show here
-      com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create v1 = 1;
+      interactive.transaction.v1.Create v1 = 1;
     }
     uint64 created_at = 1000;
     reserved 1001; // Used to contain driver_metadata, now contained in event_blob
