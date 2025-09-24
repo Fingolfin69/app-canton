@@ -1,4 +1,4 @@
-#include "proto_deserialize_cb.h"
+#include "proto_deserialize_input_contract.h"
 
 #include "buffer.h"
 #include "canonical_hash.h"

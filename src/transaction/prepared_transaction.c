@@ -13,7 +13,7 @@
 #include "display.h"
 #include "tx_types.h"
 #include "proto_deserialize.h"
-#include "proto_deserialize_cb.h"
+#include "proto_deserialize_input_contract.h"
 #include "validate.h"
 #include "canonical_hash.h"
 
