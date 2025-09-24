@@ -108,8 +108,8 @@ ifneq ($(DEBUG), 0)
 endif
 
 DEFINES += PB_ENABLE_MALLOC=1
-#DEFINES += PB_BUFFER_ONLY=1
-#DEFINES += PB_INTERN_STRINGS=1
+DEFINES += PB_BUFFER_ONLY=1
+DEFINES += PB_INTERN_STRINGS=1
 
 include vendor/nanopb/extra/nanopb.mk
 
