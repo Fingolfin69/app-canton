@@ -51,8 +51,8 @@ class DeviceMetadata(_message.Message):
         V1_FIELD_NUMBER: _ClassVar[int]
         created_at: int
         event_blob: bytes
-        v1: _interactive_submission_data_cb_pb2.Create
-        def __init__(self, v1: _Optional[_Union[_interactive_submission_data_cb_pb2.Create, _Mapping]] = ..., created_at: _Optional[int] = ..., event_blob: _Optional[bytes] = ...) -> None: ...
+        v1: _interactive_submission_data_pb2.Create
+        def __init__(self, v1: _Optional[_Union[_interactive_submission_data_pb2.Create, _Mapping]] = ..., created_at: _Optional[int] = ..., event_blob: _Optional[bytes] = ...) -> None: ...
     class SubmitterInfo(_message.Message):
         __slots__ = ["act_as", "command_id"]
         ACT_AS_FIELD_NUMBER: _ClassVar[int]

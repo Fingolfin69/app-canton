@@ -75,7 +75,7 @@ typedef struct _com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract 
     pb_callback_t cb_contract;
     pb_size_t which_contract;
     union {
-        com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create v1;
+        com_daml_ledger_api_v2_interactive_transaction_v1_Create v1;
     }; 
     uint64_t created_at; 
 } com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract;
@@ -92,14 +92,14 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_default {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_default {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_default, false, com_daml_ledger_api_v2_Value_init_default}
-#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_default {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_init_default}, 0}
+#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_default {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_init_zero {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_init_zero {0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_zero {NULL, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_zero {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_zero {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_zero, false, com_daml_ledger_api_v2_Value_init_zero}
-#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_zero {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_init_zero}, 0}
+#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_zero {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero}, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_act_as_tag 1
@@ -180,7 +180,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (contract,v1,v1),   1) \
 X(a, STATIC,   SINGULAR, UINT64,   created_at,      1000)
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_CALLBACK NULL
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_DEFAULT NULL
-#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_contract_v1_MSGTYPE com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create
+#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_contract_v1_MSGTYPE com_daml_ledger_api_v2_interactive_transaction_v1_Create
 
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_msg;
@@ -208,8 +208,8 @@ extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceMetadata_Inpu
 #if defined(com_daml_ledger_api_v2_interactive_GlobalKey_size) && defined(com_daml_ledger_api_v2_Value_size)
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_size (12 + com_daml_ledger_api_v2_interactive_GlobalKey_size + com_daml_ledger_api_v2_Value_size)
 #endif
-#if defined(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_size)
-#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_size (18 + com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_size)
+#if defined(com_daml_ledger_api_v2_interactive_transaction_v1_Create_size)
+#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_size (18 + com_daml_ledger_api_v2_interactive_transaction_v1_Create_size)
 #endif
 
 #ifdef __cplusplus
