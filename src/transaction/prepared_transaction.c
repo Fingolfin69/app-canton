@@ -177,22 +177,14 @@ int process_prepared_tx_part(buffer_t *buf) {
 
         } break;
         case RECEIVING_METADATA_INPUT_CONTRACTS: {
-            parser_status_e status = proto_deserialize_input_contract(buf, &G_context.tx_info);
+            parser_status_e status = proto_deserialize_cb_input_contract(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Input Contract part: %d\n", status);
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res = hash_input_contract(&G_context.tx_info.hasher,
-                                          &G_context.tx_info.tx_parts_ctx.input_contract);
-
-            release_input_contract(&G_context.tx_info);
-
-            if (res != 0) {
-                PRINTF("Failed to hash Input Contract part: %d\n", res);
-                return SW_TX_HASH_FAIL;
-            }
+            release_cb_input_contract(&G_context.tx_info);
 
             G_context.tx_info.recv_node_idx++;
 

@@ -15,13 +15,13 @@
 #include "ledger_assert.h"
 #endif
 
-typedef com_daml_ledger_api_v2_cb_Value Value;
-typedef com_daml_ledger_api_v2_cb_Record Record;
-typedef com_daml_ledger_api_v2_cb_RecordField RecordField;
-typedef com_daml_ledger_api_v2_cb_List List;
-typedef com_daml_ledger_api_v2_cb_Optional Optional;
-typedef com_daml_ledger_api_v2_cb_GenMap GenMap;
-typedef com_daml_ledger_api_v2_cb_GenMap_Entry GenMapEntry;
+typedef com_daml_ledger_api_v2_cb_Value cbValue;
+typedef com_daml_ledger_api_v2_cb_Record cbRecord;
+typedef com_daml_ledger_api_v2_cb_RecordField cbRecordField;
+typedef com_daml_ledger_api_v2_cb_List cbList;
+typedef com_daml_ledger_api_v2_cb_Optional cbOptional;
+typedef com_daml_ledger_api_v2_cb_GenMap cbGenMap;
+typedef com_daml_ledger_api_v2_cb_GenMap_Entry cbGenMapEntry;
 
 static HashWriter node_hw;
 static uint8_t node_hash[32];
@@ -33,7 +33,7 @@ static bool count_record_field(pb_istream_t *stream, const pb_field_t *field, vo
     (void) field;
     (void) arg;
 
-    RecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
+    cbRecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_RecordField_fields, &rf)) {
         PRINTF("Failed to decode Record field: %s\n", PB_GET_ERROR(stream));
@@ -51,7 +51,7 @@ static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void 
     (void) field;
     (void) arg;
 
-    Value v = com_daml_ledger_api_v2_cb_Value_init_zero;
+    cbValue v = com_daml_ledger_api_v2_cb_Value_init_zero;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_Value_fields, &v)) {
         PRINTF("Failed to decode List: %s\n", PB_GET_ERROR(stream));
@@ -69,7 +69,7 @@ static bool count_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, v
     (void) field;
     (void) arg;
 
-    GenMapEntry e = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
+    cbGenMapEntry e = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &e)) {
         PRINTF("Failed to decode GenMap entry: %s\n", PB_GET_ERROR(stream));
@@ -103,18 +103,18 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
         } break;
         case com_daml_ledger_api_v2_cb_Value_list_tag: {
-            List *msg = field->pData;
+            cbList *msg = field->pData;
             msg->elements.funcs.decode = &count_list_elem;
         } break;
         case com_daml_ledger_api_v2_cb_Value_text_map_tag: {
             LEDGER_ASSERT(false, "TextMap not implemented");
         } break;
         case com_daml_ledger_api_v2_cb_Value_gen_map_tag: {
-            GenMap *msg = field->pData;
+            cbGenMap *msg = field->pData;
             msg->entries.funcs.decode = &count_gen_map_entry;
         } break;
         case com_daml_ledger_api_v2_cb_Value_record_tag: {
-            Record *msg = field->pData;
+            cbRecord *msg = field->pData;
             msg->fields.funcs.decode = &count_record_field;
         } break;
         case com_daml_ledger_api_v2_cb_Value_variant_tag: {
@@ -131,7 +131,7 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
 }
 
 static bool count_value_helper(pb_istream_t *stream) {
-    Value c = com_daml_ledger_api_v2_cb_Value_init_zero;
+    cbValue c = com_daml_ledger_api_v2_cb_Value_init_zero;
     pb_istream_t saved_stream = *stream;
 
     c.cb_sum.funcs.decode = &count_value;
@@ -150,7 +150,7 @@ static bool count_value_helper(pb_istream_t *stream) {
 }
 
 static bool count_record_field_helper(pb_istream_t *stream) {
-    RecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
+    cbRecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
     rf.value.cb_sum.funcs.decode = &count_value;
 
     pb_istream_t saved_stream = *stream;
@@ -170,7 +170,7 @@ static bool count_record_field_helper(pb_istream_t *stream) {
     return true;
 }
 
-static void decode_value_primitive_variants(Value *v) {
+static void decode_value_primitive_variants(cbValue *v) {
     switch (v->which_sum) {
         case com_daml_ledger_api_v2_cb_Value_unit_tag: {
             PRINTF("Decoding unit\n");
@@ -235,7 +235,7 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
         return false;
     }
 
-    RecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
+    cbRecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
     rf.value.cb_sum.funcs.decode = &decode_value_variant;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_RecordField_fields, &rf)) {
@@ -261,7 +261,7 @@ static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void
         return false;
     }
 
-    Value v = com_daml_ledger_api_v2_cb_Value_init_zero;
+    cbValue v = com_daml_ledger_api_v2_cb_Value_init_zero;
     v.cb_sum.funcs.decode = &decode_value_variant;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_Value_fields, &v)) {
@@ -286,7 +286,7 @@ static bool decode_value_opt(pb_istream_t *stream, const pb_field_t *field, void
         return false;
     }
 
-    Value v = com_daml_ledger_api_v2_cb_Value_init_zero;
+    cbValue v = com_daml_ledger_api_v2_cb_Value_init_zero;
     v.cb_sum.funcs.decode = &decode_value_variant;
 
     hw_put_byte(&node_hw, 0x01);  // encode optional field presence
@@ -311,7 +311,7 @@ static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, 
 
     PRINTF("Decoding GenMap entry\n");
 
-    GenMapEntry entry = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
+    cbGenMapEntry entry = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &entry)) {
         PRINTF("Failed to decode GenMap entry: %s\n", PB_GET_ERROR(stream));
@@ -376,12 +376,12 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
         case com_daml_ledger_api_v2_cb_Value_text_tag:
         case com_daml_ledger_api_v2_cb_Value_contract_id_tag:
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
-            Optional *msg = field->pData;
+            cbOptional *msg = field->pData;
             msg->value.funcs.decode = &decode_value_opt;
             hw_put_byte(&node_hw, 0x09);
         } break;
         case com_daml_ledger_api_v2_cb_Value_list_tag: {
-            List *msg = field->pData;
+            cbList *msg = field->pData;
             msg->elements.funcs.decode = &decode_list_elem;
             hw_put_byte(&node_hw, 0x0A);
             encode_int32(&node_hw, value_elem_count);
@@ -392,14 +392,14 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
             LEDGER_ASSERT(false, "TextMap not implemented");
         } break;
         case com_daml_ledger_api_v2_cb_Value_gen_map_tag: {
-            GenMap *msg = field->pData;
+            cbGenMap *msg = field->pData;
             msg->entries.funcs.decode = &decode_gen_map_entry;
             hw_put_byte(&node_hw, 0x0F);
             encode_int32(&node_hw, value_elem_count);
             value_elem_count = 0;
         } break;
         case com_daml_ledger_api_v2_cb_Value_record_tag: {
-            Record *msg = field->pData;
+            cbRecord *msg = field->pData;
             msg->record_id.funcs.decode = &decode_identifier_opt;
             msg->fields.funcs.decode = &decode_record_field;
             hw_put_byte(&node_hw, 0x0C);
@@ -430,7 +430,7 @@ static bool decode_input_contract_argument(pb_istream_t *stream,
         return false;
     }
 
-    Value v = com_daml_ledger_api_v2_cb_Value_init_zero;
+    cbValue v = com_daml_ledger_api_v2_cb_Value_init_zero;
 
     v.cb_sum.funcs.decode = &decode_value_variant;
 

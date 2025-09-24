@@ -9,9 +9,6 @@ typedef struct {
     cx_sha256_t ctx;
 } HashWriter;
 
-typedef com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateNoArg Node_CreateCbNoArg;
-typedef com_daml_ledger_api_v2_Identifier Identifier;
-
 int hash_transaction(HashWriter *hw, const DamlTransaction *tx);
 int hash_node(HashWriter *hw, const DamlTransaction *tx, const Node *node);
 int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]);
