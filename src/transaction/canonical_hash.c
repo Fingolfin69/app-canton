@@ -66,7 +66,6 @@ typedef com_daml_ledger_api_v2_Value Value;
 typedef com_daml_ledger_api_v2_RecordField RecordField;
 typedef com_daml_ledger_api_v2_GenMap_Entry GenMapEntry;
 typedef com_daml_ledger_api_v2_TextMap_Entry TextMapEntry;
-typedef com_daml_ledger_api_v2_Identifier Identifier;
 
 /* -------------------------------------------------------------------------- */
 /*  Error handling                                                            */
@@ -196,28 +195,29 @@ static int get_node_hash(const char *node_id, uint8_t out[32]) {
 /*  HashWriter helper                                                         */
 /* -------------------------------------------------------------------------- */
 
-static inline void hw_init(HashWriter *hw) {
+void hw_init(HashWriter *hw) {
     CX_ASSERT(cx_sha256_init_no_throw(&hw->ctx));
 }
 
-static inline void hw_put(HashWriter *hw, const void *p, size_t n) {
+void hw_put(HashWriter *hw, const void *p, size_t n) {
     CX_ASSERT(cx_hash_update((cx_hash_t *) &hw->ctx, p, n));
 }
 
-static inline void hw_finalzie(HashWriter *hw, uint8_t out[32]) {
+void hw_finalize(HashWriter *hw, uint8_t out[32]) {
     CX_ASSERT(cx_hash_final((cx_hash_t *) &hw->ctx, out));
 }
 
-static inline void hw_put_byte(HashWriter *hw, uint8_t b) {
+void hw_put_byte(HashWriter *hw, uint8_t b) {
     hw_put(hw, &b, 1);
 }
 
 // Big‑endian helpers
-static inline void hw_put_u32_be(HashWriter *hw, uint32_t v) {
+void hw_put_u32_be(HashWriter *hw, uint32_t v) {
     uint8_t t[4] = {(uint8_t) (v >> 24), (uint8_t) (v >> 16), (uint8_t) (v >> 8), (uint8_t) v};
     hw_put(hw, t, 4);
 }
-static inline void hw_put_u64_be(HashWriter *hw, uint64_t v) {
+
+void hw_put_u64_be(HashWriter *hw, uint64_t v) {
     uint8_t t[8] = {(uint8_t) (v >> 56),
                     (uint8_t) (v >> 48),
                     (uint8_t) (v >> 40),
@@ -233,28 +233,32 @@ static inline void hw_put_u64_be(HashWriter *hw, uint64_t v) {
 /*  Encoders                                                                  */
 /* -------------------------------------------------------------------------- */
 
-static inline void encode_bool(HashWriter *hw, bool v) {
+void encode_bool(HashWriter *hw, bool v) {
     hw_put_byte(hw, v ? 1 : 0);
 }
-static inline void encode_int32(HashWriter *hw, int32_t v) {
+
+void encode_int32(HashWriter *hw, int32_t v) {
     hw_put_u32_be(hw, (uint32_t) v);
 }
-static inline void encode_int64(HashWriter *hw, int64_t v) {
+
+void encode_int64(HashWriter *hw, int64_t v) {
     hw_put_u64_be(hw, (uint64_t) v);
 }
 
-static inline void encode_int64_by_ptr(HashWriter *hw, int64_t *v) {
+void encode_int64_by_ptr(HashWriter *hw, int64_t *v) {
     hw_put_u64_be(hw, (uint64_t) *v);
 }
 
-static void encode_bytes(HashWriter *hw, const uint8_t *data, int32_t len) {
+void encode_bytes(HashWriter *hw, const uint8_t *data, int32_t len) {
     encode_int32(hw, len);
     hw_put(hw, data, (size_t) len);
 }
-static void encode_string(HashWriter *hw, const char *s) {
+
+void encode_string(HashWriter *hw, const char *s) {
     encode_bytes(hw, (const uint8_t *) s, (int32_t) strlen(s));
 }
-static void encode_hash(HashWriter *hw, const uint8_t h[32]) {
+
+void encode_hash(HashWriter *hw, const uint8_t h[32]) {
     hw_put(hw, h, 32);
 }
 
@@ -265,7 +269,7 @@ static uint8_t hex_val(char c) {
                                                : 10 + c - 'A');
 }
 
-static void encode_hex_string(HashWriter *hw, const char *hex) {
+void encode_hex_string(HashWriter *hw, const char *hex) {
     size_t len = strlen(hex);
     if (len % 2 != 0) {
         set_hash_error(HASH_ERROR_INVALID_HASH_STRING, "Hex string must have even length");
@@ -297,7 +301,6 @@ static void encode_repeated(HashWriter *hw,
     for (size_t i = 0; i < count; ++i) fn(hw, p + i * elem_sz);
 }
 
-static void encode_identifier(HashWriter *, const Identifier *);
 static void encode_value(HashWriter *, const Value *);
 
 // Helper wrappers invoked by encode_repeated
@@ -449,7 +452,8 @@ static void split_dot_and_encode(HashWriter *hw, const char *dotstr) {
         start = dot + 1;
     }
 }
-static void encode_identifier(HashWriter *hw, const Identifier *id) {
+
+void encode_identifier(HashWriter *hw, const Identifier *id) {
     encode_string(hw, id->package_id);
     split_dot_and_encode(hw, id->module_name);
     split_dot_and_encode(hw, id->entity_name);
@@ -483,11 +487,11 @@ static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *
     }
 }
 
-static void encode_create(HashWriter *hw,
-                          const Node_Create *c,
-                          const char *node_id,
-                          const NodeSeed *seeds,
-                          size_t n_seeds) {
+void encode_create(HashWriter *hw,
+                   const Node_Create *c,
+                   const char *node_id,
+                   const NodeSeed *seeds,
+                   size_t n_seeds) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, c->lf_version);
     hw_put_byte(hw, 0x00);
@@ -497,6 +501,22 @@ static void encode_create(HashWriter *hw,
     encode_string(hw, c->package_name);
     encode_identifier(hw, &c->template_id);
     encode_value(hw, &c->argument);
+    encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
+    encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
+}
+
+void encode_create_cb_start(HashWriter *hw, const Node_CreateCbNoArg *c) {
+    hw_put_byte(hw, NODE_ENCODING_VERSION);
+    encode_string(hw, c->lf_version);
+    hw_put_byte(hw, 0x00);
+    // Optional false
+    hw_put_byte(hw, 0x00);
+    encode_hex_string(hw, c->contract_id);
+    encode_string(hw, c->package_name);
+    encode_identifier(hw, (const com_daml_ledger_api_v2_Identifier *) &c->template_id);
+}
+
+void encode_create_cb_end(HashWriter *hw, const Node_CreateCbNoArg *c) {
     encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }
@@ -606,7 +626,7 @@ static void encode_node_id_hash(HashWriter *hw,
     hw_init(&n_hw);
     encode_node(&n_hw, node, seeds, n_seeds);
     uint8_t h[32];
-    hw_finalzie(&n_hw, h);
+    hw_finalize(&n_hw, h);
 
     if (is_root_node) {
         hw_put(hw, h, 32);
@@ -684,7 +704,7 @@ int hash_node(HashWriter *hw, const DamlTransaction *tx, const Node *node) {
 }
 
 int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]) {
-    hw_finalzie(hw, out);
+    hw_finalize(hw, out);
 
     PRINTF("TX hash: %.*H\n", 32, out);
 
@@ -706,33 +726,33 @@ int hash_metadata(HashWriter *hw, const Metadata *md) {
     return 0;
 }
 
-int hash_input_contract(HashWriter *hw, const InputContract *c) {
-    encode_int64(hw, c->created_at);
-
-    // Encode contract create node in separate buffer and calculate its hash
-    HashWriter n_hw;
-    hw_init(&n_hw);
-    encode_create(&n_hw, &c->v1, NULL, NULL, 0);
-
-    uint8_t hash[32];
-    hw_finalzie(&n_hw, hash);
-
-    PRINTF("Contract hash: %.*H\n", 32, hash);
-
-    encode_hash(hw, hash);
-
-    if (is_hash_error()) {
-        PRINTF("Error hashing input contract: '%s', code: %d\n",
-               HASH_ERR_INFO.err_msg,
-               HASH_ERR_INFO.err_code);
-        return HASH_ERR_INFO.err_code;
-    }
-
-    return 0;
-}
+// int hash_input_contract(HashWriter *hw, const InputContract *c) {
+//     encode_int64(hw, c->created_at);
+//
+//     // Encode contract create node in separate buffer and calculate its hash
+//     HashWriter n_hw;
+//     hw_init(&n_hw);
+//     encode_create(&n_hw, &c->v1, NULL, NULL, 0);
+//
+//     uint8_t hash[32];
+//     hw_finalize(&n_hw, hash);
+//
+//     PRINTF("Contract hash: %.*H\n", 32, hash);
+//
+//     encode_hash(hw, hash);
+//
+//     if (is_hash_error()) {
+//         PRINTF("Error hashing input contract: '%s', code: %d\n",
+//                HASH_ERR_INFO.err_msg,
+//                HASH_ERR_INFO.err_code);
+//         return HASH_ERR_INFO.err_code;
+//     }
+//
+//     return 0;
+// }
 
 int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]) {
-    hw_finalzie(hw, out);
+    hw_finalize(hw, out);
 
     PRINTF("Metadata hash: %.*H\n", 32, out);
 
@@ -748,7 +768,7 @@ int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t 
     hw_put(&hw, tx_hash, 32);
     hw_put(&hw, md_hash, 32);
 
-    hw_finalzie(&hw, out);
+    hw_finalize(&hw, out);
 
     return 0;
 }

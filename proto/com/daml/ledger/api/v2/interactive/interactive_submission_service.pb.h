@@ -73,8 +73,8 @@ typedef struct _com_daml_ledger_api_v2_interactive_DamlTransaction {
  If the synchronizer_id was specified in the request, then it matches the request synchronizer_id.
  Required */
     pb_callback_t roots; 
+    pb_callback_t nodes; 
     pb_callback_t node_seeds; 
-    int32_t nodes_count; 
 } com_daml_ledger_api_v2_interactive_DamlTransaction;
 
 typedef struct _com_daml_ledger_api_v2_interactive_DamlTransaction_Node { 
@@ -217,23 +217,6 @@ typedef struct _com_daml_ledger_api_v2_interactive_PackageVettingRequirement {
     char package_name[1024]; 
 } com_daml_ledger_api_v2_interactive_PackageVettingRequirement;
 
-typedef PB_BYTES_ARRAY_T(32) com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_hash_t;
-typedef struct _com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse { 
-    /* The interpreted transaction, it represents the ledger changes necessary to execute the commands specified in the request.
- Clients MUST display the content of the transaction to the user for them to validate before signing the hash if the preparing participant is not trusted.
- PreparedTransaction prepared_transaction = 1;
- Hash of the transaction, this is what needs to be signed by the party to authorize the transaction.
- Only provided for convenience, clients MUST recompute the hash from the raw transaction if the preparing participant is not trusted.
- May be removed in future versions */
-    com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_hash_t prepared_transaction_hash; 
-    /* The hashing scheme version used when building the hash */
-    com_daml_ledger_api_v2_interactive_HashingSchemeVersion hashing_scheme_version; 
-    /* Optional additional details on how the transaction was encoded and hashed. Only set if verbose_hashing = true in the request
- Note that there are no guarantees on the stability of the format or content of this field.
- Its content should NOT be parsed and should only be used for troubleshooting purposes. */
-    char *hashing_details; 
-} com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse;
-
 typedef PB_BYTES_ARRAY_T(1024) com_daml_ledger_api_v2_interactive_Signature_signature_t;
 typedef struct _com_daml_ledger_api_v2_interactive_Signature { 
     com_daml_ledger_api_v2_interactive_SignatureFormat format; 
@@ -268,7 +251,7 @@ typedef struct _com_daml_ledger_api_v2_interactive_Metadata {
     uint32_t mediator_group; 
     char transaction_uuid[1024]; 
     uint64_t preparation_time; 
-    int32_t input_contracts_count; 
+    pb_callback_t input_contracts; 
     /* Where ledger time constraints are imposed during the execution of the contract they will be populated
  in the fields below. These are optional because if the transaction does NOT depend on time, these values
  do not need to be set.
@@ -484,6 +467,24 @@ typedef struct _com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest {
     com_daml_ledger_api_v2_interactive_MinLedgerTime min_ledger_time; 
 } com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest;
 
+typedef PB_BYTES_ARRAY_T(32) com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_hash_t;
+typedef struct _com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse { 
+    /* The interpreted transaction, it represents the ledger changes necessary to execute the commands specified in the request.
+ Clients MUST display the content of the transaction to the user for them to validate before signing the hash if the preparing participant is not trusted. */
+    bool has_prepared_transaction;
+    com_daml_ledger_api_v2_interactive_PreparedTransaction prepared_transaction; 
+    /* Hash of the transaction, this is what needs to be signed by the party to authorize the transaction.
+ Only provided for convenience, clients MUST recompute the hash from the raw transaction if the preparing participant is not trusted.
+ May be removed in future versions */
+    com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_hash_t prepared_transaction_hash; 
+    /* The hashing scheme version used when building the hash */
+    com_daml_ledger_api_v2_interactive_HashingSchemeVersion hashing_scheme_version; 
+    /* Optional additional details on how the transaction was encoded and hashed. Only set if verbose_hashing = true in the request
+ Note that there are no guarantees on the stability of the format or content of this field.
+ Its content should NOT be parsed and should only be used for troubleshooting purposes. */
+    char *hashing_details; 
+} com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse;
+
 
 /* Helper constants for enums */
 #define _com_daml_ledger_api_v2_interactive_HashingSchemeVersion_MIN com_daml_ledger_api_v2_interactive_HashingSchemeVersion_HASHING_SCHEME_VERSION_UNSPECIFIED
@@ -505,7 +506,7 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest_init_default {"", "", {{NULL}, NULL}, false, com_daml_ledger_api_v2_interactive_MinLedgerTime_init_default, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, "", {{NULL}, NULL}, 0, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_init_default {{0, {0}}, _com_daml_ledger_api_v2_interactive_HashingSchemeVersion_MIN, NULL}
+#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_init_default {false, com_daml_ledger_api_v2_interactive_PreparedTransaction_init_default, {0, {0}}, _com_daml_ledger_api_v2_interactive_HashingSchemeVersion_MIN, NULL}
 #define com_daml_ledger_api_v2_interactive_Signature_init_default {_com_daml_ledger_api_v2_interactive_SignatureFormat_MIN, {0, {0}}, "", _com_daml_ledger_api_v2_interactive_SigningAlgorithmSpec_MIN}
 #define com_daml_ledger_api_v2_interactive_SinglePartySignatures_init_default {"", {{NULL}, NULL}}
 #define com_daml_ledger_api_v2_interactive_PartySignatures_init_default {{{NULL}, NULL}}
@@ -517,11 +518,11 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitForTransactionResponse_init_default {false, com_daml_ledger_api_v2_Transaction_init_default}
 #define com_daml_ledger_api_v2_interactive_MinLedgerTime_init_default {0, {google_protobuf_Timestamp_init_default}}
 #define com_daml_ledger_api_v2_interactive_PreparedTransaction_init_default {false, com_daml_ledger_api_v2_interactive_DamlTransaction_init_default, false, com_daml_ledger_api_v2_interactive_Metadata_init_default}
-#define com_daml_ledger_api_v2_interactive_Metadata_init_default {false, com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_init_default, "", 0, "", 0, 0, {{NULL}, NULL}, false, 0, false, 0}
+#define com_daml_ledger_api_v2_interactive_Metadata_init_default {false, com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_init_default, "", 0, "", 0, {{NULL}, NULL}, {{NULL}, NULL}, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_init_default {{{NULL}, NULL}, ""}
 #define com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry_init_default {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_default, false, com_daml_ledger_api_v2_Value_init_default}
 #define com_daml_ledger_api_v2_interactive_Metadata_InputContract_init_default {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}, 0, {0, {0}}}
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_init_default {"", {{NULL}, NULL}, {{NULL}, NULL}, 0}
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_init_default {"", {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_init_default {0, {0, {0}}}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_init_default {"", 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default}}
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest_init_default {{{NULL}, NULL}, "", "", false, google_protobuf_Timestamp_init_default}
@@ -531,7 +532,7 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackagesRequest_init_default {{{NULL}, NULL}, "", false, google_protobuf_Timestamp_init_default}
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackagesResponse_init_default {{{NULL}, NULL}, ""}
 #define com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest_init_zero {"", "", {{NULL}, NULL}, false, com_daml_ledger_api_v2_interactive_MinLedgerTime_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, "", {{NULL}, NULL}, 0, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_init_zero {{0, {0}}, _com_daml_ledger_api_v2_interactive_HashingSchemeVersion_MIN, NULL}
+#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_init_zero {false, com_daml_ledger_api_v2_interactive_PreparedTransaction_init_zero, {0, {0}}, _com_daml_ledger_api_v2_interactive_HashingSchemeVersion_MIN, NULL}
 #define com_daml_ledger_api_v2_interactive_Signature_init_zero {_com_daml_ledger_api_v2_interactive_SignatureFormat_MIN, {0, {0}}, "", _com_daml_ledger_api_v2_interactive_SigningAlgorithmSpec_MIN}
 #define com_daml_ledger_api_v2_interactive_SinglePartySignatures_init_zero {"", {{NULL}, NULL}}
 #define com_daml_ledger_api_v2_interactive_PartySignatures_init_zero {{{NULL}, NULL}}
@@ -543,11 +544,11 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_ExecuteSubmissionAndWaitForTransactionResponse_init_zero {false, com_daml_ledger_api_v2_Transaction_init_zero}
 #define com_daml_ledger_api_v2_interactive_MinLedgerTime_init_zero {0, {google_protobuf_Timestamp_init_zero}}
 #define com_daml_ledger_api_v2_interactive_PreparedTransaction_init_zero {false, com_daml_ledger_api_v2_interactive_DamlTransaction_init_zero, false, com_daml_ledger_api_v2_interactive_Metadata_init_zero}
-#define com_daml_ledger_api_v2_interactive_Metadata_init_zero {false, com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_init_zero, "", 0, "", 0, 0, {{NULL}, NULL}, false, 0, false, 0}
+#define com_daml_ledger_api_v2_interactive_Metadata_init_zero {false, com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_init_zero, "", 0, "", 0, {{NULL}, NULL}, {{NULL}, NULL}, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_init_zero {{{NULL}, NULL}, ""}
 #define com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry_init_zero {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_zero, false, com_daml_ledger_api_v2_Value_init_zero}
 #define com_daml_ledger_api_v2_interactive_Metadata_InputContract_init_zero {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero}, 0, {0, {0}}}
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_init_zero {"", {{NULL}, NULL}, {{NULL}, NULL}, 0}
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_init_zero {"", {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_init_zero {0, {0, {0}}}
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_init_zero {"", 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
 #define com_daml_ledger_api_v2_interactive_GetPreferredPackageVersionRequest_init_zero {{{NULL}, NULL}, "", "", false, google_protobuf_Timestamp_init_zero}
@@ -561,8 +562,8 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_PartySignatures_signatures_tag 1
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_version_tag 1
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_roots_tag 2
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_node_seeds_tag 3
-#define com_daml_ledger_api_v2_interactive_DamlTransaction_nodes_count_tag 4
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_nodes_tag 3
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_node_seeds_tag 4
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_node_id_tag 1
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_Node_v1_tag 1000
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_node_id_tag 1
@@ -592,9 +593,6 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_PackagePreference_synchronizer_id_tag 2
 #define com_daml_ledger_api_v2_interactive_PackageVettingRequirement_parties_tag 1
 #define com_daml_ledger_api_v2_interactive_PackageVettingRequirement_package_name_tag 2
-#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_hash_tag 1
-#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_hashing_scheme_version_tag 2
-#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_hashing_details_tag 3
 #define com_daml_ledger_api_v2_interactive_Signature_format_tag 1
 #define com_daml_ledger_api_v2_interactive_Signature_signature_tag 2
 #define com_daml_ledger_api_v2_interactive_Signature_signed_by_tag 3
@@ -607,7 +605,7 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_Metadata_mediator_group_tag 4
 #define com_daml_ledger_api_v2_interactive_Metadata_transaction_uuid_tag 5
 #define com_daml_ledger_api_v2_interactive_Metadata_preparation_time_tag 6
-#define com_daml_ledger_api_v2_interactive_Metadata_input_contracts_count_tag 7
+#define com_daml_ledger_api_v2_interactive_Metadata_input_contracts_tag 7
 #define com_daml_ledger_api_v2_interactive_Metadata_global_key_mapping_tag 8
 #define com_daml_ledger_api_v2_interactive_Metadata_min_ledger_effective_time_tag 9
 #define com_daml_ledger_api_v2_interactive_Metadata_max_ledger_effective_time_tag 10
@@ -649,6 +647,10 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest_user_id_tag 6
 #define com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest_hashing_scheme_version_tag 7
 #define com_daml_ledger_api_v2_interactive_ExecuteSubmissionRequest_min_ledger_time_tag 8
+#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_tag 1
+#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_hash_tag 2
+#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_hashing_scheme_version_tag 3
+#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_hashing_details_tag 4
 
 /* Struct field encoding specification for nanopb */
 #define com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest_FIELDLIST(X, a) \
@@ -671,11 +673,13 @@ X(a, CALLBACK, REPEATED, MESSAGE,  prefetch_contract_keys,  15)
 #define com_daml_ledger_api_v2_interactive_PrepareSubmissionRequest_prefetch_contract_keys_MSGTYPE com_daml_ledger_api_v2_PrefetchContractKey
 
 #define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, BYTES,    prepared_transaction_hash,   1) \
-X(a, STATIC,   SINGULAR, UENUM,    hashing_scheme_version,   2) \
-X(a, POINTER,  OPTIONAL, STRING,   hashing_details,   3)
+X(a, STATIC,   OPTIONAL, MESSAGE,  prepared_transaction,   1) \
+X(a, STATIC,   SINGULAR, BYTES,    prepared_transaction_hash,   2) \
+X(a, STATIC,   SINGULAR, UENUM,    hashing_scheme_version,   3) \
+X(a, POINTER,  OPTIONAL, STRING,   hashing_details,   4)
 #define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_CALLBACK NULL
 #define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_DEFAULT NULL
+#define com_daml_ledger_api_v2_interactive_PrepareSubmissionResponse_prepared_transaction_MSGTYPE com_daml_ledger_api_v2_interactive_PreparedTransaction
 
 #define com_daml_ledger_api_v2_interactive_Signature_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    format,            1) \
@@ -787,13 +791,14 @@ X(a, STATIC,   SINGULAR, STRING,   synchronizer_id,   3) \
 X(a, STATIC,   SINGULAR, UINT32,   mediator_group,    4) \
 X(a, STATIC,   SINGULAR, STRING,   transaction_uuid,   5) \
 X(a, STATIC,   SINGULAR, UINT64,   preparation_time,   6) \
-X(a, STATIC,   SINGULAR, INT32,    input_contracts_count,   7) \
+X(a, CALLBACK, REPEATED, MESSAGE,  input_contracts,   7) \
 X(a, CALLBACK, REPEATED, MESSAGE,  global_key_mapping,   8) \
 X(a, STATIC,   OPTIONAL, UINT64,   min_ledger_effective_time,   9) \
 X(a, STATIC,   OPTIONAL, UINT64,   max_ledger_effective_time,  10)
 #define com_daml_ledger_api_v2_interactive_Metadata_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_interactive_Metadata_DEFAULT NULL
 #define com_daml_ledger_api_v2_interactive_Metadata_submitter_info_MSGTYPE com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo
+#define com_daml_ledger_api_v2_interactive_Metadata_input_contracts_MSGTYPE com_daml_ledger_api_v2_interactive_Metadata_InputContract
 #define com_daml_ledger_api_v2_interactive_Metadata_global_key_mapping_MSGTYPE com_daml_ledger_api_v2_interactive_Metadata_GlobalKeyMappingEntry
 
 #define com_daml_ledger_api_v2_interactive_Metadata_SubmitterInfo_FIELDLIST(X, a) \
@@ -821,10 +826,11 @@ X(a, STATIC,   SINGULAR, BYTES,    event_blob,      1002)
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   version,           1) \
 X(a, CALLBACK, REPEATED, STRING,   roots,             2) \
-X(a, CALLBACK, REPEATED, MESSAGE,  node_seeds,        3) \
-X(a, STATIC,   SINGULAR, INT32,    nodes_count,       4)
+X(a, CALLBACK, REPEATED, MESSAGE,  nodes,             3) \
+X(a, CALLBACK, REPEATED, MESSAGE,  node_seeds,        4)
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_DEFAULT NULL
+#define com_daml_ledger_api_v2_interactive_DamlTransaction_nodes_MSGTYPE com_daml_ledger_api_v2_interactive_DamlTransaction_Node
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_node_seeds_MSGTYPE com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed
 
 #define com_daml_ledger_api_v2_interactive_DamlTransaction_NodeSeed_FIELDLIST(X, a) \

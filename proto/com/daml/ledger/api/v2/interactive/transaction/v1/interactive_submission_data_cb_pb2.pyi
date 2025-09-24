@@ -1,4 +1,4 @@
-from com.daml.ledger.api.v2 import value_pb2 as _value_pb2
+from com.daml.ledger.api.v2 import value_cb_pb2 as _value_cb_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -15,14 +15,32 @@ class Create(_message.Message):
     SIGNATORIES_FIELD_NUMBER: _ClassVar[int]
     STAKEHOLDERS_FIELD_NUMBER: _ClassVar[int]
     TEMPLATE_ID_FIELD_NUMBER: _ClassVar[int]
-    argument: _value_pb2.Value
+    argument: _value_cb_pb2.Value
     contract_id: str
     lf_version: str
     package_name: str
     signatories: _containers.RepeatedScalarFieldContainer[str]
     stakeholders: _containers.RepeatedScalarFieldContainer[str]
-    template_id: _value_pb2.Identifier
-    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_pb2.Identifier, _Mapping]] = ..., argument: _Optional[_Union[_value_pb2.Value, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ...) -> None: ...
+    template_id: _value_cb_pb2.Identifier
+    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., argument: _Optional[_Union[_value_cb_pb2.Value, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class CreateNoArg(_message.Message):
+    __slots__ = ["argument", "contract_id", "lf_version", "package_name", "signatories", "stakeholders", "template_id"]
+    ARGUMENT_FIELD_NUMBER: _ClassVar[int]
+    CONTRACT_ID_FIELD_NUMBER: _ClassVar[int]
+    LF_VERSION_FIELD_NUMBER: _ClassVar[int]
+    PACKAGE_NAME_FIELD_NUMBER: _ClassVar[int]
+    SIGNATORIES_FIELD_NUMBER: _ClassVar[int]
+    STAKEHOLDERS_FIELD_NUMBER: _ClassVar[int]
+    TEMPLATE_ID_FIELD_NUMBER: _ClassVar[int]
+    argument: _value_cb_pb2.Value
+    contract_id: str
+    lf_version: str
+    package_name: str
+    signatories: _containers.RepeatedScalarFieldContainer[str]
+    stakeholders: _containers.RepeatedScalarFieldContainer[str]
+    template_id: _value_cb_pb2.Identifier
+    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., argument: _Optional[_Union[_value_cb_pb2.Value, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class Exercise(_message.Message):
     __slots__ = ["acting_parties", "children", "choice_id", "choice_observers", "chosen_value", "consuming", "contract_id", "exercise_result", "interface_id", "lf_version", "package_name", "signatories", "stakeholders", "template_id"]
@@ -44,17 +62,17 @@ class Exercise(_message.Message):
     children: _containers.RepeatedScalarFieldContainer[str]
     choice_id: str
     choice_observers: _containers.RepeatedScalarFieldContainer[str]
-    chosen_value: _value_pb2.Value
+    chosen_value: _value_cb_pb2.Value
     consuming: bool
     contract_id: str
-    exercise_result: _value_pb2.Value
-    interface_id: _value_pb2.Identifier
+    exercise_result: _value_cb_pb2.Value
+    interface_id: _value_cb_pb2.Identifier
     lf_version: str
     package_name: str
     signatories: _containers.RepeatedScalarFieldContainer[str]
     stakeholders: _containers.RepeatedScalarFieldContainer[str]
-    template_id: _value_pb2.Identifier
-    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_pb2.Identifier, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ..., acting_parties: _Optional[_Iterable[str]] = ..., interface_id: _Optional[_Union[_value_pb2.Identifier, _Mapping]] = ..., choice_id: _Optional[str] = ..., chosen_value: _Optional[_Union[_value_pb2.Value, _Mapping]] = ..., consuming: bool = ..., children: _Optional[_Iterable[str]] = ..., exercise_result: _Optional[_Union[_value_pb2.Value, _Mapping]] = ..., choice_observers: _Optional[_Iterable[str]] = ...) -> None: ...
+    template_id: _value_cb_pb2.Identifier
+    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ..., acting_parties: _Optional[_Iterable[str]] = ..., interface_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., choice_id: _Optional[str] = ..., chosen_value: _Optional[_Union[_value_cb_pb2.Value, _Mapping]] = ..., consuming: bool = ..., children: _Optional[_Iterable[str]] = ..., exercise_result: _Optional[_Union[_value_cb_pb2.Value, _Mapping]] = ..., choice_observers: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class Fetch(_message.Message):
     __slots__ = ["acting_parties", "contract_id", "interface_id", "lf_version", "package_name", "signatories", "stakeholders", "template_id"]
@@ -68,13 +86,13 @@ class Fetch(_message.Message):
     TEMPLATE_ID_FIELD_NUMBER: _ClassVar[int]
     acting_parties: _containers.RepeatedScalarFieldContainer[str]
     contract_id: str
-    interface_id: _value_pb2.Identifier
+    interface_id: _value_cb_pb2.Identifier
     lf_version: str
     package_name: str
     signatories: _containers.RepeatedScalarFieldContainer[str]
     stakeholders: _containers.RepeatedScalarFieldContainer[str]
-    template_id: _value_pb2.Identifier
-    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_pb2.Identifier, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ..., acting_parties: _Optional[_Iterable[str]] = ..., interface_id: _Optional[_Union[_value_pb2.Identifier, _Mapping]] = ...) -> None: ...
+    template_id: _value_cb_pb2.Identifier
+    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ..., acting_parties: _Optional[_Iterable[str]] = ..., interface_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ...) -> None: ...
 
 class Node(_message.Message):
     __slots__ = ["create", "exercise", "fetch", "rollback"]

@@ -6,6 +6,7 @@
 #include <pb.h>
 #include "com/daml/ledger/api/v2/interactive/interactive_submission_common_data.pb.h"
 #include "com/daml/ledger/api/v2/interactive/transaction/v1/interactive_submission_data.pb.h"
+#include "com/daml/ledger/api/v2/interactive/transaction/v1/interactive_submission_data_cb.pb.h"
 #include "com/daml/ledger/api/v2/value.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
@@ -71,6 +72,7 @@ typedef struct _com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappi
 } com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry;
 
 typedef struct _com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract { 
+    pb_callback_t cb_contract;
     pb_size_t which_contract;
     union {
         com_daml_ledger_api_v2_interactive_transaction_v1_Create v1;
@@ -90,14 +92,14 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_default {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_default {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_default, false, com_daml_ledger_api_v2_Value_init_default}
-#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_default {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}, 0}
+#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_default {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_init_zero {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_init_zero {0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_zero {NULL, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_zero {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_zero {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_zero, false, com_daml_ledger_api_v2_Value_init_zero}
-#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_zero {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero}, 0}
+#define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_zero {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero}, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_act_as_tag 1
@@ -174,7 +176,7 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_value_MSGTYPE com_daml_ledger_api_v2_Value
 
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (contract,v1,v1),   1) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (contract,v1,v1),   1) \
 X(a, STATIC,   SINGULAR, UINT64,   created_at,      1000)
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_CALLBACK NULL
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_DEFAULT NULL
