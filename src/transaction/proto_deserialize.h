@@ -82,3 +82,7 @@ void release_node(transaction_ctx_t *tx_ctx);
  *
  */
 void release_metadata(transaction_ctx_t *tx_ctx);
+
+parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx);
+
+void release_input_contract(transaction_ctx_t *tx_ctx);
