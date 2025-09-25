@@ -51,6 +51,19 @@ message Exercise {
   repeated string choice_observers = 14;
 }
 
+// Another copy of Create node for display parsing.
+message CreateDisplay {
+  // Specific LF version of the node
+  string lf_version = 1;
+  string contract_id = 2;
+  string package_name = 3;
+  // The identifier uses the package-id reference format.
+  com.daml.ledger.api.v2.cb.Identifier template_id = 4;
+  com.daml.ledger.api.v2.cb.Value argument = 5;
+  repeated string signatories = 6;
+  repeated string stakeholders = 7;
+}
+
 // Create Node
 message Create {
   // Specific LF version of the node
@@ -85,6 +98,15 @@ message Rollback {
 message Node {
   oneof node_type {
     Create create = 1;
+    Fetch fetch = 2;
+    Exercise exercise = 3;
+    Rollback rollback = 4;
+  }
+}
+
+message NodeDisplay {
+  oneof node_type {
+    CreateDisplay create = 1;
     Fetch fetch = 2;
     Exercise exercise = 3;
     Rollback rollback = 4;

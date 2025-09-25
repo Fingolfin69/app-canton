@@ -16,7 +16,7 @@
  *****************************************************************************/
 #include "buffer.h"
 
-#include "proto_deserialize.h"
+#include "pb_parser.h"
 #include "utils.h"
 #include "types.h"
 #include "com/daml/ledger/api/v2/interactive/device.pb.h"

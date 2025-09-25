@@ -127,6 +127,7 @@ com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.acting_parties type:FT_P
 com.daml.ledger.api.v2.interactive.transaction.v1.Fetch.interface_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Exercise.interface_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.Rollback.children type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.Node submsg_callback:true
 EOF
 
 echo "Creating interactive_submission_service.options file..."
@@ -147,6 +148,7 @@ com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.node_seeds type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.Node.node_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.Node submsg_callback:true
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.NodeSeed type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.synchronizer_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.transaction_uuid type:FT_POINTER
@@ -154,6 +156,15 @@ com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.act_as type:FT_P
 com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.command_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract.event_blob type:FT_IGNORE
 com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract submsg_callback:true
+
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.NodeSeed.node_id type:FT_STATIC
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.roots type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.roots type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.node_seeds type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.Node.node_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.Node submsg_callback:true
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.NodeSeed type:FT_POINTER
 EOF
 
 # CALLBACK versions of the options files
@@ -180,7 +191,7 @@ com.daml.ledger.api.v2.cb.Identifier.module_name type:FT_POINTER
 com.daml.ledger.api.v2.cb.Identifier.entity_name type:FT_POINTER
 com.daml.ledger.api.v2.cb.Variant.constructor type:FT_POINTER
 com.daml.ledger.api.v2.cb.Enum.constructor type:FT_POINTER
-com.daml.ledger.api.v2.cb.RecordField.label type:FT_POINTER
+com.daml.ledger.api.v2.cb.RecordField.label type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.TextMap.Entry.key type:FT_POINTER
 com.daml.ledger.api.v2.cb.Record.fields type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Record.record_id type:FT_CALLBACK
@@ -216,6 +227,10 @@ com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.package_name ty
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.signatories type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.stakeholders type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.argument type:FT_IGNORE
+# Create node for display parsing
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay.argument type:FT_STATIC
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.NodeDisplay submsg_callback:true
 EOF
 
 echo "untyped_versioned_message.options file..."

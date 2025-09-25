@@ -58,6 +58,24 @@ class Exercise(_message.Message):
     choice_observers: _containers.RepeatedScalarFieldContainer[str]
     def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ..., acting_parties: _Optional[_Iterable[str]] = ..., interface_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., choice_id: _Optional[str] = ..., chosen_value: _Optional[_Union[_value_cb_pb2.Value, _Mapping]] = ..., consuming: bool = ..., children: _Optional[_Iterable[str]] = ..., exercise_result: _Optional[_Union[_value_cb_pb2.Value, _Mapping]] = ..., choice_observers: _Optional[_Iterable[str]] = ...) -> None: ...
 
+class CreateDisplay(_message.Message):
+    __slots__ = ("lf_version", "contract_id", "package_name", "template_id", "argument", "signatories", "stakeholders")
+    LF_VERSION_FIELD_NUMBER: _ClassVar[int]
+    CONTRACT_ID_FIELD_NUMBER: _ClassVar[int]
+    PACKAGE_NAME_FIELD_NUMBER: _ClassVar[int]
+    TEMPLATE_ID_FIELD_NUMBER: _ClassVar[int]
+    ARGUMENT_FIELD_NUMBER: _ClassVar[int]
+    SIGNATORIES_FIELD_NUMBER: _ClassVar[int]
+    STAKEHOLDERS_FIELD_NUMBER: _ClassVar[int]
+    lf_version: str
+    contract_id: str
+    package_name: str
+    template_id: _value_cb_pb2.Identifier
+    argument: _value_cb_pb2.Value
+    signatories: _containers.RepeatedScalarFieldContainer[str]
+    stakeholders: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, lf_version: _Optional[str] = ..., contract_id: _Optional[str] = ..., package_name: _Optional[str] = ..., template_id: _Optional[_Union[_value_cb_pb2.Identifier, _Mapping]] = ..., argument: _Optional[_Union[_value_cb_pb2.Value, _Mapping]] = ..., signatories: _Optional[_Iterable[str]] = ..., stakeholders: _Optional[_Iterable[str]] = ...) -> None: ...
+
 class Create(_message.Message):
     __slots__ = ("lf_version", "contract_id", "package_name", "template_id", "argument", "signatories", "stakeholders")
     LF_VERSION_FIELD_NUMBER: _ClassVar[int]
@@ -111,3 +129,15 @@ class Node(_message.Message):
     exercise: Exercise
     rollback: Rollback
     def __init__(self, create: _Optional[_Union[Create, _Mapping]] = ..., fetch: _Optional[_Union[Fetch, _Mapping]] = ..., exercise: _Optional[_Union[Exercise, _Mapping]] = ..., rollback: _Optional[_Union[Rollback, _Mapping]] = ...) -> None: ...
+
+class NodeDisplay(_message.Message):
+    __slots__ = ("create", "fetch", "exercise", "rollback")
+    CREATE_FIELD_NUMBER: _ClassVar[int]
+    FETCH_FIELD_NUMBER: _ClassVar[int]
+    EXERCISE_FIELD_NUMBER: _ClassVar[int]
+    ROLLBACK_FIELD_NUMBER: _ClassVar[int]
+    create: CreateDisplay
+    fetch: Fetch
+    exercise: Exercise
+    rollback: Rollback
+    def __init__(self, create: _Optional[_Union[CreateDisplay, _Mapping]] = ..., fetch: _Optional[_Union[Fetch, _Mapping]] = ..., exercise: _Optional[_Union[Exercise, _Mapping]] = ..., rollback: _Optional[_Union[Rollback, _Mapping]] = ...) -> None: ...

@@ -12,6 +12,9 @@ PB_BIND(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Fetch, com_daml_led
 PB_BIND(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise, com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise, 4)
 
 
+PB_BIND(com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateDisplay, com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateDisplay, 4)
+
+
 PB_BIND(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create, com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create, AUTO)
 
 
@@ -22,6 +25,9 @@ PB_BIND(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Rollback, com_daml_
 
 
 PB_BIND(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Node, com_daml_ledger_api_v2_interactive_transaction_v1_cb_Node, 4)
+
+
+PB_BIND(com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay, com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay, 4)
 
 
 

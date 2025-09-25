@@ -30,7 +30,6 @@
 #include "display.h"
 #include "tx_types.h"
 #include "types.h"
-#include "proto_deserialize.h"
 #include "validate.h"
 #include "canonical_hash.h"
 #include "prepared_transaction.h"

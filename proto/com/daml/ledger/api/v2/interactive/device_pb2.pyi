@@ -35,6 +35,32 @@ class DeviceDamlTransaction(_message.Message):
     node_seeds: _containers.RepeatedCompositeFieldContainer[DeviceDamlTransaction.NodeSeed]
     def __init__(self, version: _Optional[str] = ..., roots: _Optional[_Iterable[str]] = ..., nodes_count: _Optional[int] = ..., node_seeds: _Optional[_Iterable[_Union[DeviceDamlTransaction.NodeSeed, _Mapping]]] = ...) -> None: ...
 
+class DeviceDamlTransactionDisplay(_message.Message):
+    __slots__ = ("version", "roots", "nodes_count", "node_seeds")
+    class NodeSeed(_message.Message):
+        __slots__ = ("node_id", "seed")
+        NODE_ID_FIELD_NUMBER: _ClassVar[int]
+        SEED_FIELD_NUMBER: _ClassVar[int]
+        node_id: int
+        seed: bytes
+        def __init__(self, node_id: _Optional[int] = ..., seed: _Optional[bytes] = ...) -> None: ...
+    class Node(_message.Message):
+        __slots__ = ("node_id", "v1")
+        NODE_ID_FIELD_NUMBER: _ClassVar[int]
+        V1_FIELD_NUMBER: _ClassVar[int]
+        node_id: str
+        v1: _interactive_submission_data_cb_pb2.NodeDisplay
+        def __init__(self, node_id: _Optional[str] = ..., v1: _Optional[_Union[_interactive_submission_data_cb_pb2.NodeDisplay, _Mapping]] = ...) -> None: ...
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    ROOTS_FIELD_NUMBER: _ClassVar[int]
+    NODES_COUNT_FIELD_NUMBER: _ClassVar[int]
+    NODE_SEEDS_FIELD_NUMBER: _ClassVar[int]
+    version: str
+    roots: _containers.RepeatedScalarFieldContainer[str]
+    nodes_count: int
+    node_seeds: _containers.RepeatedCompositeFieldContainer[DeviceDamlTransactionDisplay.NodeSeed]
+    def __init__(self, version: _Optional[str] = ..., roots: _Optional[_Iterable[str]] = ..., nodes_count: _Optional[int] = ..., node_seeds: _Optional[_Iterable[_Union[DeviceDamlTransactionDisplay.NodeSeed, _Mapping]]] = ...) -> None: ...
+
 class DeviceMetadata(_message.Message):
     __slots__ = ("submitter_info", "synchronizer_id", "mediator_group", "transaction_uuid", "preparation_time", "input_contracts_count", "min_ledger_effective_time", "max_ledger_effective_time")
     class SubmitterInfo(_message.Message):

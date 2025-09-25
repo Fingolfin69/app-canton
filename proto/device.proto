@@ -45,6 +45,37 @@ message DeviceDamlTransaction {
   repeated NodeSeed node_seeds = 4;
 }
 
+message DeviceDamlTransactionDisplay {
+  message NodeSeed {
+    int32 node_id = 1;
+    bytes seed = 2;
+  }
+
+  // A transaction may contain nodes with different versions.
+  // Each node must be hashed using the hashing algorithm corresponding to its specific version.
+  // [docs-entry-start: DamlTransaction.Node]
+  message Node {
+    string node_id = 1;
+
+    // Versioned node
+    oneof versioned_node {
+      // Start at 1000 so we can add more fields before if necessary
+      // When new versions will be added, they will show here
+      interactive.transaction.v1.cb.NodeDisplay v1 = 1000;
+    }
+  }
+  // [docs-entry-end: DamlTransaction.Node]
+
+  // Transaction version, will be >= max(nodes version)
+  string version = 1;
+  // Root nodes of the transaction
+  repeated string roots = 2;
+  // Number of nodes in the transaction
+  int32 nodes_count = 3;
+  // Node seeds are values associated with certain nodes used for generating cryptographic salts
+  repeated NodeSeed node_seeds = 4;
+}
+
 // Device variant of Transaction Metadata
 // Refer to the hashing documentation for information on how it should be hashed.
 message DeviceMetadata {

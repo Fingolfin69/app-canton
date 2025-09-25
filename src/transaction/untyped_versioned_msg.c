@@ -33,8 +33,8 @@
 #include "tx_types.h"
 #include "sw.h"
 #include "bytewriter.h"
-#include "proto_deserialize.h"
-#include "prepared_transaction.h"
+#include "pb_parser.h"
+#include "pb_node_display_parser.h"
 
 #define HASH_LEN                                     34
 #define HEX_LEN                                      (HASH_LEN * 2 + 1)
@@ -42,6 +42,11 @@
 #define PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE       ((uint8_t) 11)
 #define PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE ((uint8_t) 55)
 #define ONBOARDING_FLOW_DISPLAY_FIELDS               4
+
+typedef struct {
+    const char *item_name;
+    size_t field_index;
+} field_display_t;
 
 // Namespace Delegation fields
 const field_display_t NAMESPACE_FIELD = {"Namespace", 0};

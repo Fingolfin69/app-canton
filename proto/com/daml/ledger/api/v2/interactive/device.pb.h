@@ -35,18 +35,44 @@ typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransaction {
     struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed *node_seeds; 
 } com_daml_ledger_api_v2_interactive_DeviceDamlTransaction;
 
+typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay { 
+    char *version; 
+    pb_size_t roots_count;
+    char **roots; 
+    int32_t nodes_count; 
+    pb_size_t node_seeds_count;
+    struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed *node_seeds; 
+} com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay;
+
+typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node { 
+    char *node_id; 
+    pb_callback_t cb_versioned_node;
+    pb_size_t which_versioned_node;
+    union {
+        com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay v1;
+    }; 
+} com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node;
+
+typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed { 
+    int32_t node_id; 
+    pb_bytes_array_t *seed; 
+} com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed;
+
+/* Device variant of Transaction Metadata
+ Refer to the hashing documentation for information on how it should be hashed. */
 typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node { 
     char *node_id; 
+    pb_callback_t cb_versioned_node;
     pb_size_t which_versioned_node;
     union {
         com_daml_ledger_api_v2_interactive_transaction_v1_Node v1;
     }; 
 } com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node;
 
-/* Device variant of Transaction Metadata
- Refer to the hashing documentation for information on how it should be hashed. */
 typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed { 
+    /* Transaction version, will be >= max(nodes version) */
     int32_t node_id; 
+    /* Root nodes of the transaction */
     pb_bytes_array_t *seed; 
 } com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed;
 
@@ -88,14 +114,20 @@ extern "C" {
 /* Initializer values for message structs */
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_init_default {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_init_default {0, NULL}
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_default {NULL, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_default {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_init_default {NULL, 0, NULL, 0, 0, NULL}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_init_default {0, NULL}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_init_default {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay_init_default}}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_default {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_default {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_default, false, com_daml_ledger_api_v2_Value_init_default}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_default {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_init_zero {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_init_zero {0, NULL}
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_zero {NULL, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_zero {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_init_zero {NULL, 0, NULL, 0, 0, NULL}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_init_zero {0, NULL}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_init_zero {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay_init_zero}}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_zero {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_zero {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_zero, false, com_daml_ledger_api_v2_Value_init_zero}
@@ -108,6 +140,14 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_roots_tag 2
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_nodes_count_tag 3
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_node_seeds_tag 4
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_version_tag 1
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_roots_tag 2
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_nodes_count_tag 3
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_node_seeds_tag 4
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_node_id_tag 1
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_v1_tag 1000
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_node_id_tag 1
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_seed_tag 2
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_node_id_tag 1
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_v1_tag 1000
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_node_id_tag 1
@@ -143,10 +183,32 @@ X(a, POINTER,  SINGULAR, BYTES,    seed,              2)
 
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_FIELDLIST(X, a) \
 X(a, POINTER,  SINGULAR, STRING,   node_id,           1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (versioned_node,v1,v1), 1000)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (versioned_node,v1,v1), 1000)
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_CALLBACK NULL
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_DEFAULT NULL
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_versioned_node_v1_MSGTYPE com_daml_ledger_api_v2_interactive_transaction_v1_Node
+
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_FIELDLIST(X, a) \
+X(a, POINTER,  SINGULAR, STRING,   version,           1) \
+X(a, POINTER,  REPEATED, STRING,   roots,             2) \
+X(a, STATIC,   SINGULAR, INT32,    nodes_count,       3) \
+X(a, POINTER,  REPEATED, MESSAGE,  node_seeds,        4)
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_CALLBACK NULL
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_DEFAULT NULL
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_node_seeds_MSGTYPE com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed
+
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, INT32,    node_id,           1) \
+X(a, POINTER,  SINGULAR, BYTES,    seed,              2)
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_CALLBACK NULL
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_DEFAULT NULL
+
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_FIELDLIST(X, a) \
+X(a, POINTER,  SINGULAR, STRING,   node_id,           1) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (versioned_node,v1,v1), 1000)
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_CALLBACK NULL
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_DEFAULT NULL
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_versioned_node_v1_MSGTYPE com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay
 
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  submitter_info,    2) \
@@ -185,6 +247,9 @@ X(a, STATIC,   SINGULAR, UINT64,   created_at,      1000)
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_msg;
+extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_msg;
+extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_msg;
+extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceMetadata_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_msg;
 extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_msg;
@@ -194,6 +259,9 @@ extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceMetadata_Inpu
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_fields &com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_msg
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_fields &com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_msg
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields &com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_msg
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_fields &com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_msg
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_fields &com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_msg
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_fields &com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_msg
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_fields &com_daml_ledger_api_v2_interactive_DeviceMetadata_msg
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_fields &com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_msg
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_fields &com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_msg
@@ -203,6 +271,9 @@ extern const pb_msgdesc_t com_daml_ledger_api_v2_interactive_DeviceMetadata_Inpu
 /* com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_size depends on runtime parameters */
+/* com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_size depends on runtime parameters */
+/* com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_size depends on runtime parameters */
+/* com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_interactive_DeviceMetadata_size depends on runtime parameters */
 /* com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_size depends on runtime parameters */
 #if defined(com_daml_ledger_api_v2_interactive_GlobalKey_size) && defined(com_daml_ledger_api_v2_Value_size)

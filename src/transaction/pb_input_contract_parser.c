@@ -1,4 +1,4 @@
-#include "proto_deserialize_input_contract.h"
+#include "pb_input_contract_parser.h"
 
 #include "buffer.h"
 #include "canonical_hash.h"
@@ -14,14 +14,6 @@
 #else
 #include "ledger_assert.h"
 #endif
-
-typedef com_daml_ledger_api_v2_cb_Value cbValue;
-typedef com_daml_ledger_api_v2_cb_Record cbRecord;
-typedef com_daml_ledger_api_v2_cb_RecordField cbRecordField;
-typedef com_daml_ledger_api_v2_cb_List cbList;
-typedef com_daml_ledger_api_v2_cb_Optional cbOptional;
-typedef com_daml_ledger_api_v2_cb_GenMap cbGenMap;
-typedef com_daml_ledger_api_v2_cb_GenMap_Entry cbGenMapEntry;
 
 static HashWriter node_hw;
 static uint8_t node_hash[32];
@@ -161,8 +153,8 @@ static bool count_record_field_helper(pb_istream_t *stream) {
     }
 
     // TODO: shouldn't be here
-    hw_put_byte(&node_hw, rf.label != NULL);  // encode optional field
-    encode_string(&node_hw, rf.label);
+    // hw_put_byte(&node_hw, rf.label != NULL);  // encode optional field
+    // encode_string(&node_hw, rf.label);
 
     pb_release(com_daml_ledger_api_v2_cb_RecordField_fields, &rf);
 
@@ -219,6 +211,30 @@ static void decode_value_primitive_variants(cbValue *v) {
     }
 }
 
+static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    // Read string from stream
+    char label_buffer[64] = {0};
+    size_t len =
+        stream->bytes_left < sizeof(label_buffer) ? stream->bytes_left : sizeof(label_buffer) - 1;
+
+    if (!pb_read(stream, (pb_byte_t *) label_buffer, len)) {
+        PRINTF("Failed to read string from stream\n");
+        return false;
+    }
+
+    PRINTF("Decoded Record field label: %s\n", label_buffer);
+
+    // Encode the label
+    PRINTF(">>>>>>>>Encoded Record field label: %s\n", label_buffer);
+    hw_put_byte(&node_hw, 0x01);  // encode optional field
+    encode_string(&node_hw, label_buffer);
+
+    return true;
+}
+
 static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
@@ -237,6 +253,7 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
 
     cbRecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
     rf.value.cb_sum.funcs.decode = &decode_value_variant;
+    rf.label.funcs.decode = &decode_record_field_label;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_RecordField_fields, &rf)) {
         PRINTF("Failed to decode Record field: %s\n", PB_GET_ERROR(stream));
@@ -245,7 +262,7 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
 
     decode_value_primitive_variants(&rf.value);
 
-    PRINTF("/Decoded Record field with label: %s\n", rf.label);
+    // PRINTF("/Decoded Record field with label: %s\n", rf.label);
 
     pb_release(com_daml_ledger_api_v2_cb_RecordField_fields, &rf);
 
@@ -471,7 +488,7 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
     hw_init(&node_hw);
     encode_create_cb_start(&node_hw, &c);
 
-    // Rewind stream to the begining of Create node CB message
+    // Rewind stream to the beginning of Create node CB message
     stream->bytes_left = stream_bytes_left;
     stream->state = stream_state;
 
