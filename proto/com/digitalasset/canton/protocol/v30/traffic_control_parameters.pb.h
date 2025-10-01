@@ -36,8 +36,7 @@ typedef struct _com_digitalasset_canton_protocol_v30_TrafficConsumed {
 } com_digitalasset_canton_protocol_v30_TrafficConsumed;
 
 typedef struct _com_digitalasset_canton_protocol_v30_TrafficControlParameters { 
-    /* [doc-entry-start: TrafficControlParameters]
- In bytes, the maximum amount of base traffic that can be accumulated */
+    /* In bytes, the maximum amount of base traffic that can be accumulated */
     uint64_t max_base_traffic_amount; 
     /* Maximum duration over which the base rate can be accumulated
  Consequently, base_traffic_rate = max_base_traffic_amount / max_base_traffic_accumulation_duration */
@@ -55,7 +54,7 @@ typedef struct _com_digitalasset_canton_protocol_v30_TrafficControlParameters {
     /* In bytes, base event cost added to all sequenced events.
  Optional */
     bool has_base_event_cost;
-    uint64_t base_event_cost; /* [doc-entry-end: TrafficControlParameters] */
+    uint64_t base_event_cost; 
 } com_digitalasset_canton_protocol_v30_TrafficControlParameters;
 
 /* Message representing a traffic purchase made on behalf of a member */

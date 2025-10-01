@@ -40,7 +40,7 @@ typedef struct _com_daml_ledger_api_v2_cb_Identifier {
     char *entity_name; 
 } com_daml_ledger_api_v2_cb_Identifier;
 
-/* A homogenous collection of values. */
+/* A homogeneous collection of values. */
 typedef struct _com_daml_ledger_api_v2_cb_List { 
     /* The elements must all be of the same concrete value type.
  Optional */

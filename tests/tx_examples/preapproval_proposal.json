@@ -77,7 +77,7 @@
       },
       "synchronizerId": "global-domain::1220540f46fe214f533e81145d40b579d867b198b9b224483d7ad4d210df6052d885",
       "transactionUuid": "5781e887-89a3-4b55-90ec-5a4cf9c4cba8",
-      "preparationTime": "1757957749534488"
+      "submissionTime": "1757957749534488"
     }
   },
   "prepared_transaction_hash": "AogiBt33xHH1SqDuw3ijY4skoDh9ghwvyjj4JLRr3v8=",

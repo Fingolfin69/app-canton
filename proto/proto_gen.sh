@@ -9,9 +9,9 @@ green() { echo -e "\e[32m$*\e[0m"; }
 yellow() { echo -e "\e[33m$*\e[0m"; }
 
 ROOT_PATH=$(git rev-parse --show-toplevel)/proto
-LEDGER_API_PROTO_PATH=$ROOT_PATH/canton/community/ledger-api/src/main/protobuf
-COMMUNITY_PROTO_PATH=$ROOT_PATH/canton/community/base/src/main/protobuf
-LAPI_VALUE_PROTO_PATH=$ROOT_PATH/daml/sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2/value.proto
+LEDGER_API_PROTO_PATH=$ROOT_PATH/canton-protos-scala/src/main/protobuf
+COMMUNITY_PROTO_PATH=$ROOT_PATH/canton-protos-scala/src/main/protobuf
+LAPI_VALUE_PROTO_PATH=$ROOT_PATH/canton-protos-scala/src/main/protobuf/com/daml/ledger/api/v2/value.proto
 COMMUNITY_CANTON_PROTO_PATH=$COMMUNITY_PROTO_PATH/com/digitalasset/canton
 PROTOCOL_PROTO_PATH=$COMMUNITY_CANTON_PROTO_PATH/protocol/v30
 CRYPTO_PROTO_PATH=$COMMUNITY_CANTON_PROTO_PATH/crypto/v30
@@ -19,6 +19,8 @@ LEDGER_API_V2_PATH=$LEDGER_API_PROTO_PATH/com/daml/ledger/api/v2
 OUTPUT_DIR="./"
 NANOPB_GENERATOR="../vendor/nanopb/generator/protoc-gen-nanopb"
 PROTOC="../vendor/nanopb/generator/protoc"
+PROTO_SOURCE_REPO_URL="git@github.com:LedgerHQ/canton-protos-scala.git"
+PROTO_SOURCE_REPO_REF="v1.1.0"
 
 # Download utility
 download_if_not_exists() {
@@ -34,12 +36,13 @@ download_if_not_exists() {
 # Define function that does the previous if / else logic
 clone_if_not_exists() {
   local repo_url=$1
-  local sparse_path=$2
+  local repo_ref=$2
+  local sparse_path=$3
   local repo_name=$(basename "$repo_url" .git)
 
   if [ ! -d "$repo_name" ]; then
     yellow "Cloning $repo_name repository..."
-    git clone --filter=blob:none --sparse "$repo_url" && \
+    git clone --filter=blob:none --sparse --branch "$repo_ref" "$repo_url" && \
     cd "$repo_name" && \
     git sparse-checkout set "$sparse_path"
     cd ..
@@ -60,11 +63,12 @@ download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protob
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/duration.proto" "google/protobuf/duration.proto"
 download_if_not_exists "https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto" "google/protobuf/timestamp.proto"
 
-clone_if_not_exists "https://github.com/digital-asset/daml.git" "sdk/daml-lf/ledger-api-value/src/main/protobuf/com/daml/ledger/api/v2"
-clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/ledger-api/src/main/protobuf/com/daml/ledger/api/v2/interactive"
-clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/base/src/main/protobuf/com/digitalasset/canton/version/v1"
-clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/base/src/main/protobuf/com/digitalasset/canton/protocol/v30"
-clone_if_not_exists "https://github.com/digital-asset/canton.git" "community/base/src/main/protobuf/com/digitalasset/canton/crypto/v30"
+clone_if_not_exists "$PROTO_SOURCE_REPO_URL" "$PROTO_SOURCE_REPO_REF" "src/main/protobuf/com/daml/ledger/api/v2"
+clone_if_not_exists "$PROTO_SOURCE_REPO_URL" "$PROTO_SOURCE_REPO_REF" "src/main/protobuf/com/daml/ledger/api/v2/interactive"
+clone_if_not_exists "$PROTO_SOURCE_REPO_URL" "$PROTO_SOURCE_REPO_REF" "src/main/protobuf/com/digitalasset/canton/version/v1"
+clone_if_not_exists "$PROTO_SOURCE_REPO_URL" "$PROTO_SOURCE_REPO_REF" "src/main/protobuf/com/digitalasset/canton/protocol/v30"
+clone_if_not_exists "$PROTO_SOURCE_REPO_URL" "$PROTO_SOURCE_REPO_REF" "src/main/protobuf/com/digitalasset/canton/crypto/v30"
+
 mkdir -p "com/daml/ledger/api/v2" && cp "$LAPI_VALUE_PROTO_PATH" "com/daml/ledger/api/v2/value.proto"
 
 # Copy device proto file
@@ -154,8 +158,8 @@ com.daml.ledger.api.v2.interactive.DeviceMetadata.synchronizer_id type:FT_POINTE
 com.daml.ledger.api.v2.interactive.DeviceMetadata.transaction_uuid type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.act_as type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.SubmitterInfo.command_id type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract.event_blob type:FT_IGNORE
 com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract submsg_callback:true
+com.daml.ledger.api.v2.interactive.DeviceMetadata.InputContract.driver_metadata type:FT_IGNORE
 
 com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.NodeSeed.node_id type:FT_STATIC
 com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.version type:FT_POINTER

@@ -82,7 +82,7 @@ typedef struct _com_daml_ledger_api_v2_interactive_DeviceMetadata {
     char *synchronizer_id; 
     uint32_t mediator_group; 
     char *transaction_uuid; 
-    uint64_t preparation_time; 
+    uint64_t submission_time; 
     int32_t input_contracts_count; 
     bool has_min_ledger_effective_time;
     uint64_t min_ledger_effective_time; 
@@ -156,7 +156,7 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_synchronizer_id_tag 3
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_mediator_group_tag 4
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_transaction_uuid_tag 5
-#define com_daml_ledger_api_v2_interactive_DeviceMetadata_preparation_time_tag 6
+#define com_daml_ledger_api_v2_interactive_DeviceMetadata_submission_time_tag 6
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_input_contracts_count_tag 7
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_min_ledger_effective_time_tag 9
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_max_ledger_effective_time_tag 10
@@ -215,7 +215,7 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  submitter_info,    2) \
 X(a, POINTER,  SINGULAR, STRING,   synchronizer_id,   3) \
 X(a, STATIC,   SINGULAR, UINT32,   mediator_group,    4) \
 X(a, POINTER,  SINGULAR, STRING,   transaction_uuid,   5) \
-X(a, STATIC,   SINGULAR, UINT64,   preparation_time,   6) \
+X(a, STATIC,   SINGULAR, UINT64,   submission_time,   6) \
 X(a, STATIC,   SINGULAR, INT32,    input_contracts_count,   7) \
 X(a, STATIC,   OPTIONAL, UINT64,   min_ledger_effective_time,   9) \
 X(a, STATIC,   OPTIONAL, UINT64,   max_ledger_effective_time,  10)

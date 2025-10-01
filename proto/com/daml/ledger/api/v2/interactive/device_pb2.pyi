@@ -62,7 +62,7 @@ class DeviceDamlTransactionDisplay(_message.Message):
     def __init__(self, version: _Optional[str] = ..., roots: _Optional[_Iterable[str]] = ..., nodes_count: _Optional[int] = ..., node_seeds: _Optional[_Iterable[_Union[DeviceDamlTransactionDisplay.NodeSeed, _Mapping]]] = ...) -> None: ...
 
 class DeviceMetadata(_message.Message):
-    __slots__ = ("submitter_info", "synchronizer_id", "mediator_group", "transaction_uuid", "preparation_time", "input_contracts_count", "min_ledger_effective_time", "max_ledger_effective_time")
+    __slots__ = ("submitter_info", "synchronizer_id", "mediator_group", "transaction_uuid", "submission_time", "input_contracts_count", "min_ledger_effective_time", "max_ledger_effective_time")
     class SubmitterInfo(_message.Message):
         __slots__ = ("act_as", "command_id")
         ACT_AS_FIELD_NUMBER: _ClassVar[int]
@@ -78,19 +78,19 @@ class DeviceMetadata(_message.Message):
         value: _value_pb2.Value
         def __init__(self, key: _Optional[_Union[_interactive_submission_common_data_pb2.GlobalKey, _Mapping]] = ..., value: _Optional[_Union[_value_pb2.Value, _Mapping]] = ...) -> None: ...
     class InputContract(_message.Message):
-        __slots__ = ("v1", "created_at", "event_blob")
+        __slots__ = ("v1", "created_at", "driver_metadata")
         V1_FIELD_NUMBER: _ClassVar[int]
         CREATED_AT_FIELD_NUMBER: _ClassVar[int]
-        EVENT_BLOB_FIELD_NUMBER: _ClassVar[int]
+        DRIVER_METADATA_FIELD_NUMBER: _ClassVar[int]
         v1: _interactive_submission_data_pb2.Create
         created_at: int
-        event_blob: bytes
-        def __init__(self, v1: _Optional[_Union[_interactive_submission_data_pb2.Create, _Mapping]] = ..., created_at: _Optional[int] = ..., event_blob: _Optional[bytes] = ...) -> None: ...
+        driver_metadata: bytes
+        def __init__(self, v1: _Optional[_Union[_interactive_submission_data_pb2.Create, _Mapping]] = ..., created_at: _Optional[int] = ..., driver_metadata: _Optional[bytes] = ...) -> None: ...
     SUBMITTER_INFO_FIELD_NUMBER: _ClassVar[int]
     SYNCHRONIZER_ID_FIELD_NUMBER: _ClassVar[int]
     MEDIATOR_GROUP_FIELD_NUMBER: _ClassVar[int]
     TRANSACTION_UUID_FIELD_NUMBER: _ClassVar[int]
-    PREPARATION_TIME_FIELD_NUMBER: _ClassVar[int]
+    SUBMISSION_TIME_FIELD_NUMBER: _ClassVar[int]
     INPUT_CONTRACTS_COUNT_FIELD_NUMBER: _ClassVar[int]
     MIN_LEDGER_EFFECTIVE_TIME_FIELD_NUMBER: _ClassVar[int]
     MAX_LEDGER_EFFECTIVE_TIME_FIELD_NUMBER: _ClassVar[int]
@@ -98,8 +98,8 @@ class DeviceMetadata(_message.Message):
     synchronizer_id: str
     mediator_group: int
     transaction_uuid: str
-    preparation_time: int
+    submission_time: int
     input_contracts_count: int
     min_ledger_effective_time: int
     max_ledger_effective_time: int
-    def __init__(self, submitter_info: _Optional[_Union[DeviceMetadata.SubmitterInfo, _Mapping]] = ..., synchronizer_id: _Optional[str] = ..., mediator_group: _Optional[int] = ..., transaction_uuid: _Optional[str] = ..., preparation_time: _Optional[int] = ..., input_contracts_count: _Optional[int] = ..., min_ledger_effective_time: _Optional[int] = ..., max_ledger_effective_time: _Optional[int] = ...) -> None: ...
+    def __init__(self, submitter_info: _Optional[_Union[DeviceMetadata.SubmitterInfo, _Mapping]] = ..., synchronizer_id: _Optional[str] = ..., mediator_group: _Optional[int] = ..., transaction_uuid: _Optional[str] = ..., submission_time: _Optional[int] = ..., input_contracts_count: _Optional[int] = ..., min_ledger_effective_time: _Optional[int] = ..., max_ledger_effective_time: _Optional[int] = ...) -> None: ...

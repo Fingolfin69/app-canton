@@ -173,7 +173,7 @@ message Enum {
   string constructor = 2;
 }
 
-// A homogenous collection of values.
+// A homogeneous collection of values.
 message List {
   // The elements must all be of the same concrete value type.
   // Optional
