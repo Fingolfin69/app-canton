@@ -6,16 +6,19 @@
 #include "os.h"
 #include "cx.h"
 #include "buffer.h"
+#include "mem.h"  // for app_mem_alloc
 
 #include "sign_tx.h"
 #include "sw.h"
 #include "globals.h"
 #include "display.h"
 #include "tx_types.h"
-#include "proto_deserialize.h"
-#include "proto_deserialize_input_contract.h"
+#include "pb_parser.h"
+#include "prepared_transaction.h"
 #include "validate.h"
 #include "canonical_hash.h"
+#include "pb_decode.h"
+#include "pb_node_display_parser.h"
 
 typedef enum {
     RECEIVING_DAML_TX_PART,              /// Receiving part of DAML transaction
@@ -25,7 +28,6 @@ typedef enum {
 } prepared_tx_receiving_state_e;
 
 static prepared_tx_receiving_state_e tx_state = RECEIVING_DAML_TX_PART;
-
 static int process_prepared_tx_finalize();
 
 void process_prepared_tx_init() {
@@ -55,6 +57,7 @@ int process_prepared_tx_part(buffer_t *buf) {
                            ? RECEIVING_METADATA
                            : RECEIVING_DAML_NODES;
         } break;
+
         case RECEIVING_DAML_NODES: {
             parser_status_e status = proto_deserialize_node(buf, &G_context.tx_info);
 
@@ -73,6 +76,9 @@ int process_prepared_tx_part(buffer_t *buf) {
                 PRINTF("Failed to hash DAML Node part: %d\n", res);
                 return SW_TX_HASH_FAIL;
             }
+
+            // Parse node for clear signing availability
+            parse_node_for_display(buf);
 
             G_context.tx_info.recv_node_idx++;
 
@@ -119,14 +125,22 @@ int process_prepared_tx_part(buffer_t *buf) {
         } break;
         case RECEIVING_METADATA_INPUT_CONTRACTS: {
             // Hash calculated inside callback during deserialization
-            parser_status_e status = proto_deserialize_cb_input_contract(buf, &G_context.tx_info);
+            parser_status_e status = proto_deserialize_input_contract(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Input Contract part: %d\n", status);
                 return SW_TX_PARSING_FAIL;
             }
 
-            release_cb_input_contract(&G_context.tx_info);
+            int res = hash_input_contract(&G_context.tx_info.hasher,
+                                          &G_context.tx_info.tx_parts_ctx.input_contract);
+
+            release_input_contract(&G_context.tx_info);
+
+            if (res != 0) {
+                PRINTF("Failed to hash Input Contract part: %d\n", res);
+                return SW_TX_HASH_FAIL;
+            }
 
             G_context.tx_info.recv_node_idx++;
 

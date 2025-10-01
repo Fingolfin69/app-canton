@@ -40,5 +40,6 @@ ledger/
 # Proto sources
 proto/canton/
 proto/daml/
+proto/canton-protos-scala/
 !proto/com/daml/*
 proto/*.options

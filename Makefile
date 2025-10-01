@@ -29,8 +29,8 @@ APPNAME = "Canton"
 
 # Application version
 APPVERSION_M = 2
-APPVERSION_N = 4
-APPVERSION_P = 2
+APPVERSION_N = 5
+APPVERSION_P = 0
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
 # Application source files
@@ -115,7 +115,8 @@ include vendor/nanopb/extra/nanopb.mk
 
 INCLUDES_PATH += $(NANOPB_DIR) . proto
 
-DEFINES   += PB_NO_ERRMSG=1
+# DEFINES   += PB_NO_ERRMSG=1
+DEFINES   += PB_ENABLE_ERRORS=1
 SOURCE_FILES += $(NANOPB_CORE)
 APP_SOURCE_PATH += proto
 

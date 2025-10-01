@@ -40,7 +40,7 @@ typedef struct _com_daml_ledger_api_v2_cb_Identifier {
     char *entity_name; 
 } com_daml_ledger_api_v2_cb_Identifier;
 
-/* A homogenous collection of values. */
+/* A homogeneous collection of values. */
 typedef struct _com_daml_ledger_api_v2_cb_List { 
     /* The elements must all be of the same concrete value type.
  Optional */
@@ -151,7 +151,7 @@ typedef struct _com_daml_ledger_api_v2_cb_RecordField {
  - if any of the keys within a single record are omitted, the order of fields MUST match the order of declaration in the Daml template.
 
  Must be a valid NameString */
-    char *label; 
+    pb_callback_t label; 
     /* A nested value of a record.
  Required */
     bool has_value;
@@ -166,7 +166,7 @@ extern "C" {
 /* Initializer values for message structs */
 #define com_daml_ledger_api_v2_cb_Value_init_default {{{NULL}, NULL}, 0, {google_protobuf_Empty_init_default}}
 #define com_daml_ledger_api_v2_cb_Record_init_default {{{NULL}, NULL}, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_cb_RecordField_init_default {NULL, false, com_daml_ledger_api_v2_cb_Value_init_default}
+#define com_daml_ledger_api_v2_cb_RecordField_init_default {{{NULL}, NULL}, false, com_daml_ledger_api_v2_cb_Value_init_default}
 #define com_daml_ledger_api_v2_cb_Identifier_init_default {NULL, NULL, NULL}
 #define com_daml_ledger_api_v2_cb_Variant_init_default {false, com_daml_ledger_api_v2_cb_Identifier_init_default, NULL, NULL}
 #define com_daml_ledger_api_v2_cb_Enum_init_default {false, com_daml_ledger_api_v2_cb_Identifier_init_default, NULL}
@@ -178,7 +178,7 @@ extern "C" {
 #define com_daml_ledger_api_v2_cb_GenMap_Entry_init_default {false, com_daml_ledger_api_v2_cb_Value_init_default, false, com_daml_ledger_api_v2_cb_Value_init_default}
 #define com_daml_ledger_api_v2_cb_Value_init_zero {{{NULL}, NULL}, 0, {google_protobuf_Empty_init_zero}}
 #define com_daml_ledger_api_v2_cb_Record_init_zero {{{NULL}, NULL}, {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_cb_RecordField_init_zero {NULL, false, com_daml_ledger_api_v2_cb_Value_init_zero}
+#define com_daml_ledger_api_v2_cb_RecordField_init_zero {{{NULL}, NULL}, false, com_daml_ledger_api_v2_cb_Value_init_zero}
 #define com_daml_ledger_api_v2_cb_Identifier_init_zero {NULL, NULL, NULL}
 #define com_daml_ledger_api_v2_cb_Variant_init_zero {false, com_daml_ledger_api_v2_cb_Identifier_init_zero, NULL, NULL}
 #define com_daml_ledger_api_v2_cb_Enum_init_zero {false, com_daml_ledger_api_v2_cb_Identifier_init_zero, NULL}
@@ -265,9 +265,9 @@ X(a, CALLBACK, REPEATED, MESSAGE,  fields,            2)
 #define com_daml_ledger_api_v2_cb_Record_fields_MSGTYPE com_daml_ledger_api_v2_cb_RecordField
 
 #define com_daml_ledger_api_v2_cb_RecordField_FIELDLIST(X, a) \
-X(a, POINTER,  SINGULAR, STRING,   label,             1) \
+X(a, CALLBACK, SINGULAR, STRING,   label,             1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define com_daml_ledger_api_v2_cb_RecordField_CALLBACK NULL
+#define com_daml_ledger_api_v2_cb_RecordField_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_cb_RecordField_DEFAULT NULL
 #define com_daml_ledger_api_v2_cb_RecordField_value_MSGTYPE com_daml_ledger_api_v2_cb_Value
 

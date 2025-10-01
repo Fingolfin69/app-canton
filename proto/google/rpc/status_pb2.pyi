@@ -7,11 +7,11 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Status(_message.Message):
-    __slots__ = ["code", "details", "message"]
+    __slots__ = ("code", "message", "details")
     CODE_FIELD_NUMBER: _ClassVar[int]
-    DETAILS_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    DETAILS_FIELD_NUMBER: _ClassVar[int]
     code: int
-    details: _containers.RepeatedCompositeFieldContainer[_any_pb2.Any]
     message: str
+    details: _containers.RepeatedCompositeFieldContainer[_any_pb2.Any]
     def __init__(self, code: _Optional[int] = ..., message: _Optional[str] = ..., details: _Optional[_Iterable[_Union[_any_pb2.Any, _Mapping]]] = ...) -> None: ...

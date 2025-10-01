@@ -29,10 +29,7 @@ typedef struct _com_daml_ledger_api_v2_ArchivedEvent {
  Must be a valid LedgerString (as described in ``value.proto``).
  Required */
     char contract_id[1024]; 
-    /* Identifies the template that defines the choice that archived the contract.
- This template's package-id may differ from the target contract's package-id
- if the target contract has been upgraded or downgraded.
-
+    /* The template of the archived contract.
  The identifier uses the package-id reference format.
 
  Required */
@@ -85,13 +82,20 @@ typedef struct _com_daml_ledger_api_v2_CreatedEvent {
     bool has_template_id;
     com_daml_ledger_api_v2_Identifier template_id; 
     /* The key of the created contract.
- This will be set if and only if ``template_id`` defines a contract key.
+ This will be set if and only if ``create_arguments`` is set and ``template_id`` defines a contract key.
  Optional */
     bool has_contract_key;
     com_daml_ledger_api_v2_Value contract_key; 
     /* The arguments that have been used to create the contract.
+ Set either:
 
- Required */
+ - if there was a party, which is in the ``witness_parties`` of this event,
+   and for which a ``CumulativeFilter`` exists with the ``template_id`` of this event
+   among the ``template_filters``,
+ - or if there was a party, which is in the ``witness_parties`` of this event,
+   and for which a wildcard filter exists (``Filters`` with a ``CumulativeFilter`` of ``WildcardFilter``).
+
+ Optional */
     bool has_create_arguments;
     com_daml_ledger_api_v2_Record create_arguments; 
     /* Opaque representation of contract create event payload intended for forwarding
@@ -110,10 +114,8 @@ typedef struct _com_daml_ledger_api_v2_CreatedEvent {
     pb_callback_t interface_views; 
     /* The parties that are notified of this event. When a ``CreatedEvent``
  is returned as part of a transaction tree or ledger-effects transaction, this will include all
- the parties specified in the ``TransactionFilter`` that are witnesses  of the event
- (the stakeholders of the contract and all informees of all the ancestors
- of this create action that this participant knows about).
- If served as part of a ACS delta transaction those will
+ the parties specified in the ``TransactionFilter`` that are informees
+ of the event. If served as part of a ACS delta transaction those will
  be limited to all parties specified in the ``TransactionFilter`` that
  are stakeholders of the contract (i.e. either signatories or observers).
  If the ``CreatedEvent`` is returned as part of an AssignedEvent,
@@ -150,10 +152,6 @@ typedef struct _com_daml_ledger_api_v2_CreatedEvent {
     /* The package name of the created contract.
  Required */
     char package_name[1024]; 
-    /* Whether this event would be part of respective ACS_DELTA shaped stream,
- and should therefore considered when tracking contract activeness on the client-side.
- Required */
-    bool acs_delta; 
 } com_daml_ledger_api_v2_CreatedEvent;
 
 /* Records that a choice has been exercised on a target contract. */
@@ -172,10 +170,7 @@ typedef struct _com_daml_ledger_api_v2_ExercisedEvent {
  Must be a valid LedgerString (as described in ``value.proto``).
  Required */
     char contract_id[1024]; 
-    /* Identifies the template that defines the executed choice.
- This template's package-id may differ from the target contract's package-id
- if the target contract has been upgraded or downgraded.
-
+    /* The template of the target contract.
  The identifier uses the package-id reference format.
 
  Required */
@@ -204,16 +199,11 @@ typedef struct _com_daml_ledger_api_v2_ExercisedEvent {
     bool consuming; 
     /* The parties that are notified of this event. The witnesses of an exercise
  node will depend on whether the exercise was consuming or not.
- If consuming, the witnesses are the union of the stakeholders,
- the actors and all informees of all the ancestors of this event this
- participant knows about.
- If not consuming, the witnesses are the union of the signatories,
- the actors and all informees of all the ancestors of this event this
- participant knows about.
- In both cases the witnesses are limited to the querying parties, or not
- limited in case anyParty filters are used.
- Note that the actors might not necessarily be observers
- and thus stakeholders. This is the case when the controllers of a
+ If consuming, the witnesses are the union of the stakeholders and
+ the actors.
+ If not consuming, the witnesses are the union of the signatories and
+ the actors. Note that the actors might not necessarily be observers
+ and thus signatories. This is the case when the controllers of a
  choice are specified using "flexible controllers", using the
  ``choice ... controller`` syntax, and said controllers are not
  explicitly marked as observers.
@@ -241,10 +231,6 @@ typedef struct _com_daml_ledger_api_v2_ExercisedEvent {
 
  Optional */
     pb_callback_t implemented_interfaces; 
-    /* Whether this event would be part of respective ACS_DELTA shaped stream,
- and should therefore considered when tracking contract activeness on the client-side.
- Required */
-    bool acs_delta; 
 } com_daml_ledger_api_v2_ExercisedEvent;
 
 /* View of a create event matched by an interface filter. */
@@ -263,7 +249,7 @@ typedef struct _com_daml_ledger_api_v2_InterfaceView {
     google_rpc_Status view_status; 
     /* The value of the interface's view method on this event.
  Set if it was requested in the ``InterfaceFilter`` and it could be
- successfully computed.
+ sucessfully computed.
  Optional */
     bool has_view_value;
     com_daml_ledger_api_v2_Record view_value; 
@@ -297,15 +283,15 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define com_daml_ledger_api_v2_Event_init_default {0, {com_daml_ledger_api_v2_CreatedEvent_init_default}}
-#define com_daml_ledger_api_v2_CreatedEvent_init_default {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Value_init_default, false, com_daml_ledger_api_v2_Record_init_default, {0, {0}}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, false, google_protobuf_Timestamp_init_default, "", 0}
+#define com_daml_ledger_api_v2_CreatedEvent_init_default {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Value_init_default, false, com_daml_ledger_api_v2_Record_init_default, {0, {0}}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, false, google_protobuf_Timestamp_init_default, ""}
 #define com_daml_ledger_api_v2_InterfaceView_init_default {false, com_daml_ledger_api_v2_Identifier_init_default, false, google_rpc_Status_init_default, false, com_daml_ledger_api_v2_Record_init_default}
 #define com_daml_ledger_api_v2_ArchivedEvent_init_default {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_default, {{NULL}, NULL}, "", {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_ExercisedEvent_init_default {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Identifier_init_default, "", false, com_daml_ledger_api_v2_Value_init_default, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0, false, com_daml_ledger_api_v2_Value_init_default, "", {{NULL}, NULL}, 0}
+#define com_daml_ledger_api_v2_ExercisedEvent_init_default {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Identifier_init_default, "", false, com_daml_ledger_api_v2_Value_init_default, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0, false, com_daml_ledger_api_v2_Value_init_default, "", {{NULL}, NULL}}
 #define com_daml_ledger_api_v2_Event_init_zero   {0, {com_daml_ledger_api_v2_CreatedEvent_init_zero}}
-#define com_daml_ledger_api_v2_CreatedEvent_init_zero {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Value_init_zero, false, com_daml_ledger_api_v2_Record_init_zero, {0, {0}}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, false, google_protobuf_Timestamp_init_zero, "", 0}
+#define com_daml_ledger_api_v2_CreatedEvent_init_zero {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Value_init_zero, false, com_daml_ledger_api_v2_Record_init_zero, {0, {0}}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, false, google_protobuf_Timestamp_init_zero, ""}
 #define com_daml_ledger_api_v2_InterfaceView_init_zero {false, com_daml_ledger_api_v2_Identifier_init_zero, false, google_rpc_Status_init_zero, false, com_daml_ledger_api_v2_Record_init_zero}
 #define com_daml_ledger_api_v2_ArchivedEvent_init_zero {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_zero, {{NULL}, NULL}, "", {{NULL}, NULL}}
-#define com_daml_ledger_api_v2_ExercisedEvent_init_zero {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Identifier_init_zero, "", false, com_daml_ledger_api_v2_Value_init_zero, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0, false, com_daml_ledger_api_v2_Value_init_zero, "", {{NULL}, NULL}, 0}
+#define com_daml_ledger_api_v2_ExercisedEvent_init_zero {0, 0, "", false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Identifier_init_zero, "", false, com_daml_ledger_api_v2_Value_init_zero, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0, false, com_daml_ledger_api_v2_Value_init_zero, "", {{NULL}, NULL}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_daml_ledger_api_v2_ArchivedEvent_offset_tag 1
@@ -328,7 +314,6 @@ extern "C" {
 #define com_daml_ledger_api_v2_CreatedEvent_observers_tag 11
 #define com_daml_ledger_api_v2_CreatedEvent_created_at_tag 12
 #define com_daml_ledger_api_v2_CreatedEvent_package_name_tag 13
-#define com_daml_ledger_api_v2_CreatedEvent_acs_delta_tag 14
 #define com_daml_ledger_api_v2_ExercisedEvent_offset_tag 1
 #define com_daml_ledger_api_v2_ExercisedEvent_node_id_tag 2
 #define com_daml_ledger_api_v2_ExercisedEvent_contract_id_tag 3
@@ -343,7 +328,6 @@ extern "C" {
 #define com_daml_ledger_api_v2_ExercisedEvent_exercise_result_tag 12
 #define com_daml_ledger_api_v2_ExercisedEvent_package_name_tag 13
 #define com_daml_ledger_api_v2_ExercisedEvent_implemented_interfaces_tag 14
-#define com_daml_ledger_api_v2_ExercisedEvent_acs_delta_tag 15
 #define com_daml_ledger_api_v2_InterfaceView_interface_id_tag 1
 #define com_daml_ledger_api_v2_InterfaceView_view_status_tag 2
 #define com_daml_ledger_api_v2_InterfaceView_view_value_tag 3
@@ -375,8 +359,7 @@ X(a, CALLBACK, REPEATED, STRING,   witness_parties,   9) \
 X(a, CALLBACK, REPEATED, STRING,   signatories,      10) \
 X(a, CALLBACK, REPEATED, STRING,   observers,        11) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  created_at,       12) \
-X(a, STATIC,   SINGULAR, STRING,   package_name,     13) \
-X(a, STATIC,   SINGULAR, BOOL,     acs_delta,        14)
+X(a, STATIC,   SINGULAR, STRING,   package_name,     13)
 #define com_daml_ledger_api_v2_CreatedEvent_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_CreatedEvent_DEFAULT NULL
 #define com_daml_ledger_api_v2_CreatedEvent_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier
@@ -422,8 +405,7 @@ X(a, CALLBACK, REPEATED, STRING,   witness_parties,  10) \
 X(a, STATIC,   SINGULAR, INT32,    last_descendant_node_id,  11) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  exercise_result,  12) \
 X(a, STATIC,   SINGULAR, STRING,   package_name,     13) \
-X(a, CALLBACK, REPEATED, MESSAGE,  implemented_interfaces,  14) \
-X(a, STATIC,   SINGULAR, BOOL,     acs_delta,        15)
+X(a, CALLBACK, REPEATED, MESSAGE,  implemented_interfaces,  14)
 #define com_daml_ledger_api_v2_ExercisedEvent_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_ExercisedEvent_DEFAULT NULL
 #define com_daml_ledger_api_v2_ExercisedEvent_template_id_MSGTYPE com_daml_ledger_api_v2_Identifier

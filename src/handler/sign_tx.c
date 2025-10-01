@@ -30,7 +30,6 @@
 #include "display.h"
 #include "tx_types.h"
 #include "types.h"
-#include "proto_deserialize.h"
 #include "validate.h"
 #include "canonical_hash.h"
 #include "prepared_transaction.h"
@@ -79,8 +78,19 @@ int handler_sign_tx(buffer_t *cdata, signing_type_e type, bool first, bool more,
         if (result != 0) {
             return io_send_sw(result);  // Send the error code via io_send_sw
         }
-        return (G_context.state == STATE_PARSED) ? ui_display_blind_signed_transaction()
-                                                 : io_send_sw(SW_OK);
+
+        if (G_context.state == STATE_PARSED) {
+            if (G_context.tx_info.clear_signing_available == true) {
+                return ui_display_transaction();
+            } else {
+                return ui_display_blind_signed_transaction();
+            }
+        } else {
+            return io_send_sw(SW_OK);
+        }
+
+        // return (G_context.state == STATE_PARSED) ? ui_display_blind_signed_transaction()
+        //                                          : io_send_sw(SW_OK);
     } else {
         // Invalid state
         PRINTF("Invalid state after processing chunk: %d\n", G_context.state);
@@ -98,6 +108,7 @@ static int process_tx_chunk(buffer_t *cdata,
         PRINTF("Processing first chunk of transaction\n");
         G_context.req_type = CONFIRM_TRANSACTION;
         G_context.signing_type = type;
+        G_context.tx_info.clear_signing_available = false;
         G_context.state = STATE_EXPECTING_MORE;
 
         if (type == SIGN_PREPARED_TRANSACTION) {

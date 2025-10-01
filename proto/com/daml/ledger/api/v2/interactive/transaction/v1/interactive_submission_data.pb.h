@@ -83,6 +83,7 @@ typedef struct _com_daml_ledger_api_v2_interactive_transaction_v1_Fetch {
 } com_daml_ledger_api_v2_interactive_transaction_v1_Fetch;
 
 typedef struct _com_daml_ledger_api_v2_interactive_transaction_v1_Node { 
+    pb_callback_t cb_node_type;
     pb_size_t which_node_type;
     union {
         com_daml_ledger_api_v2_interactive_transaction_v1_Create create;
@@ -102,12 +103,12 @@ extern "C" {
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Exercise_init_default {NULL, NULL, NULL, false, com_daml_ledger_api_v2_Identifier_init_default, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, false, com_daml_ledger_api_v2_Value_init_default, 0, 0, NULL, false, com_daml_ledger_api_v2_Value_init_default, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default {NULL, NULL, NULL, false, com_daml_ledger_api_v2_Identifier_init_default, false, com_daml_ledger_api_v2_Value_init_default, 0, NULL, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Rollback_init_default {0, NULL}
-#define com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}}
+#define com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}}
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_init_zero {NULL, NULL, NULL, false, com_daml_ledger_api_v2_Identifier_init_zero, 0, NULL, 0, NULL, 0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Exercise_init_zero {NULL, NULL, NULL, false, com_daml_ledger_api_v2_Identifier_init_zero, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, false, com_daml_ledger_api_v2_Value_init_zero, 0, 0, NULL, false, com_daml_ledger_api_v2_Value_init_zero, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero {NULL, NULL, NULL, false, com_daml_ledger_api_v2_Identifier_init_zero, false, com_daml_ledger_api_v2_Value_init_zero, 0, NULL, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Rollback_init_zero {0, NULL}
-#define com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero {0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero}}
+#define com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Rollback_children_tag 1
@@ -201,10 +202,10 @@ X(a, POINTER,  REPEATED, STRING,   children,          1)
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Rollback_DEFAULT NULL
 
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Node_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (node_type,create,create),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (node_type,fetch,fetch),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (node_type,exercise,exercise),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (node_type,rollback,rollback),   4)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (node_type,create,create),   1) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (node_type,fetch,fetch),   2) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (node_type,exercise,exercise),   3) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (node_type,rollback,rollback),   4)
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Node_CALLBACK NULL
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Node_DEFAULT NULL
 #define com_daml_ledger_api_v2_interactive_transaction_v1_Node_node_type_create_MSGTYPE com_daml_ledger_api_v2_interactive_transaction_v1_Create
