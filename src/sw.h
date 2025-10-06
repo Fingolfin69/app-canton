@@ -68,3 +68,59 @@
  * Application specific swap error code
  */
 #define SWAP_ERROR_CODE 0x00
+
+/**
+ * Topology transaction error codes (0xC100-0xC4FF range)
+ */
+
+// Namespace delegation errors (0xC100 range)
+/**
+ * Status word for multiple namespace delegations found.
+ */
+#define SW_TOPOLOGY_MULTIPLE_NAMESPACE_DELEGATIONS 0xC101
+/**
+ * Status word for NULL namespace delegation.
+ */
+#define SW_TOPOLOGY_NULL_NAMESPACE_DELEGATION 0xC102
+/**
+ * Status word for missing target key in namespace delegation.
+ */
+#define SW_TOPOLOGY_MISSING_TARGET_KEY 0xC103
+/**
+ * Status word for party key mismatch.
+ */
+#define SW_TOPOLOGY_PARTY_KEY_MISMATCH 0xC104
+
+// Party to key mapping errors (0xC200 range)
+/**
+ * Status word for party ID mismatch.
+ */
+#define SW_TOPOLOGY_PARTY_ID_MISMATCH 0xC201
+/**
+ * Status word for no signing keys found.
+ */
+#define SW_TOPOLOGY_NO_SIGNING_KEYS 0xC202
+
+// Party to participant errors (0xC300 range)
+/**
+ * Status word for missing party field.
+ */
+#define SW_TOPOLOGY_MISSING_PARTY 0xC301
+/**
+ * Status word for no participants found.
+ */
+#define SW_TOPOLOGY_NO_PARTICIPANTS 0xC302
+
+// General topology transaction errors (0xC400 range)
+/**
+ * Status word for unknown mapping type.
+ */
+#define SW_TOPOLOGY_UNKNOWN_MAPPING_TYPE 0xC401
+/**
+ * Status word for unsupported topology operation.
+ */
+#define SW_TOPOLOGY_UNSUPPORTED_OPERATION 0xC402
+/**
+ * Status word for mandatory field missing.
+ */
+#define SW_TOPOLOGY_MANDATORY_FIELD_MISSING 0xC403

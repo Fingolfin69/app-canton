@@ -35,26 +35,51 @@
 #include "bytewriter.h"
 #include "pb_parser.h"
 #include "pb_node_display_parser.h"
+#include "get_public_key.h"
+#include "send_response.h"
+#include "party_id.h"
 
 #define HASH_LEN                                     34
 #define HEX_LEN                                      (HASH_LEN * 2 + 1)
 #define MAX_HASHES                                   3  // Adjust as needed
 #define PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE       ((uint8_t) 11)
 #define PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE ((uint8_t) 55)
-#define ONBOARDING_FLOW_DISPLAY_FIELDS               4
+#define ONBOARDING_FLOW_DISPLAY_FIELDS_NB            5  // Max number of display fields for onboarding flow
 
+// Separate const config from mutable state
 typedef struct {
     const char *item_name;
-    size_t field_index;
-} field_display_t;
+    bool mandatory;
+} field_config_t;
 
-// Namespace Delegation fields
-const field_display_t NAMESPACE_FIELD = {"Namespace", 0};
-const field_display_t PARTY_KEY_FIELD = {"Party Key", 1};
-// Party to Key Mapping fields
-const field_display_t PARTY_FIELD = {"Party ID", 2};
-// Party to Participant fields
-const field_display_t PARTICIPANT_UID_FIELD = {"Participant ID", 3};
+typedef struct {
+    const field_config_t *config;  // Pointer to const config
+    bool found;                    // Mutable state
+} field_state_t;
+
+#define PARTY_FIELD_IDX         0
+#define PARTICIPANT_1_FIELD_IDX 1
+#define PARTICIPANT_2_FIELD_IDX 2
+#define PARTICIPANT_3_FIELD_IDX 3
+#define THRESHOLD_FIELD_IDX     4
+
+// Const configurations (stored in flash)
+const field_config_t PARTY_FIELD_CONFIG = {"Add account", true};
+const field_config_t PARTICIPANT_1_UID_FIELD_CONFIG = {"Associate to validator 1", true};
+const field_config_t PARTICIPANT_2_UID_FIELD_CONFIG = {"Associate to validator 2", false};
+const field_config_t PARTICIPANT_3_UID_FIELD_CONFIG = {"Associate to validator 3", false};
+const field_config_t THRESHOLD_FIELD_CONFIG = {"Validators threshold", false};
+
+static const field_config_t
+    *const ONBOARDING_FLOW_DISPLAY_CONFIGS[ONBOARDING_FLOW_DISPLAY_FIELDS_NB] = {
+        &PARTY_FIELD_CONFIG,
+        &PARTICIPANT_1_UID_FIELD_CONFIG,
+        &PARTICIPANT_2_UID_FIELD_CONFIG,
+        &PARTICIPANT_3_UID_FIELD_CONFIG,
+        &THRESHOLD_FIELD_CONFIG};
+
+// Mutable state array (stored in RAM)
+static field_state_t field_states[ONBOARDING_FLOW_DISPLAY_FIELDS_NB];
 
 static uint8_t (*tx_hashes)[HASH_LEN] = NULL;
 static size_t hash_count = 0;
@@ -105,10 +130,27 @@ static int compare_hashes_hex(const void *a, const void *b) {
 
 void process_untyped_versioned_msg_tx_init(void) {
     init_hash_storage();
-    init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS);
+    init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB);
+    G_context.tx_info.pairs_count = 0;
     has_parsed_namespace_delegation = false;
     has_parsed_party_to_participant = false;
     has_parsed_party_to_key_mapping = false;
+
+    // Reuse the signature field to store the derived public key
+    // using G_context.pk_info.raw_public_key could result in corrupted value
+    // since pk_info is a union shared with tx_info.
+    cx_err_t error = derive_public_key(G_context.bip32_path,
+                                       G_context.bip32_path_len,
+                                       G_context.tx_info.signature,
+                                       NULL);
+
+    LEDGER_ASSERT(error == CX_OK, "Failed to derive public key");
+
+    // Initialize field states
+    for (size_t i = 0; i < ONBOARDING_FLOW_DISPLAY_FIELDS_NB; i++) {
+        field_states[i].config = (const field_config_t *) PIC(ONBOARDING_FLOW_DISPLAY_CONFIGS[i]);
+        field_states[i].found = false;
+    }
 }
 
 static void compute_multi_hash(void) {
@@ -153,6 +195,15 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
         cleanup_hash_storage();
         if (has_parsed_namespace_delegation && has_parsed_party_to_key_mapping &&
             has_parsed_party_to_participant) {
+            // Allow signing only if all required fields have been parsed
+            for (size_t i = 0; i < ONBOARDING_FLOW_DISPLAY_FIELDS_NB; i++) {
+                if (field_states[i].config->mandatory && !field_states[i].found) {
+                    PRINTF("Mandatory field %s not found\n",
+                           (char *) PIC(field_states[i].config->item_name));
+                    return SW_TOPOLOGY_MANDATORY_FIELD_MISSING;
+                }
+            }
+
             G_context.tx_info.clear_signing_available = true;
             // Allocate review title and finish strings
             G_context.tx_info.review_title = REVIEW_TITLE;
@@ -163,139 +214,86 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
 }
 
 // Helper function to set field value
-static bool set_field_value(transaction_ctx_t *tx_info,
-                            const field_display_t *field_config,
-                            const char *value,
-                            bool check_existing) {
+static bool set_field_value(transaction_ctx_t *tx_info, size_t field_idx, const char *value) {
+    uint8_t idx = tx_info->pairs_count;
+
     // Input validation
-    if (field_config->field_index >= tx_info->pairs_count || value == NULL) {
+    if (idx >= ONBOARDING_FLOW_DISPLAY_FIELDS_NB ||
+        field_idx >= ONBOARDING_FLOW_DISPLAY_FIELDS_NB || value == NULL) {
         return false;
     }
 
     size_t value_len = strlen(value) + 1;
 
-    // Check existing value if requested
-    if (check_existing && tx_info->pairs[field_config->field_index].value != NULL) {
-        PRINTF("Checking field number %d, %s against existing value %s\n",
-               field_config->field_index,
-               tx_info->pairs[field_config->field_index].item,
-               tx_info->pairs[field_config->field_index].value);
-        PRINTF("New value: %s\n", value);
-
-        // Check for conflict
-        if (strcmp(tx_info->pairs[field_config->field_index].value, value) != 0) {
-            return false;  // Conflict detected
-        }
-
-        // Value matches existing, no need to reallocate
-        return true;
-    }
-
-    // Allocate and set new value
-    tx_info->display_items_strings[field_config->field_index] = (char *) app_mem_alloc(value_len);
-    if (tx_info->display_items_strings[field_config->field_index] == NULL) {
+    // Allocate and set value
+    tx_info->display_items_strings[idx] = (char *) app_mem_alloc(value_len);
+    if (tx_info->display_items_strings[idx] == NULL) {
         return false;  // Memory allocation failed
     }
 
-    memcpy(tx_info->display_items_strings[field_config->field_index], value, value_len);
-    tx_info->pairs[field_config->field_index].item = (char *) PIC(field_config->item_name);
-    tx_info->pairs[field_config->field_index].value =
-        tx_info->display_items_strings[field_config->field_index];
+    memcpy(tx_info->display_items_strings[idx], value, value_len);
+    tx_info->pairs[idx].item = (char *) PIC(field_states[field_idx].config->item_name);
+    tx_info->pairs[idx].value = tx_info->display_items_strings[idx];
+    tx_info->pairs_count++;
+
+    // Mark field as found
+    field_states[field_idx].found = true;
 
     return true;
 }
 
-static bool set_field_value_bytes_to_hex(transaction_ctx_t *tx_info,
-                                         const field_display_t *field_config,
-                                         const uint8_t *bytes,
-                                         size_t byte_len,
-                                         bool check_existing) {
-    // Input validation
-    if (field_config->field_index >= tx_info->pairs_count || bytes == NULL || byte_len == 0) {
+static bool check_party_key_value(const uint8_t *key_to_check_bytes, size_t key_to_check_len) {
+    if (key_to_check_bytes == NULL || key_to_check_len == 0) {
         return false;
     }
 
-    size_t hex_len = byte_len * 2 + 1;
+    PRINTF("Key to check: %.*H\n", key_to_check_len, key_to_check_bytes);
+    PRINTF("Derived public key: %.*H\n", PUBKEY_LEN, G_context.tx_info.signature);
 
-    // Check existing value if requested
-    if (check_existing && tx_info->pairs[field_config->field_index].value != NULL) {
-        PRINTF("Checking field number %d, %s against existing value %s\n",
-               field_config->field_index,
-               tx_info->pairs[field_config->field_index].item,
-               tx_info->pairs[field_config->field_index].value);
-        PRINTF("New value: %.*H\n", byte_len, bytes);
-
-        char *new_value_hex = (char *) app_mem_alloc(hex_len);
-        if (new_value_hex == NULL) {
-            return false;  // Memory allocation failed
-        }
-
-        SNPRINTF(new_value_hex, hex_len, "%.*h", byte_len, bytes);
-
-        // Check for conflict
-        bool conflict =
-            (strlen(tx_info->pairs[field_config->field_index].value) != hex_len - 1) ||
-            (memcmp(tx_info->pairs[field_config->field_index].value, new_value_hex, hex_len - 1) !=
-             0);
-
-        app_mem_free(new_value_hex);
-
-        if (conflict) {
-            return false;  // Conflict detected
-        }
-
-        // Value matches existing, no need to reallocate
+    // Check against derived public key
+    if (key_to_check_len == PUBKEY_LEN &&
+        memcmp(key_to_check_bytes, G_context.tx_info.signature, PUBKEY_LEN) == 0) {
         return true;
+    } else {
+        return false;
+    }
+}
+
+static bool check_party_id_value(const char *party_id) {
+    if (party_id == NULL) {
+        return false;
     }
 
-    // Allocate and set new value
-    tx_info->display_items_strings[field_config->field_index] = (char *) app_mem_alloc(hex_len);
-    if (tx_info->display_items_strings[field_config->field_index] == NULL) {
-        return false;  // Memory allocation failed
+    // Check against derived party id
+    uint8_t derived_party_id[PARTY_ID_LEN] = {0};
+    if (!party_id_from_pubkey(G_context.tx_info.signature,
+                              derived_party_id,
+                              sizeof(derived_party_id))) {
+        return false;
     }
 
-    // Convert bytes to hex string
-    SNPRINTF(tx_info->display_items_strings[field_config->field_index],
-             hex_len,
-             "%.*h",
-             byte_len,
-             bytes);
-
-    tx_info->pairs[field_config->field_index].item = (char *) PIC(field_config->item_name);
-    tx_info->pairs[field_config->field_index].value =
-        tx_info->display_items_strings[field_config->field_index];
-
-    PRINTF("Set field number %d, %s to hex value %s\n",
-           field_config->field_index,
-           tx_info->pairs[field_config->field_index].item,
-           tx_info->pairs[field_config->field_index].value);
-
-    return true;
+    if (strcmp(party_id, (const char *) derived_party_id) == 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // Process namespace delegation mapping
 static int process_namespace_delegation(const NamespaceDelegation *delegation,
                                         transaction_ctx_t *tx_info) {
+    UNUSED(tx_info);
     LEDGER_ASSERT(!has_parsed_namespace_delegation, "Multiple namespace delegations found");
     LEDGER_ASSERT(delegation != NULL, "NULL namespace delegation");
 
-    // Set namespace delegation specific fields
-    if (delegation->namespace != NULL) {
-        set_field_value(tx_info, &NAMESPACE_FIELD, delegation->namespace, false);
-    } else {
-        return -1;  // Namespace is required
-    }
-
     if (delegation->has_target_key) {
-        if (!set_field_value_bytes_to_hex(tx_info,
-                                          &PARTY_KEY_FIELD,
-                                          delegation->target_key.public_key.bytes,
-                                          delegation->target_key.public_key.size,
-                                          true)) {
-            return -1;  // Conflict detected
+        // Check key value against derived public key
+        if (!check_party_key_value(delegation->target_key.public_key.bytes,
+                                   delegation->target_key.public_key.size)) {
+            return SW_TOPOLOGY_PARTY_KEY_MISMATCH;
         }
     } else {
-        return -1;  // Target key is required
+        return SW_TOPOLOGY_MISSING_TARGET_KEY;
     }
 
     has_parsed_namespace_delegation = true;
@@ -305,28 +303,21 @@ static int process_namespace_delegation(const NamespaceDelegation *delegation,
 // Process party to key mapping
 static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
                                         transaction_ctx_t *tx_info) {
+    UNUSED(tx_info);
     // Set party to key mapping specific fields
-    if (mapping->party != NULL) {
-        if (!set_field_value(tx_info, &PARTY_FIELD, mapping->party, true)) {
-            return -1;  // Conflict detected
-        }
-    } else {
-        return -1;  // Party is required
+    if (mapping->party != NULL && !check_party_id_value(mapping->party)) {
+        return SW_TOPOLOGY_PARTY_ID_MISMATCH;
     }
 
     // For signing keys, we'll show the first one or count if multiple
     if (mapping->signing_keys_count > 0) {
         com_digitalasset_canton_crypto_v30_SigningPublicKey *key = &mapping->signing_keys[0];
-        // Check key value against existing value if already set
-        if (!set_field_value_bytes_to_hex(tx_info,
-                                          &PARTY_KEY_FIELD,
-                                          key->public_key.bytes,
-                                          key->public_key.size,
-                                          true)) {
-            return -1;  // Conflict detected
+        // Check key value against derived public key
+        if (!check_party_key_value(key->public_key.bytes, key->public_key.size)) {
+            return SW_TOPOLOGY_PARTY_KEY_MISMATCH;
         }
     } else {
-        return -1;  // 1 signing key is required
+        return SW_TOPOLOGY_NO_SIGNING_KEYS;
     }
 
     has_parsed_party_to_key_mapping = true;
@@ -338,18 +329,33 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
                                         transaction_ctx_t *tx_info) {
     // Set party to participant specific fields
     if (mapping->party != NULL) {
-        set_field_value(tx_info, &PARTY_FIELD, mapping->party, true);
+        set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party);
     } else {
-        return -1;  // Party is required
+        return SW_TOPOLOGY_MISSING_PARTY;
     }
 
     if (mapping->participants_count > 0 && mapping->participants[0].participant_uid != NULL) {
-        set_field_value(tx_info,
-                        &PARTICIPANT_UID_FIELD,
-                        mapping->participants[0].participant_uid,
-                        false);
+        for (size_t i = 0; i < mapping->participants_count && i < 3; i++) {
+            size_t field_idx = PARTICIPANT_1_FIELD_IDX + i;
+            if (field_idx >= ONBOARDING_FLOW_DISPLAY_FIELDS_NB - 1) {
+                break;  // Prevent overflow
+            }
+            set_field_value(tx_info, field_idx, mapping->participants[i].participant_uid);
+        }
     } else {
-        return -1;  // 1 participant is required
+        return SW_TOPOLOGY_NO_PARTICIPANTS;
+    }
+
+    // If participants_count > 1, display threshold, otherwise skip it (it's always 1)
+    if (mapping->participants_count > 1) {
+        char threshold_str[16];
+        // Set threshold as ratio threshold/participants_count
+        SNPRINTF(threshold_str,
+                 sizeof(threshold_str),
+                 "%u out of %u",
+                 mapping->threshold,
+                 mapping->participants_count);
+        set_field_value(tx_info, THRESHOLD_FIELD_IDX, threshold_str);
     }
 
     has_parsed_party_to_participant = true;
@@ -368,30 +374,35 @@ static int parse_topology_transaction_for_display(buffer_t *buf) {
 
     if (G_context.tx_info.tx_parts_ctx.topology_transaction.operation !=
         com_digitalasset_canton_protocol_v30_Enums_TopologyChangeOp_TOPOLOGY_CHANGE_OP_ADD_REPLACE) {
-        return -1;  // TODO: add relevant error code
+        return SW_TOPOLOGY_UNSUPPORTED_OPERATION;
     }
+
+    int32_t ret = 0;
 
     switch (G_context.tx_info.tx_parts_ctx.topology_transaction.mapping.which_mapping) {
         case TOPOLOGY_MAPPING_NAMESPACE_DELEGATION_TAG:
-            process_namespace_delegation(&G_context.tx_info.tx_parts_ctx.topology_transaction
-                                              .mapping.mapping.namespace_delegation,
-                                         &G_context.tx_info);
+            PRINTF("Processing namespace delegation mapping\n");
+            ret = process_namespace_delegation(&G_context.tx_info.tx_parts_ctx.topology_transaction
+                                                    .mapping.mapping.namespace_delegation,
+                                               &G_context.tx_info);
             break;
         case TOPOLOGY_MAPPING_PARTY_TO_PARTICIPANT_TAG:
-            process_party_to_participant(&G_context.tx_info.tx_parts_ctx.topology_transaction
-                                              .mapping.mapping.party_to_participant,
-                                         &G_context.tx_info);
+            PRINTF("Processing party to participant mapping\n");
+            ret = process_party_to_participant(&G_context.tx_info.tx_parts_ctx.topology_transaction
+                                                    .mapping.mapping.party_to_participant,
+                                               &G_context.tx_info);
             break;
         case TOPOLOGY_MAPPING_PARTY_TO_KEY_MAPPING_TAG:
-            process_party_to_key_mapping(&G_context.tx_info.tx_parts_ctx.topology_transaction
-                                              .mapping.mapping.party_to_key_mapping,
-                                         &G_context.tx_info);
+            PRINTF("Processing party to key mapping\n");
+            ret = process_party_to_key_mapping(&G_context.tx_info.tx_parts_ctx.topology_transaction
+                                                    .mapping.mapping.party_to_key_mapping,
+                                               &G_context.tx_info);
             break;
         default:
             PRINTF("Unknown mapping type in topology transaction: %d\n",
                    G_context.tx_info.tx_parts_ctx.topology_transaction.mapping.which_mapping);
-            return 0;
+            return SW_TOPOLOGY_UNKNOWN_MAPPING_TYPE;
     }
 
-    return 0;
+    return ret;
 }

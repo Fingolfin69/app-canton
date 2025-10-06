@@ -4,10 +4,33 @@ import hashlib
 from io import BytesIO
 from typing import Union, List
 
+from nacl.signing import SigningKey
+
 # pylint: disable=no-name-in-module, import-error
 from split_tx_util import (
     split_transaction,
 )  # type: ignore
+
+from com.digitalasset.canton.crypto.v30.crypto_pb2 import (
+    CryptoKeyFormat,
+    SigningKeyScheme,
+    SigningKeySpec,
+    SigningPublicKey,
+    SigningKeyUsage,
+)
+from com.digitalasset.canton.protocol.v30.topology_pb2 import (
+    TopologyMapping,
+    NamespaceDelegation,
+    PartyToKeyMapping,
+    TopologyTransaction,
+    Enums,
+    PartyToParticipant,
+)
+
+# proto/com/digitalasset/canton/version/v1/untyped_versioned_message_pb2.pyi
+from com.digitalasset.canton.version.v1.untyped_versioned_message_pb2 import (
+    UntypedVersionedMessage,
+)
 
 from .canton_utils import read, read_uint, read_varint, write_varint, UINT64_MAX
 
@@ -15,6 +38,7 @@ PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE = 11
 PURPOSE_PUBLIC_KEY_FINGERPRINT = 12
 PURPOSE_MULTI_TOPOLOGY_TRANSACTION = 55
 
+DEFAULT_PARTY_NAME = "ldg"
 
 class TransactionError(Exception):
     pass
@@ -137,3 +161,144 @@ class Transaction:
         print(f"\nConcatenated sorted hashes for multi-transaction hash computation: {combined_hashes.hex()}")
 
         return Transaction.compute_sha256_canton_hash(PURPOSE_MULTI_TOPOLOGY_TRANSACTION, combined_hashes)
+
+
+    @classmethod
+    def _build_topology_transaction(
+        cls,
+        mapping: TopologyMapping,
+        serial: int,
+    ) -> bytes:
+        """
+        Constructs a topology transaction with the given mapping and serial number.
+
+        Args:
+            mapping (TopologyMapping): The topology mapping to be included in the transaction.
+            serial (int): The serial number for the transaction.
+
+        Returns:
+            bytes: Serialized topology transaction containing the provided mapping and operation.
+        """
+        topology_tx = TopologyTransaction(
+            mapping=mapping,
+            operation=Enums.TopologyChangeOp.TOPOLOGY_CHANGE_OP_ADD_REPLACE,
+            serial=serial,
+        )
+
+        versioned_topology_tx = UntypedVersionedMessage(
+            data=topology_tx.SerializeToString(),
+            version=30,
+        )
+
+        return versioned_topology_tx.SerializeToString()
+
+    @classmethod
+    def namespace_delegation(cls, public_key: bytes) -> bytes:
+        key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_RAW
+        key_scheme = SigningKeyScheme.SIGNING_KEY_SCHEME_ED25519
+        key_spec = SigningKeySpec.SIGNING_KEY_SPEC_EC_CURVE25519
+
+        print(f"\nPublic key for namespace delegation: {public_key.hex()}\n")
+
+        signing_public_key = SigningPublicKey(
+            format=key_format,
+            public_key=public_key,
+            scheme=key_scheme,
+            key_spec=key_spec,
+            usage=[SigningKeyUsage.SIGNING_KEY_USAGE_NAMESPACE, SigningKeyUsage.SIGNING_KEY_USAGE_PROTOCOL],
+        )
+
+        # Generate random namespace private ED25519 key for the party
+        private_key = SigningKey.generate()
+        public_key_bytes = private_key.verify_key.encode()
+
+        namespace = cls.compute_sha256_canton_hash(
+            PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key_bytes
+        ).hex()
+
+        namespace_delegation_mapping = TopologyMapping(
+            namespace_delegation=NamespaceDelegation(
+                namespace=namespace,
+                target_key=signing_public_key,
+                is_root_delegation=True,
+            )
+        )
+
+        return cls._build_topology_transaction(
+            mapping=namespace_delegation_mapping,
+            serial=1,
+        )
+
+    @classmethod
+    def party_to_key(cls, public_key: bytes) -> bytes:
+        key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_RAW
+        key_scheme = SigningKeyScheme.SIGNING_KEY_SCHEME_ED25519
+        key_spec = SigningKeySpec.SIGNING_KEY_SPEC_EC_CURVE25519
+
+        signing_public_key = SigningPublicKey(
+            format=key_format,
+            public_key=public_key,
+            scheme=key_scheme,
+            key_spec=key_spec,
+            usage=[SigningKeyUsage.SIGNING_KEY_USAGE_NAMESPACE, SigningKeyUsage.SIGNING_KEY_USAGE_PROTOCOL],
+        )
+
+        party_fingerprint = cls.compute_sha256_canton_hash(
+            PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key
+        ).hex()
+        party_id = DEFAULT_PARTY_NAME + "::" + party_fingerprint
+
+        party_to_key_mapping = TopologyMapping(
+            party_to_key_mapping=PartyToKeyMapping(
+                party=party_id,
+                threshold=1,
+                signing_keys=[signing_public_key],
+            )
+        )
+
+        return cls._build_topology_transaction(
+            mapping=party_to_key_mapping,
+            serial=2,
+        )
+
+    @classmethod
+    def party_to_participant(cls, public_key: bytes, validators_seeds : list[bytes]) -> bytes:
+        party_fingerprint = cls.compute_sha256_canton_hash(
+            PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key
+        ).hex()
+        party_id = DEFAULT_PARTY_NAME + "::" + party_fingerprint
+
+        validators: List[PartyToParticipant.HostingParticipant] = []
+        validators_count = len(validators_seeds)
+        # Generate validators
+        for i in range(validators_count):
+            # Assert seed is 32 bytes
+            assert len(validators_seeds[i]) == 32, "Validator seed must be 32 bytes"
+            # Generate random participant private ED25519 key for the validator
+            private_key = SigningKey(validators_seeds[i])
+            public_key_bytes = private_key.verify_key.encode()
+            participant_fingerprint = cls.compute_sha256_canton_hash(
+                PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key_bytes
+            ).hex()
+            participant_id = "participant" + str(i + 1) + "::" + participant_fingerprint
+            validators.append(
+                PartyToParticipant.HostingParticipant(
+                    participant_uid=participant_id,
+                    permission=Enums.ParticipantPermission.PARTICIPANT_PERMISSION_CONFIRMATION,
+                )
+            )
+
+        threshold = validators_count - 1 if validators_count > 1 else 1
+
+        party_to_participant_mapping = TopologyMapping(
+            party_to_participant=PartyToParticipant(
+                party=party_id,
+                threshold=threshold,
+                participants=validators,
+            )
+        )
+
+        return cls._build_topology_transaction(
+            mapping=party_to_participant_mapping,
+            serial=1,
+        )

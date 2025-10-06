@@ -35,8 +35,38 @@
 
 #define PRIVKEY_LEN 32
 
-int handler_get_public_key(buffer_t *cdata, bool display) {
+cx_err_t derive_public_key(uint32_t *bip32_path,
+                           uint8_t bip32_path_len,
+                           uint8_t *raw_public_key,
+                           uint8_t *chain_code) {
     uint8_t rawPubkey[PUBKEY_LEN + PRIVKEY_LEN + 1] = {0};
+
+    cx_err_t error = bip32_derive_with_seed_get_pubkey_256(HDW_ED25519_SLIP10,
+                                                           CX_CURVE_Ed25519,
+                                                           bip32_path,
+                                                           bip32_path_len,
+                                                           rawPubkey,
+                                                           chain_code,
+                                                           CX_SHA512,
+                                                           NULL,
+                                                           0);
+
+    if (error != CX_OK) {
+        return error;
+    }
+
+    for (uint i = 0; i < PUBKEY_LEN; i++) {
+        raw_public_key[i] = rawPubkey[PUBKEY_LEN + PRIVKEY_LEN - i];
+    }
+    if ((rawPubkey[PUBKEY_LEN] & 1) != 0) {
+        raw_public_key[PUBKEY_LEN - 1] |= 0x80;
+    }
+
+    PRINTF("Derived public key: %.*H\n", PUBKEY_LEN, raw_public_key);
+    return CX_OK;
+}
+
+int handler_get_public_key(buffer_t *cdata, bool display) {
     explicit_bzero(&G_context, sizeof(G_context));
     G_context.req_type = CONFIRM_ADDRESS;
     G_context.state = STATE_NONE;
@@ -46,30 +76,13 @@ int handler_get_public_key(buffer_t *cdata, bool display) {
         return io_send_sw(SW_WRONG_DATA_LENGTH);
     }
 
-    cx_err_t error = bip32_derive_with_seed_get_pubkey_256(HDW_ED25519_SLIP10,
-                                                           CX_CURVE_Ed25519,
-                                                           G_context.bip32_path,
-                                                           G_context.bip32_path_len,
-                                                           rawPubkey,
-                                                           G_context.pk_info.chain_code,
-                                                           CX_SHA512,
-                                                           NULL,
-                                                           0);
-
+    cx_err_t error = derive_public_key(G_context.bip32_path,
+                                       G_context.bip32_path_len,
+                                       G_context.pk_info.raw_public_key,
+                                       G_context.pk_info.chain_code);
     if (error != CX_OK) {
         return io_send_sw(error);
     }
-
-    for (uint i = 0; i < PUBKEY_LEN; i++) {
-        G_context.pk_info.raw_public_key[i] = rawPubkey[PUBKEY_LEN + PRIVKEY_LEN - i];
-    }
-    if ((rawPubkey[PUBKEY_LEN] & 1) != 0) {
-        G_context.pk_info.raw_public_key[PUBKEY_LEN - 1] |= 0x80;
-    }
-
-    PRINTF("Public key: %.*H\n",
-           sizeof(G_context.pk_info.raw_public_key),
-           G_context.pk_info.raw_public_key);
 
     if (display) {
         return ui_display_party_id();

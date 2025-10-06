@@ -24,3 +24,22 @@
  *
  */
 int handler_get_public_key(buffer_t *cdata, bool display);
+
+/**
+ * @brief Derives the public key and chain code from the given BIP32 path.
+ *
+ * @param bip32_path
+ *   The BIP32 path to derive the key from.
+ * @param bip32_path_len
+ *   The length of the BIP32 path.
+ * @param raw_public_key
+ *   The buffer to store the derived public key.
+ * @param chain_code
+ *   The buffer to store the derived chain code.
+ * @return cx_err_t
+ *   CX_OK on success, an error code otherwise.
+ */
+cx_err_t derive_public_key(uint32_t *bip32_path,
+                           uint8_t bip32_path_len,
+                           uint8_t *raw_public_key,
+                           uint8_t *chain_code);
