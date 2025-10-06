@@ -111,18 +111,23 @@ static int process_tx_chunk(buffer_t *cdata,
         G_context.tx_info.clear_signing_available = false;
         G_context.state = STATE_EXPECTING_MORE;
 
-        if (type == SIGN_PREPARED_TRANSACTION) {
-            process_prepared_tx_init();
-        } else if (type == SIGN_UNTYPED_VERSIONED_MESSAGE) {
-            process_untyped_versioned_msg_tx_init();
-        }
-
         if (!buffer_read_u8(cdata, &G_context.bip32_path_len) ||
             !buffer_read_bip32_path(cdata,
                                     G_context.bip32_path,
                                     (size_t) G_context.bip32_path_len)) {
             return SW_WRONG_DATA_LENGTH;
         }
+
+        // Initialize transaction context after reading BIP32 path
+        // some initialization functions need the BIP32 path
+        // (e.g. to derive the public key)
+
+        if (type == SIGN_PREPARED_TRANSACTION) {
+            process_prepared_tx_init();
+        } else if (type == SIGN_UNTYPED_VERSIONED_MESSAGE) {
+            process_untyped_versioned_msg_tx_init();
+        }
+
     } else {  // parse transaction
         if (G_context.req_type != CONFIRM_TRANSACTION) {
             PRINTF("Request type mismatch: expected CONFIRM_TRANSACTION, got %d\n",
