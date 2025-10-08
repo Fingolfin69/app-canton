@@ -133,7 +133,7 @@ int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            release_input_contract(&G_context.tx_info);
+            release_cb_input_contract(&G_context.tx_info);
 
             G_context.tx_info.recv_node_idx++;
 
