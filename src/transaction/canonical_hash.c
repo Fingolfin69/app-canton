@@ -683,31 +683,6 @@ int hash_metadata(HashWriter *hw, const Metadata *md) {
     return 0;
 }
 
-int hash_input_contract(HashWriter *hw, const InputContract *c) {
-    encode_int64(hw, c->created_at);
-
-    // Encode contract create node in separate buffer and calculate its hash
-    HashWriter n_hw;
-    hw_init(&n_hw);
-    encode_create(&n_hw, &c->v1, NULL, NULL, 0);
-
-    uint8_t hash[32];
-    hw_finalize(&n_hw, hash);
-
-    PRINTF("Contract hash: %.*H\n", 32, hash);
-
-    encode_hash(hw, hash);
-
-    if (is_hash_error()) {
-        PRINTF("Error hashing input contract: '%s', code: %d\n",
-               HASH_ERR_INFO.err_msg,
-               HASH_ERR_INFO.err_code);
-        return HASH_ERR_INFO.err_code;
-    }
-
-    return 0;
-}
-
 int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]) {
     hw_finalize(hw, out);
 

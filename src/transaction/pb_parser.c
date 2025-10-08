@@ -115,21 +115,6 @@ parser_status_e proto_deserialize_topology_transaction(buffer_t *buf, transactio
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx) {
-    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
-
-    PRINTF("Decoding Input contract from buffer of size %d bytes\n", buf->size);
-
-    if (!pb_decode(&stream,
-                   com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,
-                   &tx_ctx->tx_parts_ctx.input_contract)) {
-        PRINTF("Failed to decode Input contract: %s\n", PB_GET_ERROR(&stream));
-        return VALUE_PARSING_ERROR;
-    }
-
-    return PARSING_OK;
-}
-
 void release_daml_tx(transaction_ctx_t *tx_ctx) {
     pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_fields,
                &tx_ctx->tx_parts_ctx.daml_transaction);
@@ -143,9 +128,4 @@ void release_node(transaction_ctx_t *tx_ctx) {
 void release_metadata(transaction_ctx_t *tx_ctx) {
     pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_fields,
                &tx_ctx->tx_parts_ctx.metadata);
-}
-
-void release_input_contract(transaction_ctx_t *tx_ctx) {
-    pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,
-               &tx_ctx->tx_parts_ctx.input_contract);
 }

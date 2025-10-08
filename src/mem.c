@@ -14,7 +14,7 @@
 #include "os_print.h"
 #include "ledger_assert.h"
 
-#define SIZE_MEM_BUFFER (1024 * 10)
+#define SIZE_MEM_BUFFER (1024 * 8)
 
 static uint8_t mem_buffer[SIZE_MEM_BUFFER] __attribute__((aligned(sizeof(intmax_t))));
 static mem_ctx_t mem_ctx = NULL;
