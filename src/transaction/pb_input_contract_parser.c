@@ -470,8 +470,6 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
     (void) field;
     (void) arg;
 
-    com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateNoArg c =
-        com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateNoArg_init_zero;
     com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create c_cb =
         com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_init_zero;
 
@@ -481,15 +479,17 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
 
     // Decoding Create node's plain fields
     if (!pb_decode(stream,
-                   com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateNoArg_fields,
-                   &c)) {
+                   com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields,
+                   &c_cb)) {
         PRINTF("Failed to decode Create node: %s\n", PB_GET_ERROR(stream));
         return false;
     }
 
     // Hashing fields up to `argument` field
     hw_init(&node_hw);
-    encode_create_cb_start(&node_hw, &c);
+    encode_create_cb_start(&node_hw, &c_cb);
+
+    pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields, &c_cb);
 
     // Rewind stream to the beginning of Create node CB message
     stream->bytes_left = stream_bytes_left;
@@ -505,10 +505,9 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
     }
 
     // Finishing hashing Create node
-    encode_create_cb_end(&node_hw, &c);
+    encode_create_cb_end(&node_hw, &c_cb);
     hw_finalize(&node_hw, node_hash);
 
-    pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_CreateNoArg_fields, &c);
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields, &c_cb);
 
     PRINTF("/Decode Create node\n");

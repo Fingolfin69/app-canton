@@ -462,7 +462,7 @@ void encode_create(HashWriter *hw,
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }
 
-void encode_create_cb_start(HashWriter *hw, const Node_CreateCbNoArg *c) {
+void encode_create_cb_start(HashWriter *hw, const Node_CreateCb *c) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, c->lf_version);
     hw_put_byte(hw, 0x00);
@@ -473,7 +473,7 @@ void encode_create_cb_start(HashWriter *hw, const Node_CreateCbNoArg *c) {
     encode_identifier(hw, (const com_daml_ledger_api_v2_Identifier *) &c->template_id);
 }
 
-void encode_create_cb_end(HashWriter *hw, const Node_CreateCbNoArg *c) {
+void encode_create_cb_end(HashWriter *hw, const Node_CreateCb *c) {
     encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }

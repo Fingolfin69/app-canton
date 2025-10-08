@@ -33,5 +33,5 @@ void encode_string(HashWriter *hw, const char *s);
 void encode_hash(HashWriter *hw, const uint8_t h[32]);
 void encode_hex_string(HashWriter *hw, const char *hex);
 void encode_identifier(HashWriter *hw, const Identifier *id);
-void encode_create_cb_start(HashWriter *hw, const Node_CreateCbNoArg *c);
-void encode_create_cb_end(HashWriter *hw, const Node_CreateCbNoArg *c);
+void encode_create_cb_start(HashWriter *hw, const Node_CreateCb *c);
+void encode_create_cb_end(HashWriter *hw, const Node_CreateCb *c);

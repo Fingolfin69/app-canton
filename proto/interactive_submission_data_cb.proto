@@ -77,19 +77,6 @@ message Create {
   repeated string stakeholders = 7;
 }
 
-// Just copy of Create node, argument field will be removed during proto generation
-message CreateNoArg {
-  // Specific LF version of the node
-  string lf_version = 1;
-  string contract_id = 2;
-  string package_name = 3;
-  // The identifier uses the package-id reference format.
-  com.daml.ledger.api.v2.cb.Identifier template_id = 4;
-  com.daml.ledger.api.v2.cb.Value argument = 5;
-  repeated string signatories = 6;
-  repeated string stakeholders = 7;
-}
-
 // Rollback Node
 message Rollback {
   repeated string children = 1;

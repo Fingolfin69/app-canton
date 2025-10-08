@@ -204,7 +204,11 @@ EOF
 echo "Creating interactive_submission_data_cb.options file..."
 cat > interactive_submission_data_cb.options << 'EOF'
 * anonymous_oneof:true
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create type:FT_IGNORE
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create.lf_version type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create.contract_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create.package_name type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create.signatories type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create.stakeholders type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Create.argument type:FT_CALLBACK
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.lf_version type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.contract_id type:FT_POINTER
@@ -224,13 +228,7 @@ com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.acting_parties type:F
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.interface_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.interface_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Rollback.children type:FT_POINTER
-# All expect Create.argument field
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.lf_version type:FT_POINTER
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.contract_id type:FT_POINTER
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.package_name type:FT_POINTER
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.signatories type:FT_POINTER
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.stakeholders type:FT_POINTER
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateNoArg.argument type:FT_IGNORE
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Node submsg_callback:true
 # Create node for display parsing
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay.argument type:FT_STATIC
