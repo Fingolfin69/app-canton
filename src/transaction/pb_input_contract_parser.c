@@ -18,6 +18,26 @@
 static HashWriter node_hw;
 static uint8_t node_hash[32];
 static int32_t value_elem_count;
+static bool is_root_node;
+static DamlTransaction *daml_tx;
+static int32_t node_id;
+
+static bool is_digit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+static int atoint(const char *str) {
+    int res = 0;
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!is_digit(str[i])) {
+            return 0;
+        }
+        res = res * 10 + str[i] - '0';
+    }
+
+    return res;
+}
 
 static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg);
 
@@ -154,10 +174,6 @@ static bool count_record_field_helper(pb_istream_t *stream) {
         return false;
     }
 
-    // TODO: shouldn't be here
-    // hw_put_byte(&node_hw, rf.label != NULL);  // encode optional field
-    // encode_string(&node_hw, rf.label);
-
     pb_release(com_daml_ledger_api_v2_cb_RecordField_fields, &rf);
 
     *stream = saved_stream;  // restore stream position
@@ -233,6 +249,39 @@ static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *fi
     PRINTF(">>>>>>>>Encoded Record field label: %s\n", label_buffer);
     hw_put_byte(&node_hw, 0x01);  // encode optional field
     encode_string(&node_hw, label_buffer);
+
+    return true;
+}
+
+static bool decode_node_id_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    PRINTF("Decoding node_id field\n");
+
+    // Read string from stream
+    char node_id_str[4] = {0};
+
+    size_t len = stream->bytes_left;
+    if (len >= sizeof(node_id_str)) {
+        PRINTF("Node id too long\n");
+        return false;
+    }
+
+    if (!pb_read(stream, (pb_byte_t *) node_id_str, len)) {
+        PRINTF("Failed to decode node_id from stream\n");
+        return false;
+    }
+
+    for (size_t i = 0; i < daml_tx->roots_count; ++i) {
+        if (daml_tx->roots[i] != NULL && node_id_str != NULL &&
+            strcmp(daml_tx->roots[i], node_id_str) == 0) {
+            is_root_node = true;
+            break;
+        }
+    }
+
+    node_id = atoint(node_id_str);
 
     return true;
 }
@@ -486,8 +535,18 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
     }
 
     // Hashing fields up to `argument` field
-    hw_init(&node_hw);
-    encode_create_cb_start(&node_hw, &c_cb);
+    const uint8_t *seed = NULL;
+    if (daml_tx != NULL && daml_tx->node_seeds_count > 0) {
+        for (size_t i = 0; i < daml_tx->node_seeds_count; ++i) {
+            if (daml_tx->node_seeds[i].node_id == node_id) {
+                PRINTF("Found seed for node id %d\n", node_id);
+                seed = daml_tx->node_seeds[i].seed->bytes;
+                break;
+            }
+        }
+    }
+
+    encode_create_cb_start(&node_hw, &c_cb, seed);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields, &c_cb);
 
@@ -506,7 +565,6 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
 
     // Finishing hashing Create node
     encode_create_cb_end(&node_hw, &c_cb);
-    hw_finalize(&node_hw, node_hash);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields, &c_cb);
 
@@ -515,10 +573,80 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
     return true;
 }
 
+// Callback to decode Node messages
+static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    UNUSED(stream);
+    com_daml_ledger_api_v2_interactive_transaction_v1_cb_Node *node = field->message;
+
+    // Only handle Exercise nodes
+    if (field->tag == NODE_V1_EXERCISE_TAG) {
+        PRINTF("Decoding Exercise node\n");
+    } else if (field->tag == NODE_V1_CREATE_TAG) {
+        PRINTF("Decoding Create node\n");
+        return decode_tx_v1_create(stream, field, arg);
+    }
+
+    return true;
+}
+
+// Callback to decode versioned node messages, attaching Node-level callback
+static bool versioned_node_decode_callback(pb_istream_t *stream,
+                                           const pb_field_t *field,
+                                           void **arg) {
+    UNUSED(stream);
+    com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node *node = field->message;
+
+    // Attach Node-level callback dynamically
+    if (node->NODE_VERSION_ONEOF_FIELD == NODE_V1_TAG) {
+        node->v1.cb_node_type.funcs.decode = &node_decode_callback;
+    }
+
+    return true;
+}
+
+parser_status_e proto_deserialize_cb_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
+
+    PRINTF("Decoding Node from buffer of size %d bytes\n", buf->size);
+
+    is_root_node = false;
+    daml_tx = &tx_ctx->tx_parts_ctx.daml_transaction;
+
+    hw_debug(&node_hw);
+
+    tx_ctx->tx_parts_ctx.node.node_id.funcs.decode = decode_node_id_field;
+    tx_ctx->tx_parts_ctx.node.cb_versioned_node.funcs.decode = &versioned_node_decode_callback;
+
+    if (!pb_decode(&stream,
+                   com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
+                   &tx_ctx->tx_parts_ctx.node)) {
+        PRINTF("Decode failed: %s\n", PB_GET_ERROR(&stream));
+    }
+
+    hw_finalize(&node_hw, node_hash);
+
+    PRINTF("Node id %d hash: %.*H\n", node_id, 32, node_hash);
+
+    if (is_root_node) {
+        encode_hash(&tx_ctx->hasher, node_hash);
+    } else {
+        LEDGER_ASSERT(false, "Non-root nodes not implemented");
+    }
+
+    pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
+               &tx_ctx->tx_parts_ctx.node);
+
+    return PARSING_OK;
+}
+
 parser_status_e proto_deserialize_cb_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Input contract from buffer of size %d bytes\n", buf->size);
+
+    daml_tx = NULL;
+
+    hw_init(&node_hw);
 
     tx_ctx->tx_parts_ctx.input_contract.cb_contract.funcs.decode = &decode_tx_v1_create;
 
@@ -528,6 +656,8 @@ parser_status_e proto_deserialize_cb_input_contract(buffer_t *buf, transaction_c
         PRINTF("Failed to decode Input contract: %s\n", PB_GET_ERROR(&stream));
         return VALUE_PARSING_ERROR;
     }
+
+    hw_finalize(&node_hw, node_hash);
 
     encode_int64(&tx_ctx->hasher, tx_ctx->tx_parts_ctx.input_contract.created_at);
     PRINTF("Contract hash: %.*H\n", 32, node_hash);

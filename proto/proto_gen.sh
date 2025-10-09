@@ -151,7 +151,7 @@ com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.version type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.node_seeds type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.Node.node_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.Node.node_id type:FT_CALLBACK
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.Node submsg_callback:true
 com.daml.ledger.api.v2.interactive.DeviceDamlTransaction.NodeSeed type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceMetadata.synchronizer_id type:FT_POINTER
@@ -229,6 +229,7 @@ com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.interface_id type:FT_
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.interface_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Rollback.children type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Node submsg_callback:true
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Node.create type:FT_CALLBACK
 # Create node for display parsing
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay.argument type:FT_STATIC

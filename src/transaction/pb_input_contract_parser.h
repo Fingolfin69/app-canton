@@ -26,5 +26,4 @@ parser_status_e proto_deserialize_cb_input_contract(buffer_t *buf, transaction_c
  */
 void release_cb_input_contract(transaction_ctx_t *tx_ctx);
 
-
 parser_status_e proto_deserialize_cb_node(buffer_t *buf, transaction_ctx_t *tx_ctx);

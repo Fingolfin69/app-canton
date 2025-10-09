@@ -154,10 +154,19 @@ static int get_node_hash(const char *node_id, uint8_t out[32]) {
 
 void hw_init(HashWriter *hw) {
     CX_ASSERT(cx_sha256_init_no_throw(&hw->ctx));
+    hw->debug = false;
+}
+
+void hw_debug(HashWriter *hw) {
+    CX_ASSERT(cx_sha256_init_no_throw(&hw->ctx));
+    hw->debug = true;
 }
 
 void hw_put(HashWriter *hw, const void *p, size_t n) {
     CX_ASSERT(cx_hash_update((cx_hash_t *) &hw->ctx, p, n));
+
+    if (!hw->debug) return;
+    PRINTF("MOOSE: %.*H\n", n, p);
 }
 
 void hw_finalize(HashWriter *hw, uint8_t out[32]) {
@@ -462,12 +471,11 @@ void encode_create(HashWriter *hw,
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }
 
-void encode_create_cb_start(HashWriter *hw, const Node_CreateCb *c) {
+void encode_create_cb_start(HashWriter *hw, const Node_CreateCb *c, const uint8_t *seed) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, c->lf_version);
     hw_put_byte(hw, 0x00);
-    // Optional false
-    hw_put_byte(hw, 0x00);
+    encode_optional(hw, seed != NULL, (EncodeFn) encode_hash, seed);
     encode_hex_string(hw, c->contract_id);
     encode_string(hw, c->package_name);
     encode_identifier(hw, (const com_daml_ledger_api_v2_Identifier *) &c->template_id);
@@ -557,10 +565,10 @@ static void encode_node(HashWriter *hw, const Node *node, const NodeSeed *seeds,
     const Node_V1 *v = &node->v1;
     switch (v->NODE_V1_KIND_ONEOF_FIELD) {
         case NODE_V1_CREATE_TAG:
-            encode_create(hw, &v->create, node->node_id, seeds, n_seeds);
+            encode_create(hw, &v->create, "0", seeds, n_seeds);
             break;
         case NODE_V1_EXERCISE_TAG:
-            encode_exercise(hw, &v->exercise, node->node_id, seeds, n_seeds);
+            encode_exercise(hw, &v->exercise, "0", seeds, n_seeds);
             break;
         case NODE_V1_FETCH_TAG:
             encode_fetch(hw, &v->fetch);
@@ -589,12 +597,12 @@ static void encode_node_id_hash(HashWriter *hw,
         hw_put(hw, h, 32);
     } else {
         // Store node hash
-        if (set_node_hash(node->node_id, h) != 0) {
+        if (set_node_hash("0", h) != 0) {
             set_hash_error(HASH_ERROR_FAILED_TO_STORE_NODE_HASH, "Failed to memoize node id hash");
         }
     }
 
-    PRINTF("Node id %s hash: %.*H\n", node->node_id, 32, h);
+    // PRINTF("Node id %s hash: %.*H\n", node->node_id, 32, h);
 }
 
 static void encode_metadata(HashWriter *hw, const Metadata *m) {
@@ -640,13 +648,13 @@ int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
 int hash_node(HashWriter *hw, const DamlTransaction *tx, const Node *node) {
     bool is_root_node = false;
 
-    for (size_t i = 0; i < tx->roots_count; ++i) {
-        if (tx->roots[i] != NULL && node->node_id != NULL &&
-            strcmp(tx->roots[i], node->node_id) == 0) {
-            is_root_node = true;
-            break;
-        }
-    }
+    // for (size_t i = 0; i < tx->roots_count; ++i) {
+    //     if (tx->roots[i] != NULL && node->node_id != NULL &&
+    //         strcmp(tx->roots[i], node->node_id) == 0) {
+    //         is_root_node = true;
+    //         break;
+    //     }
+    // }
 
     encode_node_id_hash(hw, node, is_root_node, tx->node_seeds, tx->node_seeds_count);
 
