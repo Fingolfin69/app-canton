@@ -121,11 +121,14 @@ Signs a raw hash directly (here a 32 bytes long hash)
 
 Signs topology transactions using `PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE` (11) for individual hashes and `PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE` (55) for the final multi-hash.
 
+For attested party onboarding, an optional 24 bytes random challenge (16 bytes nonce + 8 bytes timestamp) can be provided 
+as part of the first APDU, following the BIP32 path.
+
 **Example APDU sequence:**
 
 ```shell
 // Send BIP32 path first
--> E0 06 01 03 15 058000002C80001A6F800000008000000080000000  // BIP32 path (P2_FIRST | P2_MORE)
+-> E0 06 01 03 15 058000002C80001A6F800000008000000080000000 18 F91C61B67F2A948A723A750DC89B407D2C54C7C27D3AC23F // BIP32 path + challenge (P2_FIRST | P2_MORE)
 <= 9000
 
 // Send namespace delegation transaction (130 bytes)
@@ -138,7 +141,8 @@ Signs topology transactions using `PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE` (11) 
 
 // Send party-to-participant mapping transaction (179 bytes, final message)
 -> E0 06 01 04 B3 0AAE01080110011AA7014AA4010A49626F623A3A313232306236666562363036666537326465393630363461333332323261396235633538636136313532366235616162376161323136653764623663643736333634303710011A550A517061727469636970616E743A3A31323230313235366361636138616135343236343436643262633461313632393163343862373537326238616262306431623365656136336364323939363732316362321002101E
-<= 40 484709D0D273A13EB797523760B99BD8BE995DB1652A9C8E1DAEB87A8AB4935A52D61C4772FD6347641098930EAD37AC57D6EB3B992A97013375D2182CE1440F 00 9000
+// Response containing [DER signature length (1 byte)][DER signature (64)][v (1 byte)][challenge signature len (1 byte)][challenge signature (64)]
+<= 40 50739f146e51c76cd98a1cc0a2e5d18cf40417217660423bf9b42f9060eb580eaf07415a3ca88169eadca1eb9a69a65a4180abbfdea198fb043fcb66bc5bd903 00 40 09f8d654f68f42a3aff275e57afb0f42bbbd145b6cc3a5fbfdf53462a32fe4b5f57606fc974d063662a1c1d769491bb71ecb13c6a4d152ff996ec7d64137870c 9000
 ```
 
 **P2 Flag Usage:**
@@ -150,14 +154,15 @@ Signs topology transactions using `PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE` (11) 
 
 **Processing Algorithm:**
 
-1. Each fully received transaction is hashed using PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE (purpose 11)
-2. Individual 34-byte hashes are collected and sorted lexicographically in hex format
-3. Once all transaction messages are received, hashes are sorted lexicographically in hex format.
-4. Sorted hashes are concatenated with length prefixes:
+1. Derivation path and optional 24 bytes attestation challenge is received in the first APDU. 
+2. Each fully received transaction is hashed using PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE (purpose 11)
+3. Individual 34-byte hashes are collected and sorted lexicographically in hex format
+4. Once all transaction messages are received, hashes are sorted lexicographically in hex format.
+5. Sorted hashes are concatenated with length prefixes:
    - 4-byte count of hashes
    - For each hash: 4-byte length (34) + 34-byte hash data
-5. Final 34 bytes hash computed using PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE (purpose 55)
-6. Returns 64-byte Ed25519 signature (not DER-encoded)
+6. Final 34 bytes hash computed using PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE (purpose 55). If the challenge was provided in the first APDU, it is signed with the attestation key (signing data = multihash + challenge).
+7. Returns 64-byte Ed25519 signature and challenge signature if challenge was provided.
 
 #### SIGN_PREPARED_TRANSACTION (P1 = 0x02) Example
 

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 from ragger.backend.interface import BackendInterface
@@ -14,7 +15,10 @@ from application_client.canton_response_unpacker import (
     unpack_get_public_key_response,
     unpack_sign_tx_response,
 )
-from utils import verify_signature
+from utils import (
+    verify_signature,
+    read_attestation_keys,
+)
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
@@ -43,7 +47,7 @@ def _sign_and_verify_hash(
         )
 
     response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
+    _, der_sig, _, _, _ = unpack_sign_tx_response(response)
     verify_signature(public_key, tx_hash, der_sig)
 
 
@@ -94,7 +98,7 @@ def _sign_and_verify_prepared_transaction(
                 path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text)
 
     response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
+    _, der_sig, _, _, _ = unpack_sign_tx_response(response)
     verify_signature(public_key, tx_hash, der_sig)
 
 def test_sign_ping(
@@ -139,28 +143,56 @@ def test_sign_preapproval_proposal(
 
 def _onboard_party(backend: BackendInterface,
                    scenario_navigator: NavigateWithScenario,
-                   validator_seeds: list[bytes]) -> None:
-    path: str = "m/44'/6767'/0'/0'/0'"
+                   validator_seeds: list[bytes],
+                   attestation_keys: Optional[tuple[bytes,bytes]] = None) -> None:
     client = CantonCommandSender(backend)
-    rapdu = client.get_public_key(path=path)
+
+    # Get public key
+    rapdu = client.get_public_key(path="m/44'/6767'/0'/0'/0'")
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
-    namespace_delegation_tx = Transaction.namespace_delegation(public_key)
-    party_to_key_tx = Transaction.party_to_key(public_key)
-    party_to_participant_tx = Transaction.party_to_participant(public_key, validator_seeds)
+    # Create and hash transactions
+    txs = [
+        Transaction.namespace_delegation(public_key),
+        Transaction.party_to_key(public_key),
+        Transaction.party_to_participant(public_key, validator_seeds)
+    ]
+    multi_hash = Transaction.compute_multi_transaction_hash(
+        [Transaction.compute_topology_transaction_hash(tx) for tx in txs]
+    )
 
-    txs = [namespace_delegation_tx, party_to_key_tx, party_to_participant_tx]
-
-    hashes = [Transaction.compute_topology_transaction_hash(tx) for tx in txs]
-    multi_hash = Transaction.compute_multi_transaction_hash(hashes)
-
-    with client.sign_topology_tx(path=path, transactions=txs):
+    # Sign transactions
+    challenge = os.urandom(24) if attestation_keys else None
+    with client.sign_topology_tx(path="m/44'/6767'/0'/0'/0'", transactions=txs, challenge=challenge):
         scenario_navigator.review_approve(path=ROOT_SCREENSHOT_PATH, custom_screen_text="Sign transaction to")
 
-    response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
+    # Verify signatures
+    _, der_sig, _, challenge_sig_len, challenge_sig = unpack_sign_tx_response(
+        client.get_async_response().data
+    )
     verify_signature(public_key, multi_hash, der_sig)
 
+    if attestation_keys:
+        _verify_attestation(attestation_keys[1], multi_hash, challenge, challenge_sig, challenge_sig_len)
+    else:
+        assert challenge is None
+        assert challenge_sig is None
+        assert challenge_sig_len is None
+
+
+def _verify_attestation(attest_pub_key: bytes, multi_hash: bytes, challenge: Optional[bytes],
+                        challenge_sig: Optional[bytes], challenge_sig_len: int | None) -> None:
+    assert challenge_sig is not None
+    assert challenge_sig_len is not None
+    assert challenge_sig_len == 64 == len(challenge_sig)
+    assert challenge is not None
+    verify_signature(attest_pub_key, multi_hash + challenge, challenge_sig)
+
+def test_sign_onboarding_attested(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
+    path: Path = Path(__file__).parent.parent / "src" / "crypto_data.h"
+    attest_key, attest_pub_key = read_attestation_keys(path)
+    _onboard_party(backend, scenario_navigator, validator_seeds=[VALIDATOR_SEED_1],
+                   attestation_keys=(attest_key, attest_pub_key))
 
 def test_sign_onboarding_single_validator(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
     _onboard_party(backend, scenario_navigator, validator_seeds=[VALIDATOR_SEED_1])

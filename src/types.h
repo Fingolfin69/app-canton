@@ -65,12 +65,16 @@ typedef struct {
     int32_t
         recv_node_idx;  // Index of the current entity being processed ('Node' or 'InputContract')
 
-    uint8_t m_hash[34];                  /// message hash digest
-    uint8_t m_hash_len;                  /// length of message hash digest
-    uint8_t signature[MAX_DER_SIG_LEN];  /// transaction signature encoded in DER
-    uint8_t signature_len;               /// length of transaction signature
-    uint8_t v;                           /// parity of y-coordinate of R in ECDSA signature
-    nbgl_contentTagValue_t* pairs;       // dynamically allocated array for display
+    uint8_t m_hash[34];                            /// message hash digest
+    uint8_t m_hash_len;                            /// length of message hash digest
+    uint8_t signature[MAX_DER_SIG_LEN];            /// transaction signature encoded in DER
+    uint8_t signature_len;                         /// length of transaction signature
+    uint8_t challenge_signature[MAX_DER_SIG_LEN];  /// challenge signature (r,s) raw format
+    uint8_t challenge_signature_len;               /// length of challenge signature
+    bool has_challenge_signature;                  /// whether challenge signature is present
+
+    uint8_t v;                      /// parity of y-coordinate of R in ECDSA signature
+    nbgl_contentTagValue_t* pairs;  // dynamically allocated array for display
     size_t pairs_count;
     bool clear_signing_available;  /// whether clearing signing data is allowed
     char** display_items_strings;  /// allocated strings for display

@@ -125,7 +125,9 @@ static int process_tx_chunk(buffer_t *cdata,
         if (type == SIGN_PREPARED_TRANSACTION) {
             process_prepared_tx_init();
         } else if (type == SIGN_UNTYPED_VERSIONED_MESSAGE) {
-            process_untyped_versioned_msg_tx_init();
+            if (!process_untyped_versioned_msg_tx_init(cdata)) {
+                return SW_WRONG_DATA_LENGTH;
+            }
         }
 
     } else {  // parse transaction

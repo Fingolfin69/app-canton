@@ -14,5 +14,5 @@
 
 #include "tx_types.h"
 
-void process_untyped_versioned_msg_tx_init(void);
+bool process_untyped_versioned_msg_tx_init(buffer_t *cdata);
 int process_untyped_versioned_msg_tx(buffer_t *buf);
