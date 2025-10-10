@@ -60,3 +60,34 @@ def _read_makefile() -> List[str]:
     with open(makefile, "r", encoding="utf-8") as f_p:
         lines = f_p.readlines()
     return lines
+
+
+def _read_key_block(lines: list[str], start_keyword: str, end_keyword: str = "};") -> bytes:
+    key_bytes = b""
+    found_key = False
+    for line in lines:
+        if start_keyword in line:
+            found_key = True
+            continue
+        if found_key:
+            # Extract hex values from the line
+            hex_values = line.strip().strip("{};,").split(",")
+            for hv in hex_values:
+                hv = hv.strip()
+                if hv.startswith("0x"):
+                    key_bytes += bytes([int(hv, 16)])
+            if end_keyword in line:
+                break
+
+    return key_bytes
+
+def read_attestation_keys(filename: Path) -> tuple[bytes, bytes]:
+    print(f"Reading attestation keys from: {filename.resolve()}")
+    with open(filename, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        priv_key = _read_key_block(lines, "TEST_ATTESTATION_KEY")
+        pub_key = _read_key_block(lines, "TEST_ATTESTATION_PUBKEY")
+
+        print(f"Private key: {priv_key.hex()}")
+        print(f"Public key: {pub_key.hex()}")
+        return priv_key, pub_key

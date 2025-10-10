@@ -24,6 +24,7 @@
 #include "mem.h"
 #include "os.h"
 #include "cx.h"
+#include "cx_errors.h"
 #include "ledger_assert.h"
 #include "globals.h"
 
@@ -38,6 +39,7 @@
 #include "get_public_key.h"
 #include "send_response.h"
 #include "party_id.h"
+#include "crypto_data.h"
 
 #define HASH_LEN                                     34
 #define HEX_LEN                                      (HASH_LEN * 2 + 1)
@@ -45,6 +47,7 @@
 #define PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE       ((uint8_t) 11)
 #define PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE ((uint8_t) 55)
 #define ONBOARDING_FLOW_DISPLAY_FIELDS_NB            5  // Max number of display fields for onboarding flow
+#define CHALLENGE_AND_DEADLINE_LEN                   24  // 16 bytes challenge + 8 bytes deadline
 
 // Separate const config from mutable state
 typedef struct {
@@ -80,6 +83,9 @@ static const field_config_t
 
 // Mutable state array (stored in RAM)
 static field_state_t field_states[ONBOARDING_FLOW_DISPLAY_FIELDS_NB];
+
+static bool challenge_and_deadline_parsed = false;
+static uint8_t challenge_and_deadline[CHALLENGE_AND_DEADLINE_LEN] = {0};
 
 static uint8_t (*tx_hashes)[HASH_LEN] = NULL;
 static size_t hash_count = 0;
@@ -128,13 +134,36 @@ static int compare_hashes_hex(const void *a, const void *b) {
     return strcmp(hex_a, hex_b);
 }
 
-void process_untyped_versioned_msg_tx_init(void) {
+static bool read_challenge_and_deadline(buffer_t *cdata) {
+    // Check challenge presence
+    if (!buffer_can_read(cdata, 1)) {
+        return true;  // Challenge not present, not an error
+    }
+
+    // Check the challenge + deadline length matches expected length
+    uint8_t length;
+    if (!buffer_read_u8(cdata, &length) || length != CHALLENGE_AND_DEADLINE_LEN) {
+        return false;
+    }
+
+    // Read challenge + deadline
+    if (!buffer_can_read(cdata, CHALLENGE_AND_DEADLINE_LEN) ||
+        !buffer_move(cdata, challenge_and_deadline, CHALLENGE_AND_DEADLINE_LEN)) {
+        return false;
+    }
+
+    challenge_and_deadline_parsed = true;
+    return true;
+}
+
+bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
     init_hash_storage();
     init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB);
     G_context.tx_info.pairs_count = 0;
     has_parsed_namespace_delegation = false;
     has_parsed_party_to_participant = false;
     has_parsed_party_to_key_mapping = false;
+    challenge_and_deadline_parsed = false;
 
     // Reuse the signature field to store the derived public key
     // using G_context.pk_info.raw_public_key could result in corrupted value
@@ -151,6 +180,9 @@ void process_untyped_versioned_msg_tx_init(void) {
         field_states[i].config = (const field_config_t *) PIC(ONBOARDING_FLOW_DISPLAY_CONFIGS[i]);
         field_states[i].found = false;
     }
+
+    // Read optional challenge and deadline
+    return read_challenge_and_deadline(cdata);
 }
 
 static void compute_multi_hash(void) {
@@ -178,6 +210,40 @@ static void compute_multi_hash(void) {
     app_mem_free(concat);
 }
 
+static void sign_challenge(void) {
+    size_t sig_len = sizeof(G_context.tx_info.challenge_signature);
+    uint8_t data_to_sign[HASH_LEN + CHALLENGE_AND_DEADLINE_LEN];
+    size_t size;
+
+    // Initialize private key structure
+    cx_ecfp_256_private_key_t privkey = {.curve = CX_CURVE_Ed25519, .d_len = 32};
+    memcpy(privkey.d, TEST_ATTESTATION_KEY, 32);
+
+    // Prepare data to sign: multi-hash + challenge + deadline
+    memcpy(data_to_sign, G_context.tx_info.m_hash, HASH_LEN);
+    memcpy(data_to_sign + HASH_LEN, challenge_and_deadline, CHALLENGE_AND_DEADLINE_LEN);
+
+    // Sign the data
+    explicit_bzero(G_context.tx_info.challenge_signature,
+                   sizeof(G_context.tx_info.challenge_signature));
+    CX_ASSERT(cx_eddsa_sign_no_throw(&privkey,
+                                     CX_SHA512,
+                                     data_to_sign,
+                                     sizeof(data_to_sign),
+                                     G_context.tx_info.challenge_signature,
+                                     sig_len));
+    CX_ASSERT(cx_ecdomain_parameters_length(CX_CURVE_Ed25519, &size));
+    sig_len = size * 2;  // r and s each of size 'size'
+
+    PRINTF("Challenge signature: %.*H\n", sig_len, G_context.tx_info.challenge_signature);
+
+    // Set signature length and flag
+    G_context.tx_info.challenge_signature_len = (uint8_t) sig_len;
+    G_context.tx_info.has_challenge_signature = true;
+
+    return;
+}
+
 int process_untyped_versioned_msg_tx(buffer_t *buf) {
     UNUSED(buf);
     uint8_t h[HASH_LEN] = {0};
@@ -193,6 +259,12 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
     if (G_context.state == STATE_PARSED) {
         compute_multi_hash();
         cleanup_hash_storage();
+
+        if (challenge_and_deadline_parsed) {
+            // Sign multihash + challenge + deadline
+            sign_challenge();
+        }
+
         if (has_parsed_namespace_delegation && has_parsed_party_to_key_mapping &&
             has_parsed_party_to_participant) {
             // Allow signing only if all required fields have been parsed

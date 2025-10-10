@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 from struct import unpack
 
 
@@ -68,11 +68,20 @@ def unpack_get_public_key_response(response: bytes) -> Tuple[int, bytes, int, by
 # response = der_sig_len (1)
 #            der_sig (var)
 #            v (1)
-def unpack_sign_tx_response(response: bytes) -> Tuple[int, bytes, int]:
+#            challenge_sig_len (1) - optional, only if challenge was provided
+#            challenge_sig (var) - optional, only if challenge was provided
+def unpack_sign_tx_response(response: bytes) -> Tuple[int, bytes, int, Optional[int], Optional[bytes]]:
     response, der_sig_len, der_sig = pop_size_prefixed_buf_from_buf(response)
     print(f"DER sig len: {der_sig_len}, DER sig: {der_sig.hex()}")
     response, v = pop_sized_buf_from_buffer(response, 1)
 
+    challenge_sig: Optional[bytes] = None
+    challenge_sig_len: Optional[int] = None
+    if len(response) > 0:
+        response, challenge_sig_len, challenge_sig = pop_size_prefixed_buf_from_buf(response)
+        print(f"Challenge sig len: {challenge_sig_len}, Challenge sig: {challenge_sig.hex()}")
+
+    # There should be nothing left in the response
     assert len(response) == 0
 
-    return der_sig_len, der_sig, int.from_bytes(v, byteorder="big")
+    return der_sig_len, der_sig, int.from_bytes(v, byteorder="big"), challenge_sig_len, challenge_sig

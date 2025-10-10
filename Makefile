@@ -29,8 +29,8 @@ APPNAME = "Canton"
 
 # Application version
 APPVERSION_M = 2
-APPVERSION_N = 6
-APPVERSION_P = 1
+APPVERSION_N = 7
+APPVERSION_P = 0
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
 # Application source files
@@ -48,6 +48,12 @@ ICON_FLEX = icons/app_canton_40px.gif
 # This definition allows SDK Makefiles to automatically generate it based on the App icon.
 # Please note that the icon is dynamically generated, and declared in the .gitignore to avoid storing it.
 ICON_HOME_NANO = glyphs/home_canton_14px.gif
+
+# Attestations for challenge signature during party onboarding.
+PROD_PRIVATE_KEY?=0
+ifneq ($(PROD_PRIVATE_KEY),0)
+    DEFINES += PROD_PRIVATE_KEY=${PROD_PRIVATE_KEY}
+endif
 
 # Application allowed derivation curves.
 CURVE_APP_LOAD_PARAMS = ed25519

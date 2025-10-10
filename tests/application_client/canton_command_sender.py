@@ -116,16 +116,26 @@ class CantonCommandSender:
             yield response
 
     @contextmanager
-    def sign_topology_tx(self, path: str, transactions: List[bytes]) -> Generator[None, None, None]:
+    def sign_topology_tx(self,
+                         path: str,
+                         transactions: List[bytes],
+                         challenge: Optional[bytes] = None) -> Generator[None, None, None]:
         print(f"Signing topology transaction with path: {path} and {len(transactions)} transactions")
         p1 = P1SignType.P1_SIGN_UNTYPED_VERSIONED_MESSAGE
+
+        challenge_data: bytes = b""
+        if challenge:
+            assert len(challenge) == 24, "Challenge must be 24 bytes long (16 bytes random + 8 bytes timestamp)"
+            challenge_data = (len(challenge)).to_bytes(1, byteorder='big')
+            challenge_data += challenge
+        data = pack_derivation_path(path) + challenge_data
 
         self.backend.exchange(
             cla=CLA,
             ins=InsType.SIGN_TX,
             p1=p1,
             p2=P2.P2_FIRST | P2.P2_MORE,
-            data=pack_derivation_path(path),
+            data=data
         )
 
         for tx in transactions[:-1]:
