@@ -18,6 +18,7 @@
 #include "validate.h"
 #include "canonical_hash.h"
 #include "pb_decode.h"
+#include "utils.h"
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
@@ -43,7 +44,7 @@
 /* -------------------------------------------------------------------------- */
 
 typedef struct pb_callback_context_t pb_callback_context_t;  // forward declaration
-typedef void (*field_format_callback_t)(pb_callback_context_t *ctx, char *value);
+typedef void (*field_format_callback_t)(pb_callback_context_t *ctx, char **value);
 
 /* -------------------------------------------------------------------------- */
 /* Structures                                                                 */
@@ -91,9 +92,9 @@ struct pb_callback_context_t {
 /* -------------------------------------------------------------------------- */
 
 static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void **arg);
-static void format_amount_field(pb_callback_context_t *ctx, char *value);
-static void format_token_amount_field(pb_callback_context_t *ctx, char *value);
-static void format_native_amount_field(pb_callback_context_t *ctx, char *value);
+static void format_amount_field(pb_callback_context_t *ctx, char **value);
+static void format_token_amount_field(pb_callback_context_t *ctx, char **value);
+static void format_native_amount_field(pb_callback_context_t *ctx, char **value);
 
 /* -------------------------------------------------------------------------- */
 /* Review titles for different transaction types                              */
@@ -271,19 +272,19 @@ static const field_display_t *simple_hash_lookup(const simple_hash_map_t *map, c
 /* -------------------------------------------------------------------------- */
 
 // Remove all trailing zeros and possible dot if integer for amount fields
-static void format_amount_field(pb_callback_context_t *ctx, char *value) {
+static void format_amount_field(pb_callback_context_t *ctx, char **value) {
     UNUSED(ctx);
-    PRINTF("Formatting amount field with value: %s\n", value);
-    size_t len = strlen(value);
+    PRINTF("Formatting amount field with value: %s\n", *value);
+    size_t len = strlen(*value);
 
     if (value == NULL || len == 0) {
         PRINTF("Value is NULL or empty, skipping formatting\n");
         return;
     }
 
-    char *dot = strchr(value, '.');
+    char *dot = strchr(*value, '.');
     if (dot != NULL) {
-        char *end = value + len - 1;
+        char *end = *value + len - 1;
         while (end > dot && *end == '0') {
             *end-- = '\0';
         }
@@ -292,14 +293,14 @@ static void format_amount_field(pb_callback_context_t *ctx, char *value) {
         }
     }
 
-    PRINTF("Formatted amount: %s\n", value);
+    PRINTF("Formatted amount: %s\n", *value);
 }
 
-static void format_token_amount_field(pb_callback_context_t *ctx, char *value) {
+static void format_token_amount_field(pb_callback_context_t *ctx, char **value) {
     // Call the generic amount formatter first
     format_amount_field(ctx, value);
     // Check if instrument id to ticker mapping is needed
-    if (strcmp(value, "0") != 0 && strchr(value, '.') == NULL) {
+    if (strcmp(*value, "0") != 0 && strchr(*value, '.') == NULL) {
         // Look for the instrument id in the mapping
         for (size_t i = 0; i < sizeof(INSTRUMENT_ID_TO_TICKER_MAPPING) / (2 * sizeof(char *));
              i++) {
@@ -311,11 +312,15 @@ static void format_token_amount_field(pb_callback_context_t *ctx, char *value) {
                 strcmp(ctx->tx_info->pairs[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value,
                        instrument_id) == 0) {
                 // Append ticker to value
-                size_t new_len = strlen(value) + 1 + strlen(ticker) + 1;
-                if (new_len < 64) {  // Assuming value buffer is at least 64 bytes
-                    strcat(value, " ");
-                    strcat(value, ticker);
+                size_t new_len = strlen(*value) + 1 + strlen(ticker) + 1;
+                char *new_value = (char *) app_mem_alloc(new_len);
+                if (new_value == NULL) {
+                    PRINTF("Memory allocation failed in format_token_amount_field\n");
+                    return;
                 }
+                SNPRINTF(new_value, new_len, "%s %s", *value, ticker);
+                app_mem_free(*value);
+                *value = new_value;
 
                 // If matched no need to display the instrument id field, update nb_fields
                 ctx->tx_info->pairs_count--;
@@ -332,15 +337,22 @@ static void format_token_amount_field(pb_callback_context_t *ctx, char *value) {
     }
 }
 
-static void format_native_amount_field(pb_callback_context_t *ctx, char *value) {
+static void format_native_amount_field(pb_callback_context_t *ctx, char **value) {
     // Call the generic amount formatter first
     format_amount_field(ctx, value);
     // Append "CC" ticker for Canton Coin
-    size_t new_len = strlen(value) + 1 + strlen(NATIVE_COIN_TICKER) + 1;
-    if (new_len < 64) {  // Assuming value buffer is at least 64 bytes
-        strcat(value, " ");
-        strcat(value, NATIVE_COIN_TICKER);
+    size_t new_len = strlen(*value) + 1 + strlen(NATIVE_COIN_TICKER) + 1;
+    // Allocate new string
+    char *new_value = (char *) app_mem_alloc(new_len);
+    if (new_value == NULL) {
+        PRINTF("Memory allocation failed in format_native_amount_field\n");
+        return;
     }
+    // Format the new value
+    SNPRINTF(new_value, new_len, "%s %s", *value, NATIVE_COIN_TICKER);
+    // Free old value and update pointer
+    app_mem_free(*value);
+    *value = new_value;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -512,7 +524,8 @@ static void find_tx_field(pb_callback_context_t *ctx, cbValue *value) {
                     field_format_callback_t callback =
                         (field_format_callback_t) PIC(ctx->display_config[i]->format_callback);
                     if (callback != NULL) {
-                        callback(ctx, ctx->tx_info->display_items_strings[i]);
+                        callback(ctx, &ctx->tx_info->display_items_strings[i]);
+                        ctx->tx_info->pairs[i].value = ctx->tx_info->display_items_strings[i];
                     }
                 }
             }

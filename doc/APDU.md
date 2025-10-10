@@ -121,7 +121,7 @@ Signs a raw hash directly (here a 32 bytes long hash)
 
 Signs topology transactions using `PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE` (11) for individual hashes and `PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE` (55) for the final multi-hash.
 
-For attested party onboarding, an optional 24 bytes random challenge (16 bytes nonce + 8 bytes timestamp) can be provided 
+For attested party onboarding, an optional 24 bytes random challenge (16 bytes nonce + 8 bytes timestamp) can be provided
 as part of the first APDU, following the BIP32 path.
 
 **Example APDU sequence:**
@@ -154,7 +154,7 @@ as part of the first APDU, following the BIP32 path.
 
 **Processing Algorithm:**
 
-1. Derivation path and optional 24 bytes attestation challenge is received in the first APDU. 
+1. Derivation path and optional 24 bytes attestation challenge is received in the first APDU.
 2. Each fully received transaction is hashed using PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE (purpose 11)
 3. Individual 34-byte hashes are collected and sorted lexicographically in hex format
 4. Once all transaction messages are received, hashes are sorted lexicographically in hex format.
