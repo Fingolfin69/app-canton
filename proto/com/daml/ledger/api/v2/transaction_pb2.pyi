@@ -46,7 +46,7 @@ class TransactionTree(_message.Message):
     def __init__(self, update_id: _Optional[str] = ..., command_id: _Optional[str] = ..., workflow_id: _Optional[str] = ..., effective_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., offset: _Optional[int] = ..., events_by_id: _Optional[_Mapping[int, TreeEvent]] = ..., synchronizer_id: _Optional[str] = ..., trace_context: _Optional[_Union[_trace_context_pb2.TraceContext, _Mapping]] = ..., record_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class Transaction(_message.Message):
-    __slots__ = ("update_id", "command_id", "workflow_id", "effective_at", "events", "offset", "synchronizer_id", "trace_context", "record_time")
+    __slots__ = ("update_id", "command_id", "workflow_id", "effective_at", "events", "offset", "synchronizer_id", "trace_context", "record_time", "external_transaction_hash")
     UPDATE_ID_FIELD_NUMBER: _ClassVar[int]
     COMMAND_ID_FIELD_NUMBER: _ClassVar[int]
     WORKFLOW_ID_FIELD_NUMBER: _ClassVar[int]
@@ -56,6 +56,7 @@ class Transaction(_message.Message):
     SYNCHRONIZER_ID_FIELD_NUMBER: _ClassVar[int]
     TRACE_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     RECORD_TIME_FIELD_NUMBER: _ClassVar[int]
+    EXTERNAL_TRANSACTION_HASH_FIELD_NUMBER: _ClassVar[int]
     update_id: str
     command_id: str
     workflow_id: str
@@ -65,4 +66,5 @@ class Transaction(_message.Message):
     synchronizer_id: str
     trace_context: _trace_context_pb2.TraceContext
     record_time: _timestamp_pb2.Timestamp
-    def __init__(self, update_id: _Optional[str] = ..., command_id: _Optional[str] = ..., workflow_id: _Optional[str] = ..., effective_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., events: _Optional[_Iterable[_Union[_event_pb2.Event, _Mapping]]] = ..., offset: _Optional[int] = ..., synchronizer_id: _Optional[str] = ..., trace_context: _Optional[_Union[_trace_context_pb2.TraceContext, _Mapping]] = ..., record_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    external_transaction_hash: bytes
+    def __init__(self, update_id: _Optional[str] = ..., command_id: _Optional[str] = ..., workflow_id: _Optional[str] = ..., effective_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., events: _Optional[_Iterable[_Union[_event_pb2.Event, _Mapping]]] = ..., offset: _Optional[int] = ..., synchronizer_id: _Optional[str] = ..., trace_context: _Optional[_Union[_trace_context_pb2.TraceContext, _Mapping]] = ..., record_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., external_transaction_hash: _Optional[bytes] = ...) -> None: ...
