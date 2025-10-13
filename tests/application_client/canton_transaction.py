@@ -87,7 +87,15 @@ class Transaction:
     def get_hash_from_json(cls, json_file: str) -> bytes:
         with open(json_file, "r", encoding="utf-8") as file:
             data = json.load(file)
-        return base64.b64decode(data["prepared_transaction_hash"])
+
+        tx_hash = data.get("prepared_transaction_hash") or data.get("hash")
+        # Detect if base64 or hex encoding
+        if tx_hash:
+            try:
+                return bytes.fromhex(tx_hash)
+            except ValueError:
+                return base64.b64decode(tx_hash)
+        raise TransactionError("No hash found in JSON file")
 
     @classmethod
     def serialize_from_json_into_tx_parts(cls, json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes]]:
