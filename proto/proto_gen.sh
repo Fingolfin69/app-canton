@@ -166,7 +166,7 @@ com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.version type:FT_
 com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.roots type:FT_POINTER
 com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.node_seeds type:FT_POINTER
-com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.Node.node_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.Node.node_id type:FT_CALLBACK
 com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.Node submsg_callback:true
 com.daml.ledger.api.v2.interactive.DeviceDamlTransactionDisplay.NodeSeed type:FT_POINTER
 EOF
@@ -180,9 +180,9 @@ com.daml.ledger.api.v2.cb.Value submsg_callback:true
 com.daml.ledger.api.v2.cb.RecordField.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.List.elements type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Optional.value type:FT_CALLBACK
-com.daml.ledger.api.v2.cb.Variant.value type:FT_POINTER
-com.daml.ledger.api.v2.cb.TextMap.Entry.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.TextMap.entries type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.TextMap.Entry.key type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.TextMap.Entry.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.GenMap.Entry.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.GenMap.Entry.key type:FT_STATIC
 com.daml.ledger.api.v2.cb.GenMap.entries type:FT_CALLBACK
@@ -193,10 +193,11 @@ com.daml.ledger.api.v2.cb.Value.contract_id type:FT_POINTER
 com.daml.ledger.api.v2.cb.Identifier.package_id type:FT_POINTER
 com.daml.ledger.api.v2.cb.Identifier.module_name type:FT_POINTER
 com.daml.ledger.api.v2.cb.Identifier.entity_name type:FT_POINTER
-com.daml.ledger.api.v2.cb.Variant.constructor type:FT_POINTER
+com.daml.ledger.api.v2.cb.Variant.variant_id type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.Variant.constructor type:FT_CALLBACK
+com.daml.ledger.api.v2.cb.Variant.value type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Enum.constructor type:FT_POINTER
 com.daml.ledger.api.v2.cb.RecordField.label type:FT_CALLBACK
-com.daml.ledger.api.v2.cb.TextMap.Entry.key type:FT_POINTER
 com.daml.ledger.api.v2.cb.Record.fields type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Record.record_id type:FT_CALLBACK
 EOF
@@ -214,10 +215,12 @@ com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.lf_version type:FT
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.contract_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.package_name type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.choice_id type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.chosen_value type:FT_CALLBACK
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.signatories type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.stakeholders type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.acting_parties type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.children type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.exercise_result type:FT_CALLBACK
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.choice_observers type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.lf_version type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.contract_id type:FT_POINTER
@@ -229,10 +232,11 @@ com.daml.ledger.api.v2.interactive.transaction.v1.cb.Fetch.interface_id type:FT_
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Exercise.interface_id type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Rollback.children type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.Node submsg_callback:true
-com.daml.ledger.api.v2.interactive.transaction.v1.cb.Node.create type:FT_CALLBACK
 # Create node for display parsing
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay type:FT_POINTER
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.CreateDisplay.argument type:FT_STATIC
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.ExerciseDisplay type:FT_POINTER
+com.daml.ledger.api.v2.interactive.transaction.v1.cb.ExerciseDisplay.chosen_value type:FT_STATIC
 com.daml.ledger.api.v2.interactive.transaction.v1.cb.NodeDisplay submsg_callback:true
 EOF
 
@@ -304,8 +308,6 @@ com.digitalasset.canton.protocol.v30.SequencerConnectionSuccessor.SequencerConne
 com.digitalasset.canton.protocol.v30.DynamicSequencingParametersState.synchronizer_id type:FT_POINTER
 
 com.digitalasset.canton.protocol.v30.SignedTopologyTransaction.transaction type:FT_POINTER
-
-com.digitalasset.canton.protocol.v30.TopologyTransactionsBroadcast.synchronizer_id type:FT_POINTER
 
 EOF
 

@@ -70,7 +70,7 @@ int process_prepared_tx_part(buffer_t *buf) {
             release_node(&G_context.tx_info);
 
             // Parse node for clear signing availability
-            res = parse_node_for_display(buf);
+            int res = parse_node_for_display(buf);
             if (res != 0) {
                 PRINTF("Failed to parse DAML Node for display: %d\n", res);
                 return SW_TX_PARSING_FAIL;

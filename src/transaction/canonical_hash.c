@@ -114,6 +114,16 @@ static void init_node_hash_store() {
     }
 }
 
+int set_node_hash_int(int node_id, const uint8_t hash[32]) {
+    memcpy(G_hashed_nodes_store[G_hashed_nodes_store_count].hash, hash, 32);
+    G_hashed_nodes_store[G_hashed_nodes_store_count].id = node_id;
+
+    G_hashed_nodes_store_count++;
+    G_hashed_nodes_store_count %= MAX_NODE_CHILDREN;
+
+    return 0;
+}
+
 static int set_node_hash(const char *node_id, const uint8_t hash[32]) {
     if (node_id == NULL) {
         return -1;  // No node_id provided
@@ -529,7 +539,52 @@ static void encode_exercise(HashWriter *hw,
     encode_repeated_node_ids(hw, e->children_count, e->children);
 }
 
-static void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
+void encode_exercise_start(HashWriter *hw,
+                            const Node_ExerciseCb *e,
+                            const uint8_t *seed) {
+    hw_put_byte(hw, NODE_ENCODING_VERSION);
+    encode_string(hw, e->lf_version);
+    hw_put_byte(hw, 0x01);
+
+    // NOTE: Seed always present for exercise nodes
+    LEDGER_ASSERT(seed != NULL, "Missing seed for exercise node");
+    encode_hash(hw, seed);
+    encode_hex_string(hw, e->contract_id);
+    encode_string(hw, e->package_name);
+    LEDGER_ASSERT(e->has_template_id, "Missing template_id in exercise node");
+    encode_identifier(hw, &e->template_id);
+    encode_repeated(hw, e->signatories_count, e->signatories, sizeof(char *), wrap_encode_string);
+    encode_repeated(hw, e->stakeholders_count, e->stakeholders, sizeof(char *), wrap_encode_string);
+    encode_repeated(hw,
+                    e->acting_parties_count,
+                    e->acting_parties,
+                    sizeof(char *),
+                    wrap_encode_string);
+    encode_optional(hw, e->interface_id != NULL, wrap_encode_identifier, e->interface_id);
+    encode_string(hw, e->choice_id);
+}
+
+void encode_exercise_middle(HashWriter *hw,
+                            const Node_ExerciseCb *e) {
+    encode_bool(hw, e->consuming);
+}
+
+void encode_exercise_end(HashWriter *hw,
+                            const Node_ExerciseCb *e) {
+    encode_repeated(hw,
+                    e->choice_observers_count,
+                    e->choice_observers,
+                    sizeof(char *),
+                    wrap_encode_string);
+
+    if (e->children_count > MAX_NODE_CHILDREN) {
+        set_hash_error(HASH_ERROR_MAX_NODE_CHILDREN_EXCEEDED, "Too many node children");
+        return;
+    }
+    encode_repeated_node_ids(hw, e->children_count, e->children);
+}
+
+void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, f->lf_version);
     hw_put_byte(hw, 0x02);

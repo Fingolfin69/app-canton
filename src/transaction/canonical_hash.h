@@ -13,6 +13,7 @@ typedef struct {
 int hash_transaction(HashWriter *hw, const DamlTransaction *tx);
 int hash_node(HashWriter *hw, const DamlTransaction *tx, const Node *node);
 int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]);
+int set_node_hash_int(int node_id, const uint8_t hash[32]);
 
 int hash_metadata(HashWriter *hw, const Metadata *md);
 int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]);
@@ -36,3 +37,9 @@ void encode_hex_string(HashWriter *hw, const char *hex);
 void encode_identifier(HashWriter *hw, const Identifier *id);
 void encode_create_cb_start(HashWriter *hw, const Node_CreateCb *c, const uint8_t *seed);
 void encode_create_cb_end(HashWriter *hw, const Node_CreateCb *c);
+void encode_exercise_start(HashWriter *hw,
+                            const Node_ExerciseCb *e,
+                            const uint8_t *seed);
+void encode_exercise_middle(HashWriter *hw, const Node_ExerciseCb *e);
+void encode_exercise_end(HashWriter *hw, const Node_ExerciseCb *e);
+void encode_fetch(HashWriter *hw, const Node_Fetch *f);

@@ -17,6 +17,8 @@
 
 static HashWriter node_hw;
 static uint8_t node_hash[32];
+
+#define VALUE_ELEM_COUNT_NONE 0xFFFFFFFF
 static int32_t value_elem_count;
 static bool is_root_node;
 static DamlTransaction *daml_tx;
@@ -40,6 +42,25 @@ static int atoint(const char *str) {
 }
 
 static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg);
+
+static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    com_daml_ledger_api_v2_cb_Identifier id = com_daml_ledger_api_v2_cb_Identifier_init_zero;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_Identifier_fields, &id)) {
+        PRINTF("Failed to decode Identifier: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+
+    pb_release(com_daml_ledger_api_v2_cb_Identifier_fields, &id);
+
+    value_elem_count++;
+
+    return true;
+}
 
 static bool count_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
@@ -71,6 +92,24 @@ static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void 
     }
 
     pb_release(com_daml_ledger_api_v2_cb_Value_fields, &v);
+
+    value_elem_count++;
+
+    return true;
+}
+
+static bool count_text_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    cbTextMapEntry e = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &e)) {
+        PRINTF("Failed to decode TextMap entry: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    pb_release(com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &e);
 
     value_elem_count++;
 
@@ -111,7 +150,7 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
         case com_daml_ledger_api_v2_cb_Value_date_tag:
         case com_daml_ledger_api_v2_cb_Value_party_tag:
         case com_daml_ledger_api_v2_cb_Value_text_tag:
-        case com_daml_ledger_api_v2_cb_Value_contract_id_tag:
+        case com_daml_ledger_api_v2_cb_Value_contract_id_tag: break;
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
             cbOptional *msg = field->pData;
             msg->value.funcs.decode = &count_list_elem;
@@ -121,7 +160,8 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
             msg->elements.funcs.decode = &count_list_elem;
         } break;
         case com_daml_ledger_api_v2_cb_Value_text_map_tag: {
-            LEDGER_ASSERT(false, "TextMap not implemented");
+            cbTextMap *msg = field->pData;
+            msg->entries.funcs.decode = &count_text_map_entry;
         } break;
         case com_daml_ledger_api_v2_cb_Value_gen_map_tag: {
             cbGenMap *msg = field->pData;
@@ -132,7 +172,8 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
             msg->fields.funcs.decode = &count_record_field;
         } break;
         case com_daml_ledger_api_v2_cb_Value_variant_tag: {
-            LEDGER_ASSERT(false, "Variant not implemented");
+            cbVariant *msg = field->pData;
+            msg->variant_id.funcs.decode = &count_identifier;
         } break;
         case com_daml_ledger_api_v2_cb_Value_enum__tag: {
             LEDGER_ASSERT(false, "Enum not implemented");
@@ -156,6 +197,44 @@ static bool count_value_helper(pb_istream_t *stream) {
     }
 
     pb_release(com_daml_ledger_api_v2_cb_Value_fields, &c);
+
+    // Restore stream state
+    *stream = saved_stream;
+
+    return true;
+}
+
+static bool count_gen_map_helper(pb_istream_t *stream) {
+    cbGenMapEntry e = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
+    pb_istream_t saved_stream = *stream;
+
+    e.value.cb_sum.funcs.decode = &count_value;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &e)) {
+        PRINTF("Failed to count GenMap entry: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    pb_release(com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &e);
+
+    // Restore stream state
+    *stream = saved_stream;
+
+    return true;
+}
+
+static bool count_text_map_helper(pb_istream_t *stream) {
+    cbTextMapEntry e = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
+    pb_istream_t saved_stream = *stream;
+
+    e.value.cb_sum.funcs.decode = &count_value;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &e)) {
+        PRINTF("Failed to count TextMap entry: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    pb_release(com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &e);
 
     // Restore stream state
     *stream = saved_stream;
@@ -253,6 +332,50 @@ static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *fi
     return true;
 }
 
+static bool decode_variant_constructor(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    // Read string from stream
+    char constructor_buffer[64] = {0};
+    size_t len =
+        stream->bytes_left < sizeof(constructor_buffer) ? stream->bytes_left : sizeof(constructor_buffer) - 1;
+
+    if (!pb_read(stream, (pb_byte_t *) constructor_buffer, len)) {
+        PRINTF("Failed to read string from stream\n");
+        return false;
+    }
+
+    PRINTF("Decoded constructor str: %s\n", constructor_buffer);
+
+    PRINTF(">>>>>>>>Encoded constructor str: %s\n", constructor_buffer);
+    encode_string(&node_hw, constructor_buffer);
+
+    return true;
+}
+
+static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    // Read string from stream
+    char key_buffer[64] = {0};
+    size_t len =
+        stream->bytes_left < sizeof(key_buffer) ? stream->bytes_left : sizeof(key_buffer) - 1;
+
+    if (!pb_read(stream, (pb_byte_t *) key_buffer, len)) {
+        PRINTF("Failed to read string from stream\n");
+        return false;
+    }
+
+    PRINTF("Decoded TextMap key: %s\n", key_buffer);
+
+    PRINTF(">>>>>>>>Encoded TextMap key: %s\n", key_buffer);
+    encode_string(&node_hw, key_buffer);
+
+    return true;
+}
+
 static bool decode_node_id_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
@@ -291,12 +414,6 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
     (void) arg;
 
     PRINTF("Decoding Record fields\n");
-
-    // Encode number of record fields previously counted
-    if (value_elem_count != 0) {
-        encode_int32(&node_hw, value_elem_count);
-        value_elem_count = 0;
-    }
 
     if (!count_record_field_helper(stream)) {
         return false;
@@ -345,7 +462,7 @@ static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
-static bool decode_value_opt(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -371,13 +488,48 @@ static bool decode_value_opt(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
+static bool decode_text_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    PRINTF("Decoding TextMap entry\n");
+
+    if (!count_text_map_helper(stream)) {
+        return false;
+    }
+
+    cbTextMapEntry entry = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
+
+    entry.key.funcs.decode = &decode_textmap_key;
+    entry.value.cb_sum.funcs.decode = &decode_value_variant;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &entry)) {
+        PRINTF("Failed to decode TextMap entry: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    decode_value_primitive_variants(&entry.value);
+
+    PRINTF("/Decoding TextMap entry\n");
+    pb_release(com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &entry);
+
+    return true;
+}
+
 static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
     PRINTF("Decoding GenMap entry\n");
+    if (!count_gen_map_helper(stream)) {
+        return false;
+    }
+
+    pb_istream_t saved_stream = *stream;
 
     cbGenMapEntry entry = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
+    entry.key.cb_sum.funcs.decode = &decode_value_variant;
+    entry.value.cb_sum.funcs.decode = NULL;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &entry)) {
         PRINTF("Failed to decode GenMap entry: %s\n", PB_GET_ERROR(stream));
@@ -385,10 +537,21 @@ static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, 
     }
 
     decode_value_primitive_variants(&entry.key);
+    pb_release(com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &entry);
+
+    *stream = saved_stream;  // restore stream position
+    entry.key.cb_sum.funcs.decode = NULL;
+    entry.value.cb_sum.funcs.decode = &decode_value_variant;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &entry)) {
+        PRINTF("Failed to decode GenMap entry: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
     decode_value_primitive_variants(&entry.value);
+    pb_release(com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &entry);
 
     PRINTF("/Decoding GenMap entry\n");
-    pb_release(com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &entry);
 
     return true;
 }
@@ -421,7 +584,16 @@ static bool decode_identifier_opt(pb_istream_t *stream, const pb_field_t *field,
 
     PRINTF("Decoding optional Identifier\n");
     hw_put_byte(&node_hw, 0x01);  // encode optional field presence
-    return decode_identifier(stream, field, arg);
+    bool res = decode_identifier(stream, field, arg);
+
+    // FIXME: decode number of record fields previously counted
+    // Encode number of record fields previously counted
+    if (value_elem_count != VALUE_ELEM_COUNT_NONE) {
+        encode_int32(&node_hw, value_elem_count);
+        value_elem_count = VALUE_ELEM_COUNT_NONE;
+    }
+
+    return res;
 }
 
 static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg) {
@@ -429,7 +601,7 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
     (void) field;
     (void) arg;
 
-    PRINTF("Decoding value variant\n");
+    PRINTF("Decoding value variant %d\n", field->tag);
 
     switch (field->tag) {
         case com_daml_ledger_api_v2_cb_Value_unit_tag:
@@ -440,32 +612,36 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
         case com_daml_ledger_api_v2_cb_Value_date_tag:
         case com_daml_ledger_api_v2_cb_Value_party_tag:
         case com_daml_ledger_api_v2_cb_Value_text_tag:
-        case com_daml_ledger_api_v2_cb_Value_contract_id_tag:
+        case com_daml_ledger_api_v2_cb_Value_contract_id_tag: {
+        } break;
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
             cbOptional *msg = field->pData;
-            msg->value.funcs.decode = &decode_value_opt;
+            msg->value.funcs.decode = &decode_value;
             hw_put_byte(&node_hw, 0x09);
             // Encode optional field presence
-            hw_put_byte(&node_hw, value_elem_count == 0 ? 0x00 : 0x01);
-            value_elem_count = 0;
+            hw_put_byte(&node_hw, value_elem_count == 0 ? 0x00: 0x01);
+            value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_list_tag: {
             cbList *msg = field->pData;
             msg->elements.funcs.decode = &decode_list_elem;
             hw_put_byte(&node_hw, 0x0A);
             encode_int32(&node_hw, value_elem_count);
-            value_elem_count = 0;
+            value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_text_map_tag: {
+            cbTextMap *msg = field->pData;
+            msg->entries.funcs.decode = &decode_text_map_entry;
             hw_put_byte(&node_hw, 0x0B);
-            LEDGER_ASSERT(false, "TextMap not implemented");
+            encode_int32(&node_hw, value_elem_count);
+            value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_gen_map_tag: {
             cbGenMap *msg = field->pData;
             msg->entries.funcs.decode = &decode_gen_map_entry;
             hw_put_byte(&node_hw, 0x0F);
             encode_int32(&node_hw, value_elem_count);
-            value_elem_count = 0;
+            value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_record_tag: {
             cbRecord *msg = field->pData;
@@ -474,8 +650,14 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
             hw_put_byte(&node_hw, 0x0C);
         } break;
         case com_daml_ledger_api_v2_cb_Value_variant_tag: {
+            cbVariant *msg = field->pData;
+            msg->variant_id.funcs.decode = &decode_identifier;
+            msg->constructor.funcs.decode = &decode_variant_constructor;
+            msg->value.funcs.decode = &decode_value;
             hw_put_byte(&node_hw, 0x0D);
-            LEDGER_ASSERT(false, "Variant not implemented");
+            // Encode optional field presence
+            hw_put_byte(&node_hw, value_elem_count == 0 ? 0x00: 0x01);
+            value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_enum__tag: {
             hw_put_byte(&node_hw, 0x0E);
@@ -515,7 +697,7 @@ static bool decode_input_contract_argument(pb_istream_t *stream,
     return true;
 }
 
-static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -573,6 +755,98 @@ static bool decode_tx_v1_create(pb_istream_t *stream, const pb_field_t *field, v
     return true;
 }
 
+static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    PRINTF("Decode Exercise node\n");
+
+    com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise e =
+        com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_init_zero;
+
+    pb_istream_t stream_prev = *stream;
+
+    // 1. Decode plain fields and calculate hash till `chosen_value`
+    if (!pb_decode(stream,
+                   com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields,
+                   &e)) {
+        PRINTF("Failed to decode Exercise node: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    const uint8_t *seed = NULL;
+    if (daml_tx != NULL) {
+        for (size_t i = 0; i < daml_tx->node_seeds_count; ++i) {
+            if (daml_tx->node_seeds[i].node_id == node_id) {
+                PRINTF("Found seed for node id %d\n", node_id);
+                seed = daml_tx->node_seeds[i].seed->bytes;
+                break;
+            }
+        }
+    }
+
+    encode_exercise_start(&node_hw, &e, seed);
+
+    pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields, &e);
+    *stream = stream_prev;  // rewind stream
+
+    // 2. Decode and hash `chosen_value` field and fields up to `exercise_result` field
+    e.chosen_value.funcs.decode = &decode_input_contract_argument;
+    e.exercise_result.funcs.decode = NULL;
+    if (!pb_decode(stream,
+                   com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields,
+                   &e)) {
+        PRINTF("Failed to decode Exercise node: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    encode_exercise_middle(&node_hw, &e);
+
+    pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields, &e);
+    *stream = stream_prev;  // rewind stream
+
+    // 3. Decode and hash `exercise_result` field and rest of the fields
+    // Encode optional `exercise_result` field presence
+    hw_put_byte(&node_hw, 0x01);
+    e.chosen_value.funcs.decode = NULL;
+    e.exercise_result.funcs.decode = &decode_input_contract_argument;
+    if (!pb_decode(stream,
+                   com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields,
+                   &e)) {
+        PRINTF("Failed to decode Exercise node: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    encode_exercise_end(&node_hw, &e);
+
+    pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields, &e);
+
+    return true;
+}
+
+static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    PRINTF("Decode Fetch node\n");
+
+    com_daml_ledger_api_v2_interactive_transaction_v1_Fetch f =
+        com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_init_zero;
+
+    if (!pb_decode(stream,
+                   com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_fields,
+                   &f)) {
+        PRINTF("Failed to decode Fetch node: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    encode_fetch(&node_hw, &f);
+
+    pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_fields, &f);
+
+    return true;
+}
+
 // Callback to decode Node messages
 static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     UNUSED(stream);
@@ -581,9 +855,15 @@ static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, 
     // Only handle Exercise nodes
     if (field->tag == NODE_V1_EXERCISE_TAG) {
         PRINTF("Decoding Exercise node\n");
+        return decode_exercise(stream, field, arg);
     } else if (field->tag == NODE_V1_CREATE_TAG) {
         PRINTF("Decoding Create node\n");
-        return decode_tx_v1_create(stream, field, arg);
+        return decode_create(stream, field, arg);
+    } else if (field->tag == NODE_V1_FETCH_TAG) {
+        PRINTF("Decoding Fetch node\n");
+        return decode_fetch(stream, field, arg);
+    } else {
+        LEDGER_ASSERT(false, "Unsupported node type %d", field->tag);
     }
 
     return true;
@@ -612,7 +892,7 @@ parser_status_e proto_deserialize_cb_node(buffer_t *buf, transaction_ctx_t *tx_c
     is_root_node = false;
     daml_tx = &tx_ctx->tx_parts_ctx.daml_transaction;
 
-    hw_debug(&node_hw);
+    hw_init(&node_hw);
 
     tx_ctx->tx_parts_ctx.node.node_id.funcs.decode = decode_node_id_field;
     tx_ctx->tx_parts_ctx.node.cb_versioned_node.funcs.decode = &versioned_node_decode_callback;
@@ -630,7 +910,7 @@ parser_status_e proto_deserialize_cb_node(buffer_t *buf, transaction_ctx_t *tx_c
     if (is_root_node) {
         encode_hash(&tx_ctx->hasher, node_hash);
     } else {
-        LEDGER_ASSERT(false, "Non-root nodes not implemented");
+        set_node_hash_int(node_id, node_hash);
     }
 
     pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
@@ -648,7 +928,7 @@ parser_status_e proto_deserialize_cb_input_contract(buffer_t *buf, transaction_c
 
     hw_init(&node_hw);
 
-    tx_ctx->tx_parts_ctx.input_contract.cb_contract.funcs.decode = &decode_tx_v1_create;
+    tx_ctx->tx_parts_ctx.input_contract.cb_contract.funcs.decode = &decode_create;
 
     if (!pb_decode(&stream,
                    com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,

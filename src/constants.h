@@ -23,7 +23,7 @@
 /**
  * Maximum transaction length (bytes).
  */
-#define MAX_TRANSACTION_LEN (1024 * 7)
+#define MAX_TRANSACTION_LEN (1024 * 12)
 
 /**
  * Maximum number of child nodes per transaction node.
