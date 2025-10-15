@@ -24,17 +24,16 @@
 /* Constants                                                                  */
 /* -------------------------------------------------------------------------- */
 
-#define TRANSFER_CMD_DISPLAY_FIELDS 4
-
-#define TOKEN_TRANSFER_FIELDS_NB       4
+#define MAX_DISPLAY_FIELDS_NB          5
+#define TOKEN_TRANSFER_FIELDS_NB       5
 #define NATIVE_TRANSFER_FIELDS_NB      4
 #define PREAPPROVAL_PROPOSAL_FIELDS_NB 3
 
-#define MAX_FIELD_PATH_LEN 128
-
-#define MAX_HASH_TABLE_SIZE 53
+#define MAX_FIELD_PATH_LEN  128
+#define MAX_HASH_TABLE_SIZE 53  // Large enough to avoid collisions for small sets (faster lookups)
 
 #define TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX 3
+#define PREAPPROVAL_ASSET_FIELD_INDEX            1
 
 #define NATIVE_COIN_TICKER        "CC"
 #define NATIVE_COIN_INSTRUMENT_ID "Amulet"
@@ -57,32 +56,31 @@ typedef struct {
 typedef struct {
     const char *path;
     const char *item_name;
-    size_t field_index;
     field_format_callback_t format_callback;
-} field_display_t;
+    bool mandatory;
+} field_config_t;
+
+typedef struct {
+    char *value;                   // Dynamically allocated field value
+    size_t value_len;              // Length of the field
+    const field_config_t *config;  // Pointer to const config
+    bool found;                    // Mutable state
+    bool display;                  // Whether the field should be displayed
+} tx_field_t;
 
 typedef struct {
     const identifier_config_t *identifier;
-    const field_display_t *const *fields;
+    const field_config_t *const *fields;
     size_t fields_count;
     const char *review_title;
     const char *review_finish;
 } display_config_t;
 
-typedef struct {
-    field_display_t **table;
-    size_t table_size;
-} simple_hash_map_t;
-
 struct pb_callback_context_t {
     char *field_path;
     transaction_ctx_t *tx_info;
-    const field_display_t *const *display_config;
+    tx_field_t *tx_fields;
     uint8_t nb_fields;
-    field_display_t **hash_table;
-    simple_hash_map_t field_map;
-    uint8_t found_fields_count;
-    bool clear_signing_available;
     const char *review_title;
     const char *review_finish;
 };
@@ -138,34 +136,41 @@ static const char *INSTRUMENT_ID_TO_TICKER_MAPPING[] = {
 /* -------------------------------------------------------------------------- */
 
 // Transfer commands fields
-const field_display_t SENDER_FIELD = {"transfer.sender", "From", 0, NULL};
-const field_display_t AMOUNT_FIELD = {"transfer.amount", "Amount", 1, format_token_amount_field};
-const field_display_t RECEIVER_FIELD = {"transfer.receiver", "To", 2, NULL};
-const field_display_t INSTRUMENT_ID_FIELD = {"transfer.instrumentId.id", "Token", 3, NULL};
+const field_config_t SENDER_FIELD = {"transfer.sender", "From", NULL, true};
+const field_config_t AMOUNT_FIELD = {"transfer.amount", "Amount", format_token_amount_field, true};
+const field_config_t RECEIVER_FIELD = {"transfer.receiver", "To", NULL, true};
+const field_config_t INSTRUMENT_ID_FIELD = {"transfer.instrumentId.id", "Token", NULL, true};
+// Memo field has dots in path : escape them with backslashes (paths are stored with backslashes in
+// hash table)
+const field_config_t MEMO_FIELD = {
+    "transfer.meta.values.splice\\.lfdecentralizedtrust\\.org/reason",
+    "Memo",
+    NULL,
+    false};
 // Native coin transfer fields
-const field_display_t NATIVE_SENDER_FIELD = {"sender", "From", 0, NULL};
-const field_display_t NATIVE_AMOUNT_FIELD = {"amount", "Amount", 1, format_native_amount_field};
-const field_display_t NATIVE_RECEIVER_FIELD = {"receiver", "To", 2, NULL};
-const field_display_t NATIVE_MEMO_FIELD = {"description", "Memo", 3, NULL};
+const field_config_t NATIVE_SENDER_FIELD = {"sender", "From", NULL, true};
+const field_config_t NATIVE_AMOUNT_FIELD = {"amount", "Amount", format_native_amount_field, true};
+const field_config_t NATIVE_RECEIVER_FIELD = {"receiver", "To", NULL, true};
+const field_config_t NATIVE_MEMO_FIELD = {"description", "Memo", NULL, false};
 // Pre-approval proposal fields
-const field_display_t PREAPPROVAL_RECEIVER_FIELD = {"receiver", "Pre-approve for account", 0, NULL};
+const field_config_t PREAPPROVAL_RECEIVER_FIELD = {"receiver",
+                                                   "Pre-approve for account",
+                                                   NULL,
+                                                   true};
 // Static field not parsed from tx but added manually in set_display_config
-const field_display_t PREAPPROVAL_ASSET_FIELD = {"asset", "For asset", 1, NULL};
-const field_display_t PROVIDER_FIELD = {"provider", "By validator", 2, NULL};
+const field_config_t PREAPPROVAL_ASSET_FIELD = {"asset", "For asset", NULL, true};
+const field_config_t PROVIDER_FIELD = {"provider", "By validator", NULL, true};
 
-static const field_display_t *const TOKEN_TRANSFER_FIELDS[TOKEN_TRANSFER_FIELDS_NB] = {
-    &SENDER_FIELD,
-    &AMOUNT_FIELD,
-    &RECEIVER_FIELD,
-    &INSTRUMENT_ID_FIELD};
+static const field_config_t *const TOKEN_TRANSFER_FIELDS[TOKEN_TRANSFER_FIELDS_NB] =
+    {&SENDER_FIELD, &AMOUNT_FIELD, &RECEIVER_FIELD, &INSTRUMENT_ID_FIELD, &MEMO_FIELD};
 
-static const field_display_t *const NATIVE_COIN_TRANSFER_FIELDS[NATIVE_TRANSFER_FIELDS_NB] = {
+static const field_config_t *const NATIVE_COIN_TRANSFER_FIELDS[NATIVE_TRANSFER_FIELDS_NB] = {
     &NATIVE_SENDER_FIELD,
     &NATIVE_AMOUNT_FIELD,
     &NATIVE_RECEIVER_FIELD,
     &NATIVE_MEMO_FIELD};
 
-static const field_display_t *const PREAPPROVAL_PROPOSAL_FIELDS[PREAPPROVAL_PROPOSAL_FIELDS_NB] = {
+static const field_config_t *const PREAPPROVAL_PROPOSAL_FIELDS[PREAPPROVAL_PROPOSAL_FIELDS_NB] = {
     &PREAPPROVAL_RECEIVER_FIELD,
     &PREAPPROVAL_ASSET_FIELD,
     &PROVIDER_FIELD};
@@ -192,80 +197,7 @@ const display_config_t DISPLAY_CONFIGS[] = {{
                                                 .review_finish = PREAPPROVAL_PROPOSAL_REVIEW_FINISH,
                                             }};
 
-const field_display_t *g_hash_table[MAX_HASH_TABLE_SIZE] = {0};
-
-/* -------------------------------------------------------------------------- */
-/*  Hashing utilities for field paths lookup during parsing                   */
-/* -------------------------------------------------------------------------- */
-
-// FNV-1a hashing function (32-bit version)
-static uint32_t fnv1a32(const char *s) {
-    uint32_t h = 2166136261u;
-    while (*s) {
-        h ^= (uint8_t) (*s++);
-        h *= 16777619u;
-    }
-    return h;
-}
-
-// Populate hash table for quick lookup
-static int populate_hash_map(simple_hash_map_t *map,
-                             const field_display_t *const *fields,
-                             size_t nfields,
-                             field_display_t **hash_table,
-                             size_t table_size) {
-    if (nfields > table_size / 2) return -1;
-
-    for (size_t i = 0; i < table_size; i++) hash_table[i] = NULL;
-
-    for (size_t i = 0; i < nfields; i++) {
-        // Now access the field through the pointer array
-        const field_display_t *field = fields[i];
-        if (field == NULL) {
-            continue;
-        }
-
-        const char *field_path = (const char *) PIC(field->path);
-        if (field_path == NULL) {
-            PRINTF("Warning: field_path for field[%zu] is NULL\n", i);
-            continue;
-        }
-
-        PRINTF("Building hash for field path: %s\n", field_path);
-
-        // Compute hash
-        uint32_t hash = fnv1a32(field_path);
-        // Compute index
-        uint32_t idx = hash % table_size;
-        // Linear probing for collision resolution
-        while (hash_table[idx] != NULL) {
-            idx = (idx + 1) % table_size;
-        }
-        // Store the field pointer in the hash table
-        hash_table[idx] = (field_display_t *) field;
-    }
-
-    map->table = hash_table;
-    map->table_size = table_size;
-    return 0;
-}
-
-// Lookup = no loop except probe (very rare with low load)
-static const field_display_t *simple_hash_lookup(const simple_hash_map_t *map, const char *key) {
-    uint32_t h = fnv1a32(key);
-    uint32_t idx = h % map->table_size;
-
-    // probe until we find match or empty slot
-    while (1) {
-        const field_display_t *fd = map->table[idx];
-        // print the field path being checked
-        if (fd == NULL) return NULL;
-        if (strcmp((char *) PIC(fd->path), key) == 0) {
-            return fd;
-        }
-        idx = (idx + 1) % map->table_size;
-    }
-}
+static tx_field_t tx_fields[MAX_DISPLAY_FIELDS_NB];
 
 /* -------------------------------------------------------------------------- */
 /*  Field formatting callbacks                                                */
@@ -307,9 +239,9 @@ static void format_token_amount_field(pb_callback_context_t *ctx, char **value) 
             const char *instrument_id = (const char *) PIC(INSTRUMENT_ID_TO_TICKER_MAPPING[2 * i]);
             const char *ticker = (const char *) PIC(INSTRUMENT_ID_TO_TICKER_MAPPING[2 * i + 1]);
             // Check if stored instrument id in available display items matches
-            if (ctx->tx_info->pairs != NULL &&
-                ctx->tx_info->pairs[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value != NULL &&
-                strcmp(ctx->tx_info->pairs[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value,
+            if (ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].found &&
+                ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value != NULL &&
+                strcmp(ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value,
                        instrument_id) == 0) {
                 // Append ticker to value
                 size_t new_len = strlen(*value) + 1 + strlen(ticker) + 1;
@@ -323,7 +255,7 @@ static void format_token_amount_field(pb_callback_context_t *ctx, char **value) 
                 *value = new_value;
 
                 // If matched no need to display the instrument id field, update nb_fields
-                ctx->tx_info->pairs_count--;
+                ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].display = false;
 
                 // If matched "Amulet" update review title and finish to mention Canton Coin
                 if (strcmp(instrument_id, NATIVE_COIN_INSTRUMENT_ID) == 0) {
@@ -359,6 +291,19 @@ static void format_native_amount_field(pb_callback_context_t *ctx, char **value)
 /*  Helper functions for transaction display management                       */
 /* -------------------------------------------------------------------------- */
 
+// Helper function to find field state by path
+static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, const char *path) {
+    if (ctx->tx_fields == NULL) return NULL;
+
+    for (size_t i = 0; i < ctx->nb_fields; i++) {
+        const char *field_path = (const char *) PIC(ctx->tx_fields[i].config->path);
+        if (strcmp(field_path, path) == 0) {
+            return &ctx->tx_fields[i];
+        }
+    }
+    return NULL;
+}
+
 // Helper function to initialize transaction pairs used for display
 bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
     // Free existing pairs if any
@@ -378,13 +323,12 @@ bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
     }
 
     // Allocate new arrays
-    tx_info->pairs_count = count;
+    tx_info->pairs_count = 0;
     tx_info->pairs =
         (nbgl_contentTagValue_t *) app_mem_alloc(count * sizeof(nbgl_contentTagValue_t));
     tx_info->display_items_strings = (char **) app_mem_alloc(count * sizeof(char *));
 
     if (tx_info->pairs == NULL || tx_info->display_items_strings == NULL) {
-        tx_info->pairs_count = 0;
         return false;
     }
 
@@ -395,68 +339,48 @@ bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
 }
 
 // Helper function to set field value safely with context-managed memory
-static void set_field_value(pb_callback_context_t *ctx,
-                            const field_display_t *field_config,
-                            const char *value) {
-    if (field_config->field_index < ctx->nb_fields && value != NULL) {
+static void set_field_value(tx_field_t *field_state, const char *value) {
+    if (value != NULL) {
         size_t value_len = strlen(value) + 1;
-        // Allocate memory in the context's display_items_strings array
-        ctx->tx_info->display_items_strings[field_config->field_index] =
-            (char *) app_mem_alloc(value_len);
-        if (ctx->tx_info->display_items_strings[field_config->field_index] != NULL) {
-            memcpy(ctx->tx_info->display_items_strings[field_config->field_index],
-                   value,
-                   value_len);
 
-            ctx->tx_info->pairs[field_config->field_index].item =
-                (char *) PIC(field_config->item_name);
-            ctx->tx_info->pairs[field_config->field_index].value =
-                ctx->tx_info->display_items_strings[field_config->field_index];
+        // Allocate memory for the value in the field state
+        field_state->value = (char *) app_mem_alloc(value_len);
+        if (field_state->value != NULL) {
+            memcpy(field_state->value, value, value_len);
+            field_state->value_len = value_len;
+            field_state->found = true;
         }
     }
 }
 
 // Helper function to set display configuration from a const array.
 static void set_display_config(pb_callback_context_t *ctx, const display_config_t *config_source) {
-    if (ctx->display_config != NULL) {
-        app_mem_free((void *) ctx->display_config);
-    }
+    PRINTF("Setting display config with %d fields\n", config_source->fields_count);
 
-    uint8_t count = config_source->fields_count;
-
-    PRINTF("Setting display config with %d fields\n", count);
-
-    // Allocate display_config array
-    ctx->display_config =
-        (const field_display_t **) app_mem_alloc(count * sizeof(field_display_t *));
-
-    LEDGER_ASSERT(ctx->display_config != NULL, "Memory full");
-
-    const field_display_t *const *source =
-        (const field_display_t *const *) PIC(config_source->fields);
-
-    // Populate from the const array
-    for (size_t i = 0; i < count; i++) {
-        ((field_display_t **) ctx->display_config)[i] = (field_display_t *) PIC(source[i]);
-    }
+    const field_config_t *const *source =
+        (const field_config_t *const *) PIC(config_source->fields);
 
     ctx->nb_fields = config_source->fields_count;
     ctx->review_title = config_source->review_title;
     ctx->review_finish = config_source->review_finish;
 
-    if (populate_hash_map(&ctx->field_map,
-                          ctx->display_config,
-                          ctx->nb_fields,
-                          ctx->hash_table,
-                          MAX_HASH_TABLE_SIZE) != 0) {
-        PRINTF("Error populating hash map\n");
+    // Initialize field states
+    for (size_t i = 0; i < ctx->nb_fields; i++) {
+        tx_fields[i].config = (const field_config_t *) PIC(source[i]);
+        tx_fields[i].found = false;
+        tx_fields[i].display = true;
     }
+
+    ctx->tx_fields = tx_fields;
+
     init_transaction_pairs(ctx->tx_info, ctx->nb_fields);
 
     // If pre-approval proposal, add static field for asset
     if (strcmp((const char *) PIC(ctx->review_title), PREAPPROVAL_PROPOSAL_REVIEW_TITLE) == 0) {
-        set_field_value(ctx, &PREAPPROVAL_ASSET_FIELD, PREAPPROVAL_ASSET_FIELD_VALUE);
-        ctx->found_fields_count++;  // Increment pairs count for static field
+        tx_field_t *field_state = &ctx->tx_fields[PREAPPROVAL_ASSET_FIELD_INDEX];
+        field_state->config = (const field_config_t *) PIC(&PREAPPROVAL_ASSET_FIELD);
+        field_state->found = true;
+        set_field_value(field_state, PREAPPROVAL_ASSET_FIELD_VALUE);
     }
 
     return;
@@ -470,7 +394,7 @@ static bool match_identifier(const Identifier *id, const identifier_config_t *co
 
 // Identify transaction type and set display configuration accordingly
 static void find_tx_type_and_config(pb_callback_context_t *ctx, const Identifier *id) {
-    if (ctx->display_config != NULL) {
+    if (ctx->tx_fields != NULL) {
         // Already set, no need to find again
         return;
     }
@@ -487,47 +411,28 @@ static void find_tx_type_and_config(pb_callback_context_t *ctx, const Identifier
 
 // Lookup field in hash map and set value for display if found. Discriminate field types if needed.
 static void find_tx_field(pb_callback_context_t *ctx, cbValue *value) {
-    if (ctx->display_config != NULL && !ctx->clear_signing_available) {
+    if (ctx->tx_fields != NULL) {
         PRINTF("Looking up field path: %s\n", ctx->field_path);
-        const field_display_t *fd = simple_hash_lookup(&ctx->field_map, ctx->field_path);
-        if (fd != NULL && value != NULL) {
+        tx_field_t *state = find_field_by_path(ctx, ctx->field_path);
+        if (state != NULL && value != NULL) {
             PRINTF("Found matching field for path: %s\n", ctx->field_path);
             // Set the field value
             switch (value->which_sum) {
                 case com_daml_ledger_api_v2_Value_party_tag:
                     PRINTF("Setting party value: %s\n", value->party);
-                    set_field_value(ctx, fd, value->party);
-                    ctx->found_fields_count++;
+                    set_field_value(state, value->party);
                     break;
                 case com_daml_ledger_api_v2_Value_numeric_tag:
                     PRINTF("Setting numeric value: %s\n", value->numeric);
-                    set_field_value(ctx, fd, value->numeric);
-                    ctx->found_fields_count++;
+                    set_field_value(state, value->numeric);
                     break;
                 case com_daml_ledger_api_v2_Value_text_tag:
                     PRINTF("Setting text value: %s\n", value->text);
-                    set_field_value(ctx, fd, value->text);
-                    ctx->found_fields_count++;
+                    set_field_value(state, value->text);
                     break;
                 default:
                     PRINTF("Field type not handled for display: %d\n", value->which_sum);
                     break;
-            }
-
-            // If all fields found, mark clear signing available to skip further processing
-            if (ctx->found_fields_count == ctx->nb_fields) {
-                PRINTF("All fields found, skipping further processing\n");
-                ctx->clear_signing_available = true;  // To skip further processing
-
-                // Apply formatting callbacks if any
-                for (size_t i = 0; i < ctx->nb_fields; i++) {
-                    field_format_callback_t callback =
-                        (field_format_callback_t) PIC(ctx->display_config[i]->format_callback);
-                    if (callback != NULL) {
-                        callback(ctx, &ctx->tx_info->display_items_strings[i]);
-                        ctx->tx_info->pairs[i].value = ctx->tx_info->display_items_strings[i];
-                    }
-                }
             }
         }
     }
@@ -554,33 +459,47 @@ static void free_field_path(pb_callback_context_t *ctx) {
     }
 }
 
-// Push a new segment onto the field path
+// Push a new segment onto the field path with escaping for dots
 static void push_path(pb_callback_context_t *ctx, const char *new_segment) {
-    if (ctx->display_config != NULL && ctx->field_path != NULL && new_segment != NULL) {
-        size_t current_len = strlen(ctx->field_path);
-        size_t new_segment_len = strlen(new_segment);
-        if (current_len + 1 + new_segment_len < MAX_FIELD_PATH_LEN) {
-            if (current_len > 0) {
-                ctx->field_path[current_len] = '.';  // Add dot separator
-                current_len++;
-            }
-            memcpy(ctx->field_path + current_len,
-                   new_segment,
-                   new_segment_len + 1);  // +1 to include null terminator
-        }
+    if (!ctx->tx_fields || !ctx->field_path || !new_segment) return;
+
+    size_t current_len = strlen(ctx->field_path);
+    size_t new_len = 0;
+
+    // Count length with escaping
+    for (size_t i = 0; new_segment[i]; i++) {
+        if (new_segment[i] == '.') new_len++;  // escape
+        new_len++;
     }
+
+    if (current_len + 1 + new_len >= MAX_FIELD_PATH_LEN) return;
+
+    // Add dot separator if needed
+    if (current_len > 0) ctx->field_path[current_len++] = '.';
+
+    // Copy new segment with escaping
+    for (size_t i = 0; new_segment[i]; i++) {
+        if (new_segment[i] == '.') ctx->field_path[current_len++] = '\\';
+        ctx->field_path[current_len++] = new_segment[i];
+    }
+
+    ctx->field_path[current_len] = '\0';
 }
 
-// Pop the last segment from the field path
+// Pop the last segment from the field path considering escaping
 static void pop_path(pb_callback_context_t *ctx) {
-    if (ctx->display_config != NULL && ctx->field_path != NULL) {
-        char *last_dot = strrchr(ctx->field_path, '.');
-        if (last_dot != NULL) {
-            *last_dot = '\0';  // truncate at last dot
-        } else {
-            ctx->field_path[0] = '\0';  // reset to empty
+    if (!ctx->tx_fields || !ctx->field_path) return;
+
+    // Find last unescaped dot
+    char *p = ctx->field_path + strlen(ctx->field_path) - 1;
+    while (p >= ctx->field_path) {
+        if (*p == '.' && (p == ctx->field_path || *(p - 1) != '\\')) {
+            *p = '\0';
+            return;
         }
+        p--;
     }
+    ctx->field_path[0] = '\0';
 }
 
 /* -------------------------------------------------------------------------- */
@@ -672,6 +591,36 @@ static bool decode_value_opt(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
+static bool decode_value_text_map(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    UNUSED(field);
+    pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
+
+    PRINTF("Decoding TextMap value\n");
+
+    cbTextMapEntry entry = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
+
+    entry.value.cb_sum.funcs.decode = &decode_value_var;
+    entry.value.cb_sum.arg = ctx;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &entry)) {
+        PRINTF("Failed to decode TextMap entry: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    // Push entry key onto path
+    push_path(ctx, entry.key);
+
+    // Check if current field path matches any display configured field
+    find_tx_field(ctx, &entry.value);
+
+    // Pop entry key from path
+    pop_path(ctx);
+
+    pb_release(com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &entry);
+
+    return true;
+}
+
 // Decode a value variant, handling Record types specifically
 static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     cbValue *topmsg = field->message;
@@ -690,8 +639,6 @@ static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void
                 PRINTF("Failed to decode Record in Value: %s\n", PB_GET_ERROR(stream));
                 return false;
             }
-            pop_path(ctx);
-            ctx->display_config = NULL;
             pb_release(com_daml_ledger_api_v2_cb_Record_fields, msg);
             break;
         }
@@ -700,6 +647,13 @@ static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void
             cbOptional *msg = field->pData;
             msg->value.funcs.decode = &decode_value_opt;
             msg->value.arg = ctx;
+            break;
+        }
+        case com_daml_ledger_api_v2_cb_Value_text_map_tag: {
+            pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
+            cbTextMap *msg = field->pData;
+            msg->entries.funcs.decode = &decode_value_text_map;
+            msg->entries.arg = ctx;
             break;
         }
         default: {
@@ -751,17 +705,16 @@ static bool versioned_node_decode_callback(pb_istream_t *stream,
 /*  Entry point for parsing transaction display information                   */
 /* -------------------------------------------------------------------------- */
 
-void parse_node_for_display(buffer_t *buf) {
+int parse_node_for_display(buffer_t *buf) {
     // Only parse if we haven't already found all fields
     if (G_context.tx_info.clear_signing_available) {
-        return;
+        return 0;
     }
 
     pb_callback_context_t ctx = {0};
     init_field_path(&ctx);
     ctx.tx_info = &G_context.tx_info;
-    ctx.hash_table = (field_display_t **) g_hash_table;
-    ctx.display_config = NULL;
+    ctx.tx_fields = NULL;
 
     G_context.tx_info.tx_parts_ctx.node.cb_versioned_node.funcs.decode =
         &versioned_node_decode_callback;
@@ -773,6 +726,7 @@ void parse_node_for_display(buffer_t *buf) {
                    com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_fields,
                    &G_context.tx_info.tx_parts_ctx.node)) {
         PRINTF("Decode failed: %s\n", PB_GET_ERROR(&stream));
+        return -1;
     }
 
     pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_fields,
@@ -783,9 +737,61 @@ void parse_node_for_display(buffer_t *buf) {
     G_context.tx_info.tx_parts_ctx.node.cb_versioned_node.funcs.decode = NULL;
     G_context.tx_info.tx_parts_ctx.node.cb_versioned_node.arg = NULL;
 
-    if (!G_context.tx_info.clear_signing_available && ctx.clear_signing_available) {
-        G_context.tx_info.clear_signing_available = ctx.clear_signing_available;
-        G_context.tx_info.review_title = ctx.review_title;
-        G_context.tx_info.review_finish = ctx.review_finish;
+    if (ctx.tx_fields == NULL) {
+        PRINTF("No display configuration set during parsing, skipping display population\n");
+        G_context.tx_info.clear_signing_available = false;
+        return 0;
     }
+
+    // Loop for mandatory check + format callbacks
+    for (size_t i = 0; i < ctx.nb_fields; i++) {
+        const tx_field_t *state = &ctx.tx_fields[i];
+        const field_config_t *cfg = state->config;
+
+        // Mandatory field check
+        if (cfg->mandatory && !state->found) {
+            PRINTF("Mandatory field not found: %s\n", (char *) PIC(cfg->path));
+            G_context.tx_info.clear_signing_available = false;
+            return -1;
+        }
+
+        // Execute formatting callback if applicable
+        if (state->found && state->display) {
+            field_format_callback_t callback =
+                (field_format_callback_t) PIC(ctx.tx_fields[i].config->format_callback);
+            if (callback != NULL) {
+                callback(&ctx, (void *) &state->value);
+            }
+        }
+    }
+
+    // Second loop: populate display items
+    uint8_t idx = 0;
+    ctx.tx_info->pairs_count = 0;
+    for (size_t i = 0; i < ctx.nb_fields; i++) {
+        tx_field_t *state = &ctx.tx_fields[i];
+        if (state->found && state->display && state->value_len > 0) {
+            char *dst = app_mem_alloc(state->value_len);
+            if (dst != NULL) {
+                memcpy(dst, state->value, state->value_len);
+
+                ctx.tx_info->display_items_strings[idx] = dst;
+                ctx.tx_info->pairs[idx].item = (char *) PIC(state->config->item_name);
+                ctx.tx_info->pairs[idx].value = dst;
+
+                idx++;
+                ctx.tx_info->pairs_count++;
+
+                app_mem_free(state->value);
+                state->value = NULL;
+                state->value_len = 0;
+            }
+        }
+    }
+
+    G_context.tx_info.clear_signing_available = true;
+    G_context.tx_info.review_title = ctx.review_title;
+    G_context.tx_info.review_finish = ctx.review_finish;
+
+    return 0;
 }

@@ -47,8 +47,6 @@ class Enums(_message.Message):
         TOPOLOGY_MAPPING_CODE_PURGE_TOPOLOGY_TXS: _ClassVar[Enums.TopologyMappingCode]
         TOPOLOGY_MAPPING_CODE_SEQUENCING_DYNAMIC_PARAMETERS_STATE: _ClassVar[Enums.TopologyMappingCode]
         TOPOLOGY_MAPPING_CODE_PARTY_TO_KEY_MAPPING: _ClassVar[Enums.TopologyMappingCode]
-        TOPOLOGY_MAPPING_CODE_SYNCHRONIZER_MIGRATION_ANNOUNCEMENT: _ClassVar[Enums.TopologyMappingCode]
-        TOPOLOGY_MAPPING_CODE_SEQUENCER_CONNECTION_SUCCESSOR: _ClassVar[Enums.TopologyMappingCode]
     TOPOLOGY_MAPPING_CODE_UNSPECIFIED: Enums.TopologyMappingCode
     TOPOLOGY_MAPPING_CODE_NAMESPACE_DELEGATION: Enums.TopologyMappingCode
     TOPOLOGY_MAPPING_CODE_DECENTRALIZED_NAMESPACE_DEFINITION: Enums.TopologyMappingCode
@@ -64,8 +62,6 @@ class Enums(_message.Message):
     TOPOLOGY_MAPPING_CODE_PURGE_TOPOLOGY_TXS: Enums.TopologyMappingCode
     TOPOLOGY_MAPPING_CODE_SEQUENCING_DYNAMIC_PARAMETERS_STATE: Enums.TopologyMappingCode
     TOPOLOGY_MAPPING_CODE_PARTY_TO_KEY_MAPPING: Enums.TopologyMappingCode
-    TOPOLOGY_MAPPING_CODE_SYNCHRONIZER_MIGRATION_ANNOUNCEMENT: Enums.TopologyMappingCode
-    TOPOLOGY_MAPPING_CODE_SEQUENCER_CONNECTION_SUCCESSOR: Enums.TopologyMappingCode
     def __init__(self) -> None: ...
 
 class NamespaceDelegation(_message.Message):
@@ -156,14 +152,14 @@ class PartyHostingLimits(_message.Message):
 class VettedPackages(_message.Message):
     __slots__ = ("participant_uid", "package_ids", "packages")
     class VettedPackage(_message.Message):
-        __slots__ = ("package_id", "valid_from_inclusive", "valid_until_exclusive")
+        __slots__ = ("package_id", "valid_from", "valid_until")
         PACKAGE_ID_FIELD_NUMBER: _ClassVar[int]
-        VALID_FROM_INCLUSIVE_FIELD_NUMBER: _ClassVar[int]
-        VALID_UNTIL_EXCLUSIVE_FIELD_NUMBER: _ClassVar[int]
+        VALID_FROM_FIELD_NUMBER: _ClassVar[int]
+        VALID_UNTIL_FIELD_NUMBER: _ClassVar[int]
         package_id: str
-        valid_from_inclusive: _timestamp_pb2.Timestamp
-        valid_until_exclusive: _timestamp_pb2.Timestamp
-        def __init__(self, package_id: _Optional[str] = ..., valid_from_inclusive: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., valid_until_exclusive: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+        valid_from: _timestamp_pb2.Timestamp
+        valid_until: _timestamp_pb2.Timestamp
+        def __init__(self, package_id: _Optional[str] = ..., valid_from: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., valid_until: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
     PARTICIPANT_UID_FIELD_NUMBER: _ClassVar[int]
     PACKAGE_IDS_FIELD_NUMBER: _ClassVar[int]
     PACKAGES_FIELD_NUMBER: _ClassVar[int]
@@ -175,17 +171,12 @@ class VettedPackages(_message.Message):
 class PartyToParticipant(_message.Message):
     __slots__ = ("party", "threshold", "participants")
     class HostingParticipant(_message.Message):
-        __slots__ = ("participant_uid", "permission", "onboarding")
-        class Onboarding(_message.Message):
-            __slots__ = ()
-            def __init__(self) -> None: ...
+        __slots__ = ("participant_uid", "permission")
         PARTICIPANT_UID_FIELD_NUMBER: _ClassVar[int]
         PERMISSION_FIELD_NUMBER: _ClassVar[int]
-        ONBOARDING_FIELD_NUMBER: _ClassVar[int]
         participant_uid: str
         permission: Enums.ParticipantPermission
-        onboarding: PartyToParticipant.HostingParticipant.Onboarding
-        def __init__(self, participant_uid: _Optional[str] = ..., permission: _Optional[_Union[Enums.ParticipantPermission, str]] = ..., onboarding: _Optional[_Union[PartyToParticipant.HostingParticipant.Onboarding, _Mapping]] = ...) -> None: ...
+        def __init__(self, participant_uid: _Optional[str] = ..., permission: _Optional[_Union[Enums.ParticipantPermission, str]] = ...) -> None: ...
     PARTY_FIELD_NUMBER: _ClassVar[int]
     THRESHOLD_FIELD_NUMBER: _ClassVar[int]
     PARTICIPANTS_FIELD_NUMBER: _ClassVar[int]
@@ -244,38 +235,8 @@ class PurgeTopologyTransaction(_message.Message):
     mappings: _containers.RepeatedCompositeFieldContainer[TopologyMapping]
     def __init__(self, synchronizer_id: _Optional[str] = ..., mappings: _Optional[_Iterable[_Union[TopologyMapping, _Mapping]]] = ...) -> None: ...
 
-class SynchronizerUpgradeAnnouncement(_message.Message):
-    __slots__ = ("successor_physical_synchronizer_id", "upgrade_time")
-    SUCCESSOR_PHYSICAL_SYNCHRONIZER_ID_FIELD_NUMBER: _ClassVar[int]
-    UPGRADE_TIME_FIELD_NUMBER: _ClassVar[int]
-    successor_physical_synchronizer_id: str
-    upgrade_time: _timestamp_pb2.Timestamp
-    def __init__(self, successor_physical_synchronizer_id: _Optional[str] = ..., upgrade_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
-
-class SequencerConnectionSuccessor(_message.Message):
-    __slots__ = ("sequencer_id", "synchronizer_id", "connection")
-    class SequencerConnection(_message.Message):
-        __slots__ = ("grpc",)
-        class Grpc(_message.Message):
-            __slots__ = ("endpoints", "custom_trust_certificates")
-            ENDPOINTS_FIELD_NUMBER: _ClassVar[int]
-            CUSTOM_TRUST_CERTIFICATES_FIELD_NUMBER: _ClassVar[int]
-            endpoints: _containers.RepeatedScalarFieldContainer[str]
-            custom_trust_certificates: bytes
-            def __init__(self, endpoints: _Optional[_Iterable[str]] = ..., custom_trust_certificates: _Optional[bytes] = ...) -> None: ...
-        GRPC_FIELD_NUMBER: _ClassVar[int]
-        grpc: SequencerConnectionSuccessor.SequencerConnection.Grpc
-        def __init__(self, grpc: _Optional[_Union[SequencerConnectionSuccessor.SequencerConnection.Grpc, _Mapping]] = ...) -> None: ...
-    SEQUENCER_ID_FIELD_NUMBER: _ClassVar[int]
-    SYNCHRONIZER_ID_FIELD_NUMBER: _ClassVar[int]
-    CONNECTION_FIELD_NUMBER: _ClassVar[int]
-    sequencer_id: str
-    synchronizer_id: str
-    connection: SequencerConnectionSuccessor.SequencerConnection
-    def __init__(self, sequencer_id: _Optional[str] = ..., synchronizer_id: _Optional[str] = ..., connection: _Optional[_Union[SequencerConnectionSuccessor.SequencerConnection, _Mapping]] = ...) -> None: ...
-
 class TopologyMapping(_message.Message):
-    __slots__ = ("namespace_delegation", "decentralized_namespace_definition", "owner_to_key_mapping", "synchronizer_trust_certificate", "participant_permission", "party_hosting_limits", "vetted_packages", "party_to_participant", "synchronizer_parameters_state", "mediator_synchronizer_state", "sequencer_synchronizer_state", "purge_topology_txs", "sequencing_dynamic_parameters_state", "party_to_key_mapping", "synchronizer_upgrade_announcement", "sequencer_connection_successor")
+    __slots__ = ("namespace_delegation", "decentralized_namespace_definition", "owner_to_key_mapping", "synchronizer_trust_certificate", "participant_permission", "party_hosting_limits", "vetted_packages", "party_to_participant", "synchronizer_parameters_state", "mediator_synchronizer_state", "sequencer_synchronizer_state", "purge_topology_txs", "sequencing_dynamic_parameters_state", "party_to_key_mapping")
     NAMESPACE_DELEGATION_FIELD_NUMBER: _ClassVar[int]
     DECENTRALIZED_NAMESPACE_DEFINITION_FIELD_NUMBER: _ClassVar[int]
     OWNER_TO_KEY_MAPPING_FIELD_NUMBER: _ClassVar[int]
@@ -290,8 +251,6 @@ class TopologyMapping(_message.Message):
     PURGE_TOPOLOGY_TXS_FIELD_NUMBER: _ClassVar[int]
     SEQUENCING_DYNAMIC_PARAMETERS_STATE_FIELD_NUMBER: _ClassVar[int]
     PARTY_TO_KEY_MAPPING_FIELD_NUMBER: _ClassVar[int]
-    SYNCHRONIZER_UPGRADE_ANNOUNCEMENT_FIELD_NUMBER: _ClassVar[int]
-    SEQUENCER_CONNECTION_SUCCESSOR_FIELD_NUMBER: _ClassVar[int]
     namespace_delegation: NamespaceDelegation
     decentralized_namespace_definition: DecentralizedNamespaceDefinition
     owner_to_key_mapping: OwnerToKeyMapping
@@ -306,9 +265,7 @@ class TopologyMapping(_message.Message):
     purge_topology_txs: PurgeTopologyTransaction
     sequencing_dynamic_parameters_state: DynamicSequencingParametersState
     party_to_key_mapping: PartyToKeyMapping
-    synchronizer_upgrade_announcement: SynchronizerUpgradeAnnouncement
-    sequencer_connection_successor: SequencerConnectionSuccessor
-    def __init__(self, namespace_delegation: _Optional[_Union[NamespaceDelegation, _Mapping]] = ..., decentralized_namespace_definition: _Optional[_Union[DecentralizedNamespaceDefinition, _Mapping]] = ..., owner_to_key_mapping: _Optional[_Union[OwnerToKeyMapping, _Mapping]] = ..., synchronizer_trust_certificate: _Optional[_Union[SynchronizerTrustCertificate, _Mapping]] = ..., participant_permission: _Optional[_Union[ParticipantSynchronizerPermission, _Mapping]] = ..., party_hosting_limits: _Optional[_Union[PartyHostingLimits, _Mapping]] = ..., vetted_packages: _Optional[_Union[VettedPackages, _Mapping]] = ..., party_to_participant: _Optional[_Union[PartyToParticipant, _Mapping]] = ..., synchronizer_parameters_state: _Optional[_Union[SynchronizerParametersState, _Mapping]] = ..., mediator_synchronizer_state: _Optional[_Union[MediatorSynchronizerState, _Mapping]] = ..., sequencer_synchronizer_state: _Optional[_Union[SequencerSynchronizerState, _Mapping]] = ..., purge_topology_txs: _Optional[_Union[PurgeTopologyTransaction, _Mapping]] = ..., sequencing_dynamic_parameters_state: _Optional[_Union[DynamicSequencingParametersState, _Mapping]] = ..., party_to_key_mapping: _Optional[_Union[PartyToKeyMapping, _Mapping]] = ..., synchronizer_upgrade_announcement: _Optional[_Union[SynchronizerUpgradeAnnouncement, _Mapping]] = ..., sequencer_connection_successor: _Optional[_Union[SequencerConnectionSuccessor, _Mapping]] = ...) -> None: ...
+    def __init__(self, namespace_delegation: _Optional[_Union[NamespaceDelegation, _Mapping]] = ..., decentralized_namespace_definition: _Optional[_Union[DecentralizedNamespaceDefinition, _Mapping]] = ..., owner_to_key_mapping: _Optional[_Union[OwnerToKeyMapping, _Mapping]] = ..., synchronizer_trust_certificate: _Optional[_Union[SynchronizerTrustCertificate, _Mapping]] = ..., participant_permission: _Optional[_Union[ParticipantSynchronizerPermission, _Mapping]] = ..., party_hosting_limits: _Optional[_Union[PartyHostingLimits, _Mapping]] = ..., vetted_packages: _Optional[_Union[VettedPackages, _Mapping]] = ..., party_to_participant: _Optional[_Union[PartyToParticipant, _Mapping]] = ..., synchronizer_parameters_state: _Optional[_Union[SynchronizerParametersState, _Mapping]] = ..., mediator_synchronizer_state: _Optional[_Union[MediatorSynchronizerState, _Mapping]] = ..., sequencer_synchronizer_state: _Optional[_Union[SequencerSynchronizerState, _Mapping]] = ..., purge_topology_txs: _Optional[_Union[PurgeTopologyTransaction, _Mapping]] = ..., sequencing_dynamic_parameters_state: _Optional[_Union[DynamicSequencingParametersState, _Mapping]] = ..., party_to_key_mapping: _Optional[_Union[PartyToKeyMapping, _Mapping]] = ...) -> None: ...
 
 class TopologyTransaction(_message.Message):
     __slots__ = ("operation", "serial", "mapping")
@@ -347,9 +304,9 @@ class SignedTopologyTransactions(_message.Message):
     def __init__(self, signed_transaction: _Optional[_Iterable[bytes]] = ...) -> None: ...
 
 class TopologyTransactionsBroadcast(_message.Message):
-    __slots__ = ("physical_synchronizer_id", "signed_transactions")
-    PHYSICAL_SYNCHRONIZER_ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("synchronizer_id", "signed_transactions")
+    SYNCHRONIZER_ID_FIELD_NUMBER: _ClassVar[int]
     SIGNED_TRANSACTIONS_FIELD_NUMBER: _ClassVar[int]
-    physical_synchronizer_id: str
+    synchronizer_id: str
     signed_transactions: SignedTopologyTransactions
-    def __init__(self, physical_synchronizer_id: _Optional[str] = ..., signed_transactions: _Optional[_Union[SignedTopologyTransactions, _Mapping]] = ...) -> None: ...
+    def __init__(self, synchronizer_id: _Optional[str] = ..., signed_transactions: _Optional[_Union[SignedTopologyTransactions, _Mapping]] = ...) -> None: ...

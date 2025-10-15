@@ -178,9 +178,10 @@ typedef struct _com_daml_ledger_api_v2_ExerciseByKeyCommand {
 
 /* Exercise a choice on an existing contract. */
 typedef struct _com_daml_ledger_api_v2_ExerciseCommand { 
-    /* The template of contract the client wants to exercise.
+    /* The template or interface of the contract the client wants to exercise.
  Both package-name and package-id reference identifier formats for the template-id are supported.
  Note: The package-id reference identifier format is deprecated. We plan to end support for this format in version 3.4.
+ To exercise a choice on an interface, specify the interface identifier in the template_id field.
 
  Required */
     bool has_template_id;

@@ -30,7 +30,7 @@ def split_transaction(json_file: str) -> tuple[bytes, list[bytes], bytes, list[b
         json_tx = json.load(file)
 
     # Determine if the JSON is a full PrepareSubmissionResponse or just a PreparedTransaction
-    prepared_transaction = json_tx.get("prepared_transaction") or json_tx.get("preparedTransaction")
+    prepared_transaction = json_tx.get("prepared_transaction") or json_tx.get("preparedTransaction") or json_tx.get("json")
     if not prepared_transaction:
         prepared_transaction = json_tx
 

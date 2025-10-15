@@ -1810,7 +1810,7 @@
          },
          "synchronizerId":"global-domain::1220d8db538263ee04b7aee78e9d435ffbc3d88fee47f3144c1fee0912b3c8cff0f9",
          "transactionUuid":"791a9d16-736d-4019-8b1c-866786742e49",
-         "submissionTime":"1756131506565070",
+         "preparationTime":"1756131506565070",
          "inputContracts":[
             {
                "v1":{

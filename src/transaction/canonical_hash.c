@@ -617,7 +617,7 @@ static void encode_metadata(HashWriter *hw, const Metadata *m) {
                     (EncodeFn) encode_int64_by_ptr,
                     &m->max_ledger_effective_time);
 
-    encode_int64(hw, m->submission_time);
+    encode_int64(hw, m->preparation_time);
     encode_int32(hw, m->input_contracts_count);
 }
 

@@ -93,6 +93,8 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
         case com_daml_ledger_api_v2_cb_Value_text_tag:
         case com_daml_ledger_api_v2_cb_Value_contract_id_tag:
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
+            cbOptional *msg = field->pData;
+            msg->value.funcs.decode = &count_list_elem;
         } break;
         case com_daml_ledger_api_v2_cb_Value_list_tag: {
             cbList *msg = field->pData;
@@ -306,8 +308,6 @@ static bool decode_value_opt(pb_istream_t *stream, const pb_field_t *field, void
     cbValue v = com_daml_ledger_api_v2_cb_Value_init_zero;
     v.cb_sum.funcs.decode = &decode_value_variant;
 
-    hw_put_byte(&node_hw, 0x01);  // encode optional field presence
-
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_Value_fields, &v)) {
         PRINTF("Failed to decode Optional value: %s\n", PB_GET_ERROR(stream));
         return false;
@@ -396,6 +396,9 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
             cbOptional *msg = field->pData;
             msg->value.funcs.decode = &decode_value_opt;
             hw_put_byte(&node_hw, 0x09);
+            // Encode optional field presence
+            hw_put_byte(&node_hw, value_elem_count == 0 ? 0x00 : 0x01);
+            value_elem_count = 0;
         } break;
         case com_daml_ledger_api_v2_cb_Value_list_tag: {
             cbList *msg = field->pData;

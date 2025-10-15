@@ -109,7 +109,7 @@ message DeviceMetadata {
   string synchronizer_id = 3;
   uint32 mediator_group = 4;
   string transaction_uuid = 5;
-  uint64 submission_time = 6;
+  uint64 preparation_time = 6;
   int32 input_contracts_count = 7;
 
   /*

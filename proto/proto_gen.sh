@@ -20,7 +20,7 @@ OUTPUT_DIR="./"
 NANOPB_GENERATOR="../vendor/nanopb/generator/protoc-gen-nanopb"
 PROTOC="../vendor/nanopb/generator/protoc"
 PROTO_SOURCE_REPO_URL="git@github.com:LedgerHQ/canton-protos-scala.git"
-PROTO_SOURCE_REPO_REF="v1.1.0"
+PROTO_SOURCE_REPO_REF="v1.2.0"
 
 # Download utility
 download_if_not_exists() {
@@ -181,8 +181,8 @@ com.daml.ledger.api.v2.cb.RecordField.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.List.elements type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Optional.value type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Variant.value type:FT_POINTER
-com.daml.ledger.api.v2.cb.TextMap.Entry.value type:FT_POINTER
-com.daml.ledger.api.v2.cb.TextMap.entries type:FT_POINTER
+com.daml.ledger.api.v2.cb.TextMap.Entry.value type:FT_STATIC
+com.daml.ledger.api.v2.cb.TextMap.entries type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.GenMap.Entry.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.GenMap.Entry.key type:FT_STATIC
 com.daml.ledger.api.v2.cb.GenMap.entries type:FT_CALLBACK
@@ -306,7 +306,7 @@ com.digitalasset.canton.protocol.v30.DynamicSequencingParametersState.synchroniz
 
 com.digitalasset.canton.protocol.v30.SignedTopologyTransaction.transaction type:FT_POINTER
 
-com.digitalasset.canton.protocol.v30.TopologyTransactionsBroadcast.physical_synchronizer_id type:FT_POINTER
+com.digitalasset.canton.protocol.v30.TopologyTransactionsBroadcast.synchronizer_id type:FT_POINTER
 
 EOF
 

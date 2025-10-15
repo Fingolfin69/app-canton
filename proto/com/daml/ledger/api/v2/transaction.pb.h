@@ -13,6 +13,7 @@
 #endif
 
 /* Struct definitions */
+typedef PB_BYTES_ARRAY_T(1024) com_daml_ledger_api_v2_Transaction_external_transaction_hash_t;
 typedef struct _com_daml_ledger_api_v2_Transaction { 
     char update_id[1024]; 
     char command_id[1024]; 
@@ -26,6 +27,8 @@ typedef struct _com_daml_ledger_api_v2_Transaction {
     com_daml_ledger_api_v2_TraceContext trace_context; 
     bool has_record_time;
     google_protobuf_Timestamp record_time; 
+    bool has_external_transaction_hash;
+    com_daml_ledger_api_v2_Transaction_external_transaction_hash_t external_transaction_hash; 
 } com_daml_ledger_api_v2_Transaction;
 
 /* Provided for backwards compatibility, it will be removed in the Canton version 3.4.0.
@@ -116,11 +119,11 @@ extern "C" {
 #define com_daml_ledger_api_v2_TreeEvent_init_default {0, {com_daml_ledger_api_v2_CreatedEvent_init_default}}
 #define com_daml_ledger_api_v2_TransactionTree_init_default {"", "", "", false, google_protobuf_Timestamp_init_default, 0, {{NULL}, NULL}, "", false, com_daml_ledger_api_v2_TraceContext_init_default, false, google_protobuf_Timestamp_init_default}
 #define com_daml_ledger_api_v2_TransactionTree_EventsByIdEntry_init_default {0, false, com_daml_ledger_api_v2_TreeEvent_init_default}
-#define com_daml_ledger_api_v2_Transaction_init_default {"", "", "", false, google_protobuf_Timestamp_init_default, {{NULL}, NULL}, 0, "", false, com_daml_ledger_api_v2_TraceContext_init_default, false, google_protobuf_Timestamp_init_default}
+#define com_daml_ledger_api_v2_Transaction_init_default {"", "", "", false, google_protobuf_Timestamp_init_default, {{NULL}, NULL}, 0, "", false, com_daml_ledger_api_v2_TraceContext_init_default, false, google_protobuf_Timestamp_init_default, false, {0, {0}}}
 #define com_daml_ledger_api_v2_TreeEvent_init_zero {0, {com_daml_ledger_api_v2_CreatedEvent_init_zero}}
 #define com_daml_ledger_api_v2_TransactionTree_init_zero {"", "", "", false, google_protobuf_Timestamp_init_zero, 0, {{NULL}, NULL}, "", false, com_daml_ledger_api_v2_TraceContext_init_zero, false, google_protobuf_Timestamp_init_zero}
 #define com_daml_ledger_api_v2_TransactionTree_EventsByIdEntry_init_zero {0, false, com_daml_ledger_api_v2_TreeEvent_init_zero}
-#define com_daml_ledger_api_v2_Transaction_init_zero {"", "", "", false, google_protobuf_Timestamp_init_zero, {{NULL}, NULL}, 0, "", false, com_daml_ledger_api_v2_TraceContext_init_zero, false, google_protobuf_Timestamp_init_zero}
+#define com_daml_ledger_api_v2_Transaction_init_zero {"", "", "", false, google_protobuf_Timestamp_init_zero, {{NULL}, NULL}, 0, "", false, com_daml_ledger_api_v2_TraceContext_init_zero, false, google_protobuf_Timestamp_init_zero, false, {0, {0}}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_daml_ledger_api_v2_Transaction_update_id_tag 1
@@ -132,6 +135,7 @@ extern "C" {
 #define com_daml_ledger_api_v2_Transaction_synchronizer_id_tag 7
 #define com_daml_ledger_api_v2_Transaction_trace_context_tag 8
 #define com_daml_ledger_api_v2_Transaction_record_time_tag 9
+#define com_daml_ledger_api_v2_Transaction_external_transaction_hash_tag 10
 #define com_daml_ledger_api_v2_TransactionTree_update_id_tag 1
 #define com_daml_ledger_api_v2_TransactionTree_command_id_tag 2
 #define com_daml_ledger_api_v2_TransactionTree_workflow_id_tag 3
@@ -188,7 +192,8 @@ X(a, CALLBACK, REPEATED, MESSAGE,  events,            5) \
 X(a, STATIC,   SINGULAR, INT64,    offset,            6) \
 X(a, STATIC,   SINGULAR, STRING,   synchronizer_id,   7) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  trace_context,     8) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  record_time,       9)
+X(a, STATIC,   OPTIONAL, MESSAGE,  record_time,       9) \
+X(a, STATIC,   OPTIONAL, BYTES,    external_transaction_hash,  10)
 #define com_daml_ledger_api_v2_Transaction_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_Transaction_DEFAULT NULL
 #define com_daml_ledger_api_v2_Transaction_effective_at_MSGTYPE google_protobuf_Timestamp
