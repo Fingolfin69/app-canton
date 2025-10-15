@@ -18,7 +18,7 @@ typedef struct _com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage 
     uint32_t serial; 
     /* New total traffic purchased entry */
     uint64_t total_traffic_purchased; 
-    char synchronizer_id[1024]; 
+    char physical_synchronizer_id[1024]; 
 } com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage;
 
 /* Message representing traffic consumed by a member at a given point in time */
@@ -36,8 +36,7 @@ typedef struct _com_digitalasset_canton_protocol_v30_TrafficConsumed {
 } com_digitalasset_canton_protocol_v30_TrafficConsumed;
 
 typedef struct _com_digitalasset_canton_protocol_v30_TrafficControlParameters { 
-    /* [doc-entry-start: TrafficControlParameters]
- In bytes, the maximum amount of base traffic that can be accumulated */
+    /* In bytes, the maximum amount of base traffic that can be accumulated */
     uint64_t max_base_traffic_amount; 
     /* Maximum duration over which the base rate can be accumulated
  Consequently, base_traffic_rate = max_base_traffic_amount / max_base_traffic_accumulation_duration */
@@ -55,7 +54,7 @@ typedef struct _com_digitalasset_canton_protocol_v30_TrafficControlParameters {
     /* In bytes, base event cost added to all sequenced events.
  Optional */
     bool has_base_event_cost;
-    uint64_t base_event_cost; /* [doc-entry-end: TrafficControlParameters] */
+    uint64_t base_event_cost; 
 } com_digitalasset_canton_protocol_v30_TrafficControlParameters;
 
 /* Message representing a traffic purchase made on behalf of a member */
@@ -121,7 +120,7 @@ extern "C" {
 #define com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage_member_tag 1
 #define com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage_serial_tag 2
 #define com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage_total_traffic_purchased_tag 4
-#define com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage_synchronizer_id_tag 5
+#define com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage_physical_synchronizer_id_tag 5
 #define com_digitalasset_canton_protocol_v30_TrafficConsumed_member_tag 1
 #define com_digitalasset_canton_protocol_v30_TrafficConsumed_extra_traffic_consumed_tag 2
 #define com_digitalasset_canton_protocol_v30_TrafficConsumed_base_traffic_remainder_tag 3
@@ -198,7 +197,7 @@ X(a, STATIC,   OPTIONAL, UINT32,   serial,            6)
 X(a, STATIC,   SINGULAR, STRING,   member,            1) \
 X(a, STATIC,   SINGULAR, UINT32,   serial,            2) \
 X(a, STATIC,   SINGULAR, UINT64,   total_traffic_purchased,   4) \
-X(a, STATIC,   SINGULAR, STRING,   synchronizer_id,   5)
+X(a, STATIC,   SINGULAR, STRING,   physical_synchronizer_id,   5)
 #define com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage_CALLBACK NULL
 #define com_digitalasset_canton_protocol_v30_SetTrafficPurchasedMessage_DEFAULT NULL
 

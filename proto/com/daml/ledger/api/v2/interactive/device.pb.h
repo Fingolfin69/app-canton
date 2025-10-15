@@ -45,7 +45,7 @@ typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay 
 } com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay;
 
 typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node { 
-    char *node_id; 
+    pb_callback_t node_id; 
     pb_callback_t cb_versioned_node;
     pb_size_t which_versioned_node;
     union {
@@ -61,7 +61,7 @@ typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_
 /* Device variant of Transaction Metadata
  Refer to the hashing documentation for information on how it should be hashed. */
 typedef struct _com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node { 
-    char *node_id; 
+    pb_callback_t node_id; 
     pb_callback_t cb_versioned_node;
     pb_size_t which_versioned_node;
     union {
@@ -114,20 +114,20 @@ extern "C" {
 /* Initializer values for message structs */
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_init_default {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_init_default {0, NULL}
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_default {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_default {{{NULL}, NULL}, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_default}}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_init_default {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_init_default {0, NULL}
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_init_default {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay_init_default}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_init_default {{{NULL}, NULL}, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay_init_default}}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_default {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_default {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_default {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_default, false, com_daml_ledger_api_v2_Value_init_default}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_init_default {{{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Create_init_default}, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_init_zero {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_init_zero {0, NULL}
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_zero {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_init_zero {{{NULL}, NULL}, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_Node_init_zero}}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_init_zero {NULL, 0, NULL, 0, 0, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_init_zero {0, NULL}
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_init_zero {NULL, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay_init_zero}}
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_init_zero {{{NULL}, NULL}, {{NULL}, NULL}, 0, {com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay_init_zero}}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_init_zero {false, com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero, NULL, 0, NULL, 0, 0, false, 0, false, 0}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_SubmitterInfo_init_zero {0, NULL, NULL}
 #define com_daml_ledger_api_v2_interactive_DeviceMetadata_GlobalKeyMappingEntry_init_zero {false, com_daml_ledger_api_v2_interactive_GlobalKey_init_zero, false, com_daml_ledger_api_v2_Value_init_zero}
@@ -182,9 +182,9 @@ X(a, POINTER,  SINGULAR, BYTES,    seed,              2)
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_NodeSeed_DEFAULT NULL
 
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_FIELDLIST(X, a) \
-X(a, POINTER,  SINGULAR, STRING,   node_id,           1) \
+X(a, CALLBACK, SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (versioned_node,v1,v1), 1000)
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_CALLBACK NULL
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_DEFAULT NULL
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_versioned_node_v1_MSGTYPE com_daml_ledger_api_v2_interactive_transaction_v1_Node
 
@@ -204,9 +204,9 @@ X(a, POINTER,  SINGULAR, BYTES,    seed,              2)
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_NodeSeed_DEFAULT NULL
 
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_FIELDLIST(X, a) \
-X(a, POINTER,  SINGULAR, STRING,   node_id,           1) \
+X(a, CALLBACK, SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (versioned_node,v1,v1), 1000)
-#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_CALLBACK NULL
+#define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_DEFAULT NULL
 #define com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node_versioned_node_v1_MSGTYPE com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay
 
