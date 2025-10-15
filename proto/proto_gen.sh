@@ -181,8 +181,8 @@ com.daml.ledger.api.v2.cb.RecordField.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.List.elements type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Optional.value type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.Variant.value type:FT_POINTER
-com.daml.ledger.api.v2.cb.TextMap.Entry.value type:FT_POINTER
-com.daml.ledger.api.v2.cb.TextMap.entries type:FT_POINTER
+com.daml.ledger.api.v2.cb.TextMap.Entry.value type:FT_STATIC
+com.daml.ledger.api.v2.cb.TextMap.entries type:FT_CALLBACK
 com.daml.ledger.api.v2.cb.GenMap.Entry.value type:FT_STATIC
 com.daml.ledger.api.v2.cb.GenMap.Entry.key type:FT_STATIC
 com.daml.ledger.api.v2.cb.GenMap.entries type:FT_CALLBACK

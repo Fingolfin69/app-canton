@@ -65,14 +65,8 @@ typedef struct _com_daml_ledger_api_v2_cb_Record {
 } com_daml_ledger_api_v2_cb_Record;
 
 typedef struct _com_daml_ledger_api_v2_cb_TextMap { 
-    pb_size_t entries_count;
-    struct _com_daml_ledger_api_v2_cb_TextMap_Entry *entries; 
+    pb_callback_t entries; 
 } com_daml_ledger_api_v2_cb_TextMap;
-
-typedef struct _com_daml_ledger_api_v2_cb_TextMap_Entry { 
-    char *key; 
-    struct _com_daml_ledger_api_v2_cb_Value *value; 
-} com_daml_ledger_api_v2_cb_TextMap_Entry;
 
 /* A value with finite set of alternative representations. */
 typedef struct _com_daml_ledger_api_v2_cb_Enum { 
@@ -158,6 +152,12 @@ typedef struct _com_daml_ledger_api_v2_cb_RecordField {
     com_daml_ledger_api_v2_cb_Value value; 
 } com_daml_ledger_api_v2_cb_RecordField;
 
+typedef struct _com_daml_ledger_api_v2_cb_TextMap_Entry { 
+    char *key; 
+    bool has_value;
+    com_daml_ledger_api_v2_cb_Value value; 
+} com_daml_ledger_api_v2_cb_TextMap_Entry;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -172,8 +172,8 @@ extern "C" {
 #define com_daml_ledger_api_v2_cb_Enum_init_default {false, com_daml_ledger_api_v2_cb_Identifier_init_default, NULL}
 #define com_daml_ledger_api_v2_cb_List_init_default {{{NULL}, NULL}}
 #define com_daml_ledger_api_v2_cb_Optional_init_default {{{NULL}, NULL}}
-#define com_daml_ledger_api_v2_cb_TextMap_init_default {0, NULL}
-#define com_daml_ledger_api_v2_cb_TextMap_Entry_init_default {NULL, NULL}
+#define com_daml_ledger_api_v2_cb_TextMap_init_default {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_cb_TextMap_Entry_init_default {NULL, false, com_daml_ledger_api_v2_cb_Value_init_default}
 #define com_daml_ledger_api_v2_cb_GenMap_init_default {{{NULL}, NULL}}
 #define com_daml_ledger_api_v2_cb_GenMap_Entry_init_default {false, com_daml_ledger_api_v2_cb_Value_init_default, false, com_daml_ledger_api_v2_cb_Value_init_default}
 #define com_daml_ledger_api_v2_cb_Value_init_zero {{{NULL}, NULL}, 0, {google_protobuf_Empty_init_zero}}
@@ -184,8 +184,8 @@ extern "C" {
 #define com_daml_ledger_api_v2_cb_Enum_init_zero {false, com_daml_ledger_api_v2_cb_Identifier_init_zero, NULL}
 #define com_daml_ledger_api_v2_cb_List_init_zero {{{NULL}, NULL}}
 #define com_daml_ledger_api_v2_cb_Optional_init_zero {{{NULL}, NULL}}
-#define com_daml_ledger_api_v2_cb_TextMap_init_zero {0, NULL}
-#define com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero {NULL, NULL}
+#define com_daml_ledger_api_v2_cb_TextMap_init_zero {{{NULL}, NULL}}
+#define com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero {NULL, false, com_daml_ledger_api_v2_cb_Value_init_zero}
 #define com_daml_ledger_api_v2_cb_GenMap_init_zero {{{NULL}, NULL}}
 #define com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero {false, com_daml_ledger_api_v2_cb_Value_init_zero, false, com_daml_ledger_api_v2_cb_Value_init_zero}
 
@@ -199,8 +199,6 @@ extern "C" {
 #define com_daml_ledger_api_v2_cb_Record_record_id_tag 1
 #define com_daml_ledger_api_v2_cb_Record_fields_tag 2
 #define com_daml_ledger_api_v2_cb_TextMap_entries_tag 1
-#define com_daml_ledger_api_v2_cb_TextMap_Entry_key_tag 1
-#define com_daml_ledger_api_v2_cb_TextMap_Entry_value_tag 2
 #define com_daml_ledger_api_v2_cb_Enum_enum_id_tag 1
 #define com_daml_ledger_api_v2_cb_Enum_constructor_tag 2
 #define com_daml_ledger_api_v2_cb_Variant_variant_id_tag 1
@@ -226,6 +224,8 @@ extern "C" {
 #define com_daml_ledger_api_v2_cb_GenMap_Entry_value_tag 2
 #define com_daml_ledger_api_v2_cb_RecordField_label_tag 1
 #define com_daml_ledger_api_v2_cb_RecordField_value_tag 2
+#define com_daml_ledger_api_v2_cb_TextMap_Entry_key_tag 1
+#define com_daml_ledger_api_v2_cb_TextMap_Entry_value_tag 2
 
 /* Struct field encoding specification for nanopb */
 #define com_daml_ledger_api_v2_cb_Value_FIELDLIST(X, a) \
@@ -307,14 +307,14 @@ X(a, CALLBACK, OPTIONAL, MESSAGE,  value,             1)
 #define com_daml_ledger_api_v2_cb_Optional_value_MSGTYPE com_daml_ledger_api_v2_cb_Value
 
 #define com_daml_ledger_api_v2_cb_TextMap_FIELDLIST(X, a) \
-X(a, POINTER,  REPEATED, MESSAGE,  entries,           1)
-#define com_daml_ledger_api_v2_cb_TextMap_CALLBACK NULL
+X(a, CALLBACK, REPEATED, MESSAGE,  entries,           1)
+#define com_daml_ledger_api_v2_cb_TextMap_CALLBACK pb_default_field_callback
 #define com_daml_ledger_api_v2_cb_TextMap_DEFAULT NULL
 #define com_daml_ledger_api_v2_cb_TextMap_entries_MSGTYPE com_daml_ledger_api_v2_cb_TextMap_Entry
 
 #define com_daml_ledger_api_v2_cb_TextMap_Entry_FIELDLIST(X, a) \
 X(a, POINTER,  SINGULAR, STRING,   key,               1) \
-X(a, POINTER,  OPTIONAL, MESSAGE,  value,             2)
+X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
 #define com_daml_ledger_api_v2_cb_TextMap_Entry_CALLBACK NULL
 #define com_daml_ledger_api_v2_cb_TextMap_Entry_DEFAULT NULL
 #define com_daml_ledger_api_v2_cb_TextMap_Entry_value_MSGTYPE com_daml_ledger_api_v2_cb_Value

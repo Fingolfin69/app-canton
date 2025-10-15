@@ -69,6 +69,8 @@ typedef com_daml_ledger_api_v2_cb_List cbList;
 typedef com_daml_ledger_api_v2_cb_Optional cbOptional;
 typedef com_daml_ledger_api_v2_cb_GenMap cbGenMap;
 typedef com_daml_ledger_api_v2_cb_GenMap_Entry cbGenMapEntry;
+typedef com_daml_ledger_api_v2_cb_TextMap cbTextMap;
+typedef com_daml_ledger_api_v2_cb_TextMap_Entry cbTextMapEntry;
 
 typedef com_daml_ledger_api_v2_Value Value;
 typedef com_daml_ledger_api_v2_RecordField RecordField;
