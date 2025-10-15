@@ -10,7 +10,6 @@
 #include <string.h>
 #include "mem.h"
 #include "mem_alloc.h"
-#include "mem_string_pool.h"
 #include "os_print.h"
 #include "ledger_assert.h"
 
@@ -23,15 +22,10 @@ static mem_ctx_t mem_ctx = NULL;
 #define MP_LOG_PREFIX "==MP "
 #endif
 
-void *app_mem_base() {
-    return mem_buffer;
-}
-
 bool app_mem_init(void) {
     void *buf = mem_buffer;
     size_t buf_size = sizeof(mem_buffer);
 
-    mem_string_pool_init();
     mem_ctx = mem_init(buf, buf_size);
 #ifdef HAVE_MEMORY_PROFILING
     PRINTF(MP_LOG_PREFIX "init;0x%p;%u\n", buf, buf_size);
@@ -87,11 +81,6 @@ void app_mem_free_impl(void *ptr, const char *file, int line) {
         return;
     }
 
-    if (!mem_string_pool_remove((const char *) ptr)) {
-        // String still referenced
-        return;
-    }
-
     mem_free(mem_ctx, ptr);
 }
 
@@ -105,6 +94,4 @@ void app_mem_stat() {
            stat.allocated_size,
            stat.nb_chunks,
            stat.nb_allocated);
-
-    mem_string_pool_stat();
 }
