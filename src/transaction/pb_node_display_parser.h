@@ -1,4 +1,4 @@
 #pragma once
 
 bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count);
-void parse_node_for_display(buffer_t *buf);
+int parse_node_for_display(buffer_t *buf);
