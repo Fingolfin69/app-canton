@@ -792,6 +792,6 @@ int parse_node_for_display(buffer_t *buf) {
     G_context.tx_info.clear_signing_available = true;
     G_context.tx_info.review_title = ctx.review_title;
     G_context.tx_info.review_finish = ctx.review_finish;
-    
+
     return 0;
 }
