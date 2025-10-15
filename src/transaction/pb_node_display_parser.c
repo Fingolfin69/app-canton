@@ -61,11 +61,11 @@ typedef struct {
 } field_config_t;
 
 typedef struct {
-    char *value;                    // Dynamically allocated field value
-    size_t value_len;               // Length of the field
+    char *value;                   // Dynamically allocated field value
+    size_t value_len;              // Length of the field
     const field_config_t *config;  // Pointer to const config
-    bool found;                     // Mutable state
-    bool display;                   // Whether the field should be displayed
+    bool found;                    // Mutable state
+    bool display;                  // Whether the field should be displayed
 } tx_field_t;
 
 typedef struct {
@@ -76,19 +76,12 @@ typedef struct {
     const char *review_finish;
 } display_config_t;
 
-typedef struct {
-    tx_field_t **table;
-    size_t table_size;
-} simple_hash_map_t;
-
 struct pb_callback_context_t {
     char *field_path;
     transaction_ctx_t *tx_info;
     const field_config_t *const *display_config;
     tx_field_t *field_states;
     uint8_t nb_fields;
-    tx_field_t **hash_table;
-    simple_hash_map_t field_map;
     uint8_t found_fields_count;
     bool clear_signing_available;
     const char *review_title;
@@ -164,9 +157,9 @@ const field_config_t NATIVE_RECEIVER_FIELD = {"receiver", "To", NULL, true};
 const field_config_t NATIVE_MEMO_FIELD = {"description", "Memo", NULL, false};
 // Pre-approval proposal fields
 const field_config_t PREAPPROVAL_RECEIVER_FIELD = {"receiver",
-                                                    "Pre-approve for account",
-                                                    NULL,
-                                                    true};
+                                                   "Pre-approve for account",
+                                                   NULL,
+                                                   true};
 // Static field not parsed from tx but added manually in set_display_config
 const field_config_t PREAPPROVAL_ASSET_FIELD = {"asset", "For asset", NULL, true};
 const field_config_t PROVIDER_FIELD = {"provider", "By validator", NULL, true};
@@ -208,81 +201,6 @@ const display_config_t DISPLAY_CONFIGS[] = {{
                                             }};
 
 static tx_field_t field_states[MAX_DISPLAY_FIELDS_NB];
-
-const tx_field_t *g_hash_table[MAX_HASH_TABLE_SIZE] = {0};
-
-/* -------------------------------------------------------------------------- */
-/*  Hashing utilities for field paths lookup during parsing                   */
-/* -------------------------------------------------------------------------- */
-
-// FNV-1a hashing function (32-bit version)
-static uint32_t fnv1a32(const char *s) {
-    uint32_t h = 2166136261u;
-    while (*s) {
-        h ^= (uint8_t) (*s++);
-        h *= 16777619u;
-    }
-    return h;
-}
-
-// Populate hash table for quick lookup
-static int populate_hash_map(simple_hash_map_t *map,
-                             tx_field_t *states,
-                             size_t nfields,
-                             tx_field_t **hash_table,
-                             size_t table_size) {
-    if (nfields > table_size / 2) return -1;
-
-    for (size_t i = 0; i < table_size; i++) hash_table[i] = NULL;
-
-    for (size_t i = 0; i < nfields; i++) {
-        // Now access the field through the pointer array
-        const tx_field_t *state = &states[i];
-        if (state == NULL) {
-            continue;
-        }
-
-        const char *field_path = (const char *) PIC(state->config->path);
-        if (field_path == NULL) {
-            PRINTF("Warning: field_path for field[%zu] is NULL\n", i);
-            continue;
-        }
-
-        PRINTF("Building hash for field path: %s\n", field_path);
-
-        // Compute hash
-        uint32_t hash = fnv1a32(field_path);
-        // Compute index
-        uint32_t idx = hash % table_size;
-        // Linear probing for collision resolution
-        while (hash_table[idx] != NULL) {
-            idx = (idx + 1) % table_size;
-        }
-        // Store the field pointer in the hash table
-        hash_table[idx] = (tx_field_t *) state;
-    }
-
-    map->table = hash_table;
-    map->table_size = table_size;
-    return 0;
-}
-
-// Lookup = no loop except probe (very rare with low load)
-static tx_field_t *simple_hash_lookup(const simple_hash_map_t *map, const char *key) {
-    uint32_t h = fnv1a32(key);
-    uint32_t idx = h % map->table_size;
-
-    // probe until we find match or empty slot
-    while (1) {
-        tx_field_t *state = map->table[idx];
-        // print the field path being checked
-        if (state == NULL) return NULL;
-        if (strcmp((char *) PIC(state->config->path), key) == 0) {
-            return state;
-        }
-        idx = (idx + 1) % map->table_size;
-    }
-}
 
 /* -------------------------------------------------------------------------- */
 /*  Field formatting callbacks                                                */
@@ -376,6 +294,19 @@ static void format_native_amount_field(pb_callback_context_t *ctx, char **value)
 /*  Helper functions for transaction display management                       */
 /* -------------------------------------------------------------------------- */
 
+// Helper function to find field state by path
+static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, const char *path) {
+    if (ctx->display_config == NULL) return NULL;
+
+    for (size_t i = 0; i < ctx->nb_fields; i++) {
+        const char *field_path = (const char *) PIC(ctx->display_config[i]->path);
+        if (strcmp(field_path, path) == 0) {
+            return &ctx->field_states[i];
+        }
+    }
+    return NULL;
+}
+
 // Helper function to initialize transaction pairs used for display
 bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
     // Free existing pairs if any
@@ -436,8 +367,7 @@ static void set_display_config(pb_callback_context_t *ctx, const display_config_
     PRINTF("Setting display config with %d fields\n", count);
 
     // Allocate display_config array
-    ctx->display_config =
-        (const field_config_t **) app_mem_alloc(count * sizeof(field_config_t *));
+    ctx->display_config = (const field_config_t **) app_mem_alloc(count * sizeof(field_config_t *));
 
     LEDGER_ASSERT(ctx->display_config != NULL, "Memory full");
 
@@ -462,13 +392,6 @@ static void set_display_config(pb_callback_context_t *ctx, const display_config_
 
     ctx->field_states = field_states;
 
-    if (populate_hash_map(&ctx->field_map,
-                          ctx->field_states,
-                          ctx->nb_fields,
-                          ctx->hash_table,
-                          MAX_HASH_TABLE_SIZE) != 0) {
-        PRINTF("Error populating hash map\n");
-    }
     init_transaction_pairs(ctx->tx_info, ctx->nb_fields);
 
     // If pre-approval proposal, add static field for asset
@@ -509,7 +432,8 @@ static void find_tx_type_and_config(pb_callback_context_t *ctx, const Identifier
 static void find_tx_field(pb_callback_context_t *ctx, cbValue *value) {
     if (ctx->display_config != NULL) {  //&& !ctx->clear_signing_available) {
         PRINTF("Looking up field path: %s\n", ctx->field_path);
-        tx_field_t *state = simple_hash_lookup(&ctx->field_map, ctx->field_path);
+        // tx_field_t *state = simple_hash_lookup(&ctx->field_map, ctx->field_path);
+        tx_field_t *state = find_field_by_path(ctx, ctx->field_path);
         if (state != NULL && value != NULL) {
             PRINTF("Found matching field for path: %s\n", ctx->field_path);
             // Set the field value
@@ -812,7 +736,6 @@ void parse_node_for_display(buffer_t *buf) {
     pb_callback_context_t ctx = {0};
     init_field_path(&ctx);
     ctx.tx_info = &G_context.tx_info;
-    ctx.hash_table = (tx_field_t **) g_hash_table;
     ctx.display_config = NULL;
 
     G_context.tx_info.tx_parts_ctx.node.cb_versioned_node.funcs.decode =
