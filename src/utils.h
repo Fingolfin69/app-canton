@@ -35,3 +35,20 @@ void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t 
             snprintf(str, size, format, __VA_ARGS__);                                 \
         _Pragma("GCC diagnostic pop")                                                 \
     } while (0)
+
+/**
+ * @brief Check if a character is a digit.
+ *
+ * @param c Character to check.
+ * @return true if the character is a digit, false otherwise.
+ */
+bool is_digit(char c);
+
+/**
+ * @brief Convert a string of digits to an integer.
+ *        Returns 0 if the string contains non-digit characters.
+ *
+ * @param str Null-terminated string to convert.
+ * @return The integer value, or 0 on error.
+ */
+int atoint(const char *str);

@@ -82,3 +82,12 @@ void release_node(transaction_ctx_t *tx_ctx);
  *
  */
 void release_metadata(transaction_ctx_t *tx_ctx);
+
+/**
+ * Release dynamically allocated memory for TopologyTransaction protobuf message.
+ *
+ * @param[in, out]     tx_ctx
+ *   Pointer to transaction context structure.
+ *
+ */
+void release_topology_transaction(transaction_ctx_t *tx_ctx);

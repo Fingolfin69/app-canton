@@ -1,4 +1,4 @@
-#include "pb_input_contract_parser.h"
+#include "pb_node_parser.h"
 
 #include "buffer.h"
 #include "canonical_hash.h"
@@ -15,33 +15,23 @@
 #include "ledger_assert.h"
 #endif
 
-static HashWriter node_hw;
-static uint8_t node_hash[32];
+#define VALUE_ELEM_COUNT_NONE -1
 
-#define VALUE_ELEM_COUNT_NONE 0xFFFFFFFF
-static int32_t value_elem_count;
-static bool is_root_node;
-static DamlTransaction *daml_tx;
-static int32_t node_id;
+typedef struct {
+    transaction_ctx_t *tx_info;
+    int32_t node_id;
+    bool is_root_node;
+    int32_t value_elem_count;
+    HashWriter node_hw;
+} cb_parser_ctx_t;
 
-static bool is_digit(char c) {
-    return c >= '0' && c <= '9';
-}
-
-static int atoint(const char *str) {
-    int res = 0;
-
-    for (int i = 0; str[i] != '\0'; i++) {
-        if (!is_digit(str[i])) {
-            return 0;
-        }
-        res = res * 10 + str[i] - '0';
-    }
-
-    return res;
-}
+static cb_parser_ctx_t ctx;
 
 static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg);
+
+/* -------------------------------------------------------------------------- */
+/* Callbacks for counting number of elements                                  */
+/* -------------------------------------------------------------------------- */
 
 static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
@@ -54,10 +44,9 @@ static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void
         return false;
     }
 
-
     pb_release(com_daml_ledger_api_v2_cb_Identifier_fields, &id);
 
-    value_elem_count++;
+    ctx.value_elem_count++;
 
     return true;
 }
@@ -75,7 +64,7 @@ static bool count_record_field(pb_istream_t *stream, const pb_field_t *field, vo
 
     pb_release(com_daml_ledger_api_v2_cb_RecordField_fields, &rf);
 
-    value_elem_count++;
+    ctx.value_elem_count++;
 
     return true;
 }
@@ -93,7 +82,7 @@ static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void 
 
     pb_release(com_daml_ledger_api_v2_cb_Value_fields, &v);
 
-    value_elem_count++;
+    ctx.value_elem_count++;
 
     return true;
 }
@@ -111,7 +100,7 @@ static bool count_text_map_entry(pb_istream_t *stream, const pb_field_t *field, 
 
     pb_release(com_daml_ledger_api_v2_cb_TextMap_Entry_fields, &e);
 
-    value_elem_count++;
+    ctx.value_elem_count++;
 
     return true;
 }
@@ -129,7 +118,7 @@ static bool count_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, v
 
     pb_release(com_daml_ledger_api_v2_cb_GenMap_Entry_fields, &e);
 
-    value_elem_count++;
+    ctx.value_elem_count++;
 
     return true;
 }
@@ -139,7 +128,7 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
     (void) field;
     (void) arg;
 
-    value_elem_count = 0;
+    ctx.value_elem_count = 0;
 
     switch (field->tag) {
         case com_daml_ledger_api_v2_cb_Value_unit_tag:
@@ -150,7 +139,8 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
         case com_daml_ledger_api_v2_cb_Value_date_tag:
         case com_daml_ledger_api_v2_cb_Value_party_tag:
         case com_daml_ledger_api_v2_cb_Value_text_tag:
-        case com_daml_ledger_api_v2_cb_Value_contract_id_tag: break;
+        case com_daml_ledger_api_v2_cb_Value_contract_id_tag:
+            break;
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
             cbOptional *msg = field->pData;
             msg->value.funcs.decode = &count_list_elem;
@@ -259,51 +249,55 @@ static bool count_record_field_helper(pb_istream_t *stream) {
     return true;
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Callbacks to decode Value types                                           */
+/* -------------------------------------------------------------------------- */
+
 static void decode_value_primitive_variants(cbValue *v) {
     switch (v->which_sum) {
         case com_daml_ledger_api_v2_cb_Value_unit_tag: {
             PRINTF("Decoding unit\n");
-            hw_put_byte(&node_hw, 0x00);
+            hw_put_byte(&ctx.node_hw, 0x00);
         } break;
         case com_daml_ledger_api_v2_cb_Value_bool__tag: {
             PRINTF("Decoding bool: %s\n", v->bool_ ? "true" : "false");
-            hw_put_byte(&node_hw, 0x01);
-            encode_bool(&node_hw, v->bool_);
+            hw_put_byte(&ctx.node_hw, 0x01);
+            encode_bool(&ctx.node_hw, v->bool_);
         } break;
         case com_daml_ledger_api_v2_cb_Value_int64_tag: {
             PRINTF("Decoding int64: %lld\n", v->int64);
-            hw_put_byte(&node_hw, 0x02);
-            encode_int64(&node_hw, v->int64);
+            hw_put_byte(&ctx.node_hw, 0x02);
+            encode_int64(&ctx.node_hw, v->int64);
         } break;
         case com_daml_ledger_api_v2_cb_Value_date_tag: {
             PRINTF("Decoding date: %lld\n", v->date);
-            hw_put_byte(&node_hw, 0x05);
-            encode_int32(&node_hw, v->date);
+            hw_put_byte(&ctx.node_hw, 0x05);
+            encode_int32(&ctx.node_hw, v->date);
         } break;
         case com_daml_ledger_api_v2_cb_Value_timestamp_tag: {
             PRINTF("Decoding timestamp: %lld\n", v->timestamp);
-            hw_put_byte(&node_hw, 0x04);
-            encode_int64(&node_hw, v->timestamp);
+            hw_put_byte(&ctx.node_hw, 0x04);
+            encode_int64(&ctx.node_hw, v->timestamp);
         } break;
         case com_daml_ledger_api_v2_cb_Value_numeric_tag: {
             PRINTF("Decoding numeric: %s\n", v->numeric);
-            hw_put_byte(&node_hw, 0x03);
-            encode_string(&node_hw, v->numeric);
+            hw_put_byte(&ctx.node_hw, 0x03);
+            encode_string(&ctx.node_hw, v->numeric);
         } break;
         case com_daml_ledger_api_v2_cb_Value_party_tag: {
             PRINTF("Decoding party: %s\n", v->party);
-            hw_put_byte(&node_hw, 0x06);
-            encode_string(&node_hw, v->party);
+            hw_put_byte(&ctx.node_hw, 0x06);
+            encode_string(&ctx.node_hw, v->party);
         } break;
         case com_daml_ledger_api_v2_cb_Value_text_tag: {
             PRINTF("Decoding text: %s\n", v->text);
-            hw_put_byte(&node_hw, 0x07);
-            encode_string(&node_hw, v->text);
+            hw_put_byte(&ctx.node_hw, 0x07);
+            encode_string(&ctx.node_hw, v->text);
         } break;
         case com_daml_ledger_api_v2_cb_Value_contract_id_tag: {
             PRINTF("Decoding contract_id: %s\n", v->contract_id);
-            hw_put_byte(&node_hw, 0x08);
-            encode_hex_string(&node_hw, v->contract_id);
+            hw_put_byte(&ctx.node_hw, 0x08);
+            encode_hex_string(&ctx.node_hw, v->contract_id);
         } break;
     }
 }
@@ -325,9 +319,8 @@ static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *fi
     PRINTF("Decoded Record field label: %s\n", label_buffer);
 
     // Encode the label
-    PRINTF(">>>>>>>>Encoded Record field label: %s\n", label_buffer);
-    hw_put_byte(&node_hw, 0x01);  // encode optional field
-    encode_string(&node_hw, label_buffer);
+    hw_put_byte(&ctx.node_hw, 0x01);  // encode optional field
+    encode_string(&ctx.node_hw, label_buffer);
 
     return true;
 }
@@ -338,8 +331,8 @@ static bool decode_variant_constructor(pb_istream_t *stream, const pb_field_t *f
 
     // Read string from stream
     char constructor_buffer[64] = {0};
-    size_t len =
-        stream->bytes_left < sizeof(constructor_buffer) ? stream->bytes_left : sizeof(constructor_buffer) - 1;
+    size_t len = stream->bytes_left < sizeof(constructor_buffer) ? stream->bytes_left
+                                                                 : sizeof(constructor_buffer) - 1;
 
     if (!pb_read(stream, (pb_byte_t *) constructor_buffer, len)) {
         PRINTF("Failed to read string from stream\n");
@@ -348,8 +341,7 @@ static bool decode_variant_constructor(pb_istream_t *stream, const pb_field_t *f
 
     PRINTF("Decoded constructor str: %s\n", constructor_buffer);
 
-    PRINTF(">>>>>>>>Encoded constructor str: %s\n", constructor_buffer);
-    encode_string(&node_hw, constructor_buffer);
+    encode_string(&ctx.node_hw, constructor_buffer);
 
     return true;
 }
@@ -370,8 +362,7 @@ static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, vo
 
     PRINTF("Decoded TextMap key: %s\n", key_buffer);
 
-    PRINTF(">>>>>>>>Encoded TextMap key: %s\n", key_buffer);
-    encode_string(&node_hw, key_buffer);
+    encode_string(&ctx.node_hw, key_buffer);
 
     return true;
 }
@@ -396,15 +387,15 @@ static bool decode_node_id_field(pb_istream_t *stream, const pb_field_t *field, 
         return false;
     }
 
+    DamlTransaction *daml_tx = &ctx.tx_info->tx_parts_ctx.daml_transaction;
     for (size_t i = 0; i < daml_tx->roots_count; ++i) {
-        if (daml_tx->roots[i] != NULL && node_id_str != NULL &&
-            strcmp(daml_tx->roots[i], node_id_str) == 0) {
-            is_root_node = true;
+        if (daml_tx->roots[i] != NULL && strcmp(daml_tx->roots[i], node_id_str) == 0) {
+            ctx.is_root_node = true;
             break;
         }
     }
 
-    node_id = atoint(node_id_str);
+    ctx.node_id = atoint(node_id_str);
 
     return true;
 }
@@ -430,7 +421,7 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
 
     decode_value_primitive_variants(&rf.value);
 
-    // PRINTF("/Decoded Record field with label: %s\n", rf.label);
+    PRINTF("/Decoded Record field with label: %s\n", rf.label);
 
     pb_release(com_daml_ledger_api_v2_cb_RecordField_fields, &rf);
 
@@ -556,6 +547,34 @@ static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
+static bool decode_enum(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
+
+    PRINTF("Decoding Enum\n");
+    cbEnum e = com_daml_ledger_api_v2_cb_Enum_init_zero;
+    if (!pb_decode(stream, com_daml_ledger_api_v2_cb_Enum_fields, &e)) {
+        PRINTF("Failed to decode Enum: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    // Encode optional field presence
+    if (e.has_enum_id) {
+        hw_put_byte(&ctx.node_hw, 0x01);
+        encode_identifier(&ctx.node_hw, (const com_daml_ledger_api_v2_Identifier *) &e.enum_id);
+    } else {
+        hw_put_byte(&ctx.node_hw, 0x00);
+    }
+
+    encode_string(&ctx.node_hw, e.constructor);
+
+    pb_release(com_daml_ledger_api_v2_cb_Enum_fields, &e);
+
+    PRINTF("/Decoding Enum\n");
+
+    return true;
+}
+
 static bool decode_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
@@ -569,7 +588,7 @@ static bool decode_identifier(pb_istream_t *stream, const pb_field_t *field, voi
         return false;
     }
 
-    encode_identifier(&node_hw, (const com_daml_ledger_api_v2_Identifier *) &id);
+    encode_identifier(&ctx.node_hw, (const com_daml_ledger_api_v2_Identifier *) &id);
 
     PRINTF("/Decoding Identifier\n");
 
@@ -578,19 +597,17 @@ static bool decode_identifier(pb_istream_t *stream, const pb_field_t *field, voi
     return true;
 }
 
-static bool decode_identifier_opt(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+static bool decode_record_id(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
-    PRINTF("Decoding optional Identifier\n");
-    hw_put_byte(&node_hw, 0x01);  // encode optional field presence
+    PRINTF("Decoding Record ID Identifier\n");
+    hw_put_byte(&ctx.node_hw, 0x01);  // encode optional field presence
     bool res = decode_identifier(stream, field, arg);
 
-    // FIXME: decode number of record fields previously counted
-    // Encode number of record fields previously counted
-    if (value_elem_count != VALUE_ELEM_COUNT_NONE) {
-        encode_int32(&node_hw, value_elem_count);
-        value_elem_count = VALUE_ELEM_COUNT_NONE;
+    if (ctx.value_elem_count != VALUE_ELEM_COUNT_NONE) {
+        encode_int32(&ctx.node_hw, ctx.value_elem_count);
+        ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
     }
 
     return res;
@@ -617,51 +634,51 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
             cbOptional *msg = field->pData;
             msg->value.funcs.decode = &decode_value;
-            hw_put_byte(&node_hw, 0x09);
+            hw_put_byte(&ctx.node_hw, 0x09);
             // Encode optional field presence
-            hw_put_byte(&node_hw, value_elem_count == 0 ? 0x00: 0x01);
-            value_elem_count = VALUE_ELEM_COUNT_NONE;
+            hw_put_byte(&ctx.node_hw, ctx.value_elem_count == 0 ? 0x00 : 0x01);
+            ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_list_tag: {
             cbList *msg = field->pData;
             msg->elements.funcs.decode = &decode_list_elem;
-            hw_put_byte(&node_hw, 0x0A);
-            encode_int32(&node_hw, value_elem_count);
-            value_elem_count = VALUE_ELEM_COUNT_NONE;
+            hw_put_byte(&ctx.node_hw, 0x0A);
+            encode_int32(&ctx.node_hw, ctx.value_elem_count);
+            ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_text_map_tag: {
             cbTextMap *msg = field->pData;
             msg->entries.funcs.decode = &decode_text_map_entry;
-            hw_put_byte(&node_hw, 0x0B);
-            encode_int32(&node_hw, value_elem_count);
-            value_elem_count = VALUE_ELEM_COUNT_NONE;
+            hw_put_byte(&ctx.node_hw, 0x0B);
+            encode_int32(&ctx.node_hw, ctx.value_elem_count);
+            ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_gen_map_tag: {
             cbGenMap *msg = field->pData;
             msg->entries.funcs.decode = &decode_gen_map_entry;
-            hw_put_byte(&node_hw, 0x0F);
-            encode_int32(&node_hw, value_elem_count);
-            value_elem_count = VALUE_ELEM_COUNT_NONE;
+            hw_put_byte(&ctx.node_hw, 0x0F);
+            encode_int32(&ctx.node_hw, ctx.value_elem_count);
+            ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_record_tag: {
             cbRecord *msg = field->pData;
-            msg->record_id.funcs.decode = &decode_identifier_opt;
+            msg->record_id.funcs.decode = &decode_record_id;
             msg->fields.funcs.decode = &decode_record_field;
-            hw_put_byte(&node_hw, 0x0C);
+            hw_put_byte(&ctx.node_hw, 0x0C);
         } break;
         case com_daml_ledger_api_v2_cb_Value_variant_tag: {
             cbVariant *msg = field->pData;
             msg->variant_id.funcs.decode = &decode_identifier;
             msg->constructor.funcs.decode = &decode_variant_constructor;
             msg->value.funcs.decode = &decode_value;
-            hw_put_byte(&node_hw, 0x0D);
+            hw_put_byte(&ctx.node_hw, 0x0D);
             // Encode optional field presence
-            hw_put_byte(&node_hw, value_elem_count == 0 ? 0x00: 0x01);
-            value_elem_count = VALUE_ELEM_COUNT_NONE;
+            hw_put_byte(&ctx.node_hw, ctx.value_elem_count == 0 ? 0x00 : 0x01);
+            ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
         } break;
         case com_daml_ledger_api_v2_cb_Value_enum__tag: {
-            hw_put_byte(&node_hw, 0x0E);
-            LEDGER_ASSERT(false, "Enum not implemented");
+            hw_put_byte(&ctx.node_hw, 0x0E);
+            decode_enum(stream, field, arg);
         } break;
         default:
             LEDGER_ASSERT(false, "Unknown Value type %d", field->tag);
@@ -670,13 +687,15 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool decode_input_contract_argument(pb_istream_t *stream,
-                                           const pb_field_t *field,
-                                           void **arg) {
+/* -------------------------------------------------------------------------- */
+/*  Callbacks to decode Transaction nodes                                      */
+/* -------------------------------------------------------------------------- */
+
+static bool decode_value_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
-    PRINTF("Decoding Input contract argument\n");
+    PRINTF("Decoding Value field\n");
     if (!count_value_helper(stream)) {
         return false;
     }
@@ -686,7 +705,7 @@ static bool decode_input_contract_argument(pb_istream_t *stream,
     v.cb_sum.funcs.decode = &decode_value_variant;
 
     if (!pb_decode(stream, com_daml_ledger_api_v2_cb_Value_fields, &v)) {
-        PRINTF("Failed to decode Input contract argument: %s\n", PB_GET_ERROR(stream));
+        PRINTF("Failed to decode Value field: %s\n", PB_GET_ERROR(stream));
         return false;
     }
 
@@ -701,12 +720,13 @@ static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **
     (void) field;
     (void) arg;
 
+    PRINTF("Decode Create node\n");
+
+    // Save stream state to rewind later
+    pb_istream_t saved_stream = *stream;
+
     com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create c_cb =
         com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_init_zero;
-
-    PRINTF("Decode Create node\n");
-    size_t stream_bytes_left = stream->bytes_left;
-    void *stream_state = stream->state;
 
     // Decoding Create node's plain fields
     if (!pb_decode(stream,
@@ -718,26 +738,28 @@ static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **
 
     // Hashing fields up to `argument` field
     const uint8_t *seed = NULL;
-    if (daml_tx != NULL && daml_tx->node_seeds_count > 0) {
-        for (size_t i = 0; i < daml_tx->node_seeds_count; ++i) {
-            if (daml_tx->node_seeds[i].node_id == node_id) {
-                PRINTF("Found seed for node id %d\n", node_id);
-                seed = daml_tx->node_seeds[i].seed->bytes;
-                break;
+    DamlTransaction *daml_tx = &ctx.tx_info->tx_parts_ctx.daml_transaction;
+    if (ctx.node_id >= 0) {
+        if (daml_tx->node_seeds_count > 0) {
+            for (size_t i = 0; i < daml_tx->node_seeds_count; ++i) {
+                if (daml_tx->node_seeds[i].node_id == ctx.node_id) {
+                    PRINTF("Found seed for node id %d\n", ctx.node_id);
+                    seed = daml_tx->node_seeds[i].seed->bytes;
+                    break;
+                }
             }
         }
     }
 
-    encode_create_cb_start(&node_hw, &c_cb, seed);
+    encode_create_start(&ctx.node_hw, &c_cb, seed);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields, &c_cb);
 
     // Rewind stream to the beginning of Create node CB message
-    stream->bytes_left = stream_bytes_left;
-    stream->state = stream_state;
+    *stream = saved_stream;
 
     // Decoding Create node CB recursive field `argument` and hashing it inside callbacks
-    c_cb.argument.funcs.decode = &decode_input_contract_argument;
+    c_cb.argument.funcs.decode = &decode_value_field;
     if (!pb_decode(stream,
                    com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields,
                    &c_cb)) {
@@ -746,7 +768,7 @@ static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **
     }
 
     // Finishing hashing Create node
-    encode_create_cb_end(&node_hw, &c_cb);
+    encode_create_end(&ctx.node_hw, &c_cb);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Create_fields, &c_cb);
 
@@ -775,23 +797,24 @@ static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void 
     }
 
     const uint8_t *seed = NULL;
-    if (daml_tx != NULL) {
+    DamlTransaction *daml_tx = &ctx.tx_info->tx_parts_ctx.daml_transaction;
+    if (ctx.node_id >= 0) {
         for (size_t i = 0; i < daml_tx->node_seeds_count; ++i) {
-            if (daml_tx->node_seeds[i].node_id == node_id) {
-                PRINTF("Found seed for node id %d\n", node_id);
+            if (daml_tx->node_seeds[i].node_id == ctx.node_id) {
+                PRINTF("Found seed for node id %d\n", ctx.node_id);
                 seed = daml_tx->node_seeds[i].seed->bytes;
                 break;
             }
         }
     }
 
-    encode_exercise_start(&node_hw, &e, seed);
+    encode_exercise_start(&ctx.node_hw, &e, seed);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields, &e);
     *stream = stream_prev;  // rewind stream
 
     // 2. Decode and hash `chosen_value` field and fields up to `exercise_result` field
-    e.chosen_value.funcs.decode = &decode_input_contract_argument;
+    e.chosen_value.funcs.decode = &decode_value_field;
     e.exercise_result.funcs.decode = NULL;
     if (!pb_decode(stream,
                    com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields,
@@ -800,16 +823,16 @@ static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void 
         return false;
     }
 
-    encode_exercise_middle(&node_hw, &e);
+    encode_exercise_middle(&ctx.node_hw, &e);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields, &e);
     *stream = stream_prev;  // rewind stream
 
     // 3. Decode and hash `exercise_result` field and rest of the fields
     // Encode optional `exercise_result` field presence
-    hw_put_byte(&node_hw, 0x01);
+    hw_put_byte(&ctx.node_hw, 0x01);
     e.chosen_value.funcs.decode = NULL;
-    e.exercise_result.funcs.decode = &decode_input_contract_argument;
+    e.exercise_result.funcs.decode = &decode_value_field;
     if (!pb_decode(stream,
                    com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields,
                    &e)) {
@@ -817,7 +840,7 @@ static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void 
         return false;
     }
 
-    encode_exercise_end(&node_hw, &e);
+    encode_exercise_end(&ctx.node_hw, &e);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_cb_Exercise_fields, &e);
 
@@ -833,50 +856,74 @@ static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **a
     com_daml_ledger_api_v2_interactive_transaction_v1_Fetch f =
         com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_init_zero;
 
-    if (!pb_decode(stream,
-                   com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_fields,
-                   &f)) {
+    if (!pb_decode(stream, com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_fields, &f)) {
         PRINTF("Failed to decode Fetch node: %s\n", PB_GET_ERROR(stream));
         return false;
     }
 
-    encode_fetch(&node_hw, &f);
+    encode_fetch(&ctx.node_hw, &f);
 
     pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_Fetch_fields, &f);
 
     return true;
 }
 
-// Callback to decode Node messages
-static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
-    UNUSED(stream);
-    com_daml_ledger_api_v2_interactive_transaction_v1_cb_Node *node = field->message;
+static bool decode_rollback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+    (void) arg;
 
-    // Only handle Exercise nodes
-    if (field->tag == NODE_V1_EXERCISE_TAG) {
-        PRINTF("Decoding Exercise node\n");
-        return decode_exercise(stream, field, arg);
-    } else if (field->tag == NODE_V1_CREATE_TAG) {
-        PRINTF("Decoding Create node\n");
-        return decode_create(stream, field, arg);
-    } else if (field->tag == NODE_V1_FETCH_TAG) {
-        PRINTF("Decoding Fetch node\n");
-        return decode_fetch(stream, field, arg);
-    } else {
-        LEDGER_ASSERT(false, "Unsupported node type %d", field->tag);
+    PRINTF("Decode Rollback node\n");
+
+    com_daml_ledger_api_v2_interactive_transaction_v1_Rollback r =
+        com_daml_ledger_api_v2_interactive_transaction_v1_Rollback_init_zero;
+
+    if (!pb_decode(stream, com_daml_ledger_api_v2_interactive_transaction_v1_Rollback_fields, &r)) {
+        PRINTF("Failed to decode Rollback node: %s\n", PB_GET_ERROR(stream));
+        return false;
+    }
+
+    encode_rollback(&ctx.node_hw, &r);
+
+    pb_release(com_daml_ledger_api_v2_interactive_transaction_v1_Rollback_fields, &r);
+
+    return true;
+}
+
+static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) stream;
+
+    switch (field->tag) {
+        case NODE_V1_EXERCISE_TAG: {
+            PRINTF("Decoding Exercise node\n");
+            return decode_exercise(stream, field, arg);
+        } break;
+        case NODE_V1_CREATE_TAG: {
+            PRINTF("Decoding Create node\n");
+            return decode_create(stream, field, arg);
+        } break;
+        case NODE_V1_FETCH_TAG: {
+            PRINTF("Decoding Fetch node\n");
+            return decode_fetch(stream, field, arg);
+        } break;
+        case NODE_V1_ROLLBACK_TAG: {
+            PRINTF("Decoding Rollback node\n");
+            return decode_rollback(stream, field, arg);
+        } break;
+        default:
+            LEDGER_ASSERT(false, "Unsupported node type %d", field->tag);
     }
 
     return true;
 }
 
-// Callback to decode versioned node messages, attaching Node-level callback
 static bool versioned_node_decode_callback(pb_istream_t *stream,
                                            const pb_field_t *field,
                                            void **arg) {
-    UNUSED(stream);
+    (void) stream;
+    (void) arg;
+
     com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node *node = field->message;
 
-    // Attach Node-level callback dynamically
     if (node->NODE_VERSION_ONEOF_FIELD == NODE_V1_TAG) {
         node->v1.cb_node_type.funcs.decode = &node_decode_callback;
     }
@@ -884,15 +931,22 @@ static bool versioned_node_decode_callback(pb_istream_t *stream,
     return true;
 }
 
-parser_status_e proto_deserialize_cb_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+/* -------------------------------------------------------------------------- */
+/*  Entry points for parsing Nodes/Input contracts                            */
+/* -------------------------------------------------------------------------- */
+
+parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Node from buffer of size %d bytes\n", buf->size);
 
-    is_root_node = false;
-    daml_tx = &tx_ctx->tx_parts_ctx.daml_transaction;
+    // Init parsing ctx
+    ctx.tx_info = tx_ctx;
+    ctx.node_id = -1;
+    ctx.is_root_node = false;
+    ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
 
-    hw_init(&node_hw);
+    hw_init(&ctx.node_hw);
 
     tx_ctx->tx_parts_ctx.node.node_id.funcs.decode = decode_node_id_field;
     tx_ctx->tx_parts_ctx.node.cb_versioned_node.funcs.decode = &versioned_node_decode_callback;
@@ -903,14 +957,15 @@ parser_status_e proto_deserialize_cb_node(buffer_t *buf, transaction_ctx_t *tx_c
         PRINTF("Decode failed: %s\n", PB_GET_ERROR(&stream));
     }
 
-    hw_finalize(&node_hw, node_hash);
+    uint8_t node_hash[32];
+    hw_finalize(&ctx.node_hw, node_hash);
 
-    PRINTF("Node id %d hash: %.*H\n", node_id, 32, node_hash);
+    PRINTF("Node id %d hash: %.*H\n", ctx.node_id, 32, node_hash);
 
-    if (is_root_node) {
+    if (ctx.is_root_node) {
         encode_hash(&tx_ctx->hasher, node_hash);
     } else {
-        set_node_hash_int(node_id, node_hash);
+        set_node_hash(ctx.node_id, node_hash);
     }
 
     pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
@@ -919,14 +974,18 @@ parser_status_e proto_deserialize_cb_node(buffer_t *buf, transaction_ctx_t *tx_c
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_cb_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Input contract from buffer of size %d bytes\n", buf->size);
 
-    daml_tx = NULL;
+    // Init parsing ctx
+    ctx.tx_info = tx_ctx;
+    ctx.node_id = -1;
+    ctx.is_root_node = false;
+    ctx.value_elem_count = VALUE_ELEM_COUNT_NONE;
 
-    hw_init(&node_hw);
+    hw_init(&ctx.node_hw);
 
     tx_ctx->tx_parts_ctx.input_contract.cb_contract.funcs.decode = &decode_create;
 
@@ -937,16 +996,15 @@ parser_status_e proto_deserialize_cb_input_contract(buffer_t *buf, transaction_c
         return VALUE_PARSING_ERROR;
     }
 
-    hw_finalize(&node_hw, node_hash);
+    uint8_t node_hash[32];
+    hw_finalize(&ctx.node_hw, node_hash);
 
     encode_int64(&tx_ctx->hasher, tx_ctx->tx_parts_ctx.input_contract.created_at);
     PRINTF("Contract hash: %.*H\n", 32, node_hash);
     encode_hash(&tx_ctx->hasher, node_hash);
 
-    return PARSING_OK;
-}
-
-void release_cb_input_contract(transaction_ctx_t *tx_ctx) {
     pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,
                &tx_ctx->tx_parts_ctx.input_contract);
+
+    return PARSING_OK;
 }
