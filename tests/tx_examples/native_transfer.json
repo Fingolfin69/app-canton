@@ -225,7 +225,7 @@
       },
       "synchronizerId": "global-domain::1220540f46fe214f533e81145d40b579d867b198b9b224483d7ad4d210df6052d885",
       "transactionUuid": "6d1c936b-5aab-40b5-b85d-4a2bbeadb66d",
-      "submissionTime": "1757956917286831",
+      "preparationTime": "1757956917286831",
       "inputContracts": [
         {
           "v1": {
