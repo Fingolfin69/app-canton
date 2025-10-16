@@ -19,7 +19,7 @@
 #include "canonical_hash.h"
 #include "pb_decode.h"
 #include "pb_node_display_parser.h"
-#include "pb_node_parser.h"
+#include "pb_hashing_parser.h"
 
 typedef enum {
     RECEIVING_DAML_TX_PART,              /// Receiving part of DAML transaction

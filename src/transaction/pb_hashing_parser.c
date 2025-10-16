@@ -1,4 +1,4 @@
-#include "pb_node_parser.h"
+#include "pb_hashing_parser.h"
 
 #include "buffer.h"
 #include "canonical_hash.h"
