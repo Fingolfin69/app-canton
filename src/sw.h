@@ -90,6 +90,14 @@
  * Status word for party key mismatch.
  */
 #define SW_TOPOLOGY_PARTY_KEY_MISMATCH 0xC104
+/**
+ * Status word for party key wrong format.
+ */
+#define SW_TOPOLOGY_PARTY_KEY_WRONG_FORMAT 0xC105
+/**
+ * Status word for missing party key.
+ */
+#define SW_TOPOLOGY_MISSING_PARTY_KEY 0xC106
 
 // Party to key mapping errors (0xC200 range)
 /**

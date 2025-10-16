@@ -201,8 +201,25 @@ class Transaction:
         return versioned_topology_tx.SerializeToString()
 
     @classmethod
-    def namespace_delegation(cls, public_key: bytes) -> bytes:
-        key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_RAW
+    def _compute_party_fingerprint(cls, public_key: bytes) -> str:
+        # Check if key is raw or DER format
+        if len(public_key) == 32:
+            raw_key = public_key
+        elif len(public_key) == 44 and public_key.startswith(b"\x30\x2A\x30\x05\x06\x03\x2B\x65\x70\x03\x21\x00"):
+            raw_key = public_key[12:]
+        else:
+            raise ValueError("Public key must be in raw (32 bytes) or DER (44 bytes) format")
+
+        return cls.compute_sha256_canton_hash(
+            PURPOSE_PUBLIC_KEY_FINGERPRINT, raw_key
+        ).hex()
+
+    @classmethod
+    def namespace_delegation(cls, public_key: bytes, der_format: bool) -> bytes:
+        if der_format:
+            key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_DER_X509_SUBJECT_PUBLIC_KEY_INFO
+        else:
+            key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_RAW
         key_scheme = SigningKeyScheme.SIGNING_KEY_SCHEME_ED25519
         key_spec = SigningKeySpec.SIGNING_KEY_SPEC_EC_CURVE25519
 
@@ -220,9 +237,7 @@ class Transaction:
         private_key = SigningKey.generate()
         public_key_bytes = private_key.verify_key.encode()
 
-        namespace = cls.compute_sha256_canton_hash(
-            PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key_bytes
-        ).hex()
+        namespace = cls._compute_party_fingerprint(public_key_bytes)
 
         namespace_delegation_mapping = TopologyMapping(
             namespace_delegation=NamespaceDelegation(
@@ -238,8 +253,11 @@ class Transaction:
         )
 
     @classmethod
-    def party_to_key(cls, public_key: bytes) -> bytes:
-        key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_RAW
+    def party_to_key(cls, public_key: bytes, der_format: bool) -> bytes:
+        if der_format:
+            key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_DER_X509_SUBJECT_PUBLIC_KEY_INFO
+        else:
+            key_format = CryptoKeyFormat.CRYPTO_KEY_FORMAT_RAW
         key_scheme = SigningKeyScheme.SIGNING_KEY_SCHEME_ED25519
         key_spec = SigningKeySpec.SIGNING_KEY_SPEC_EC_CURVE25519
 
@@ -251,9 +269,7 @@ class Transaction:
             usage=[SigningKeyUsage.SIGNING_KEY_USAGE_NAMESPACE, SigningKeyUsage.SIGNING_KEY_USAGE_PROTOCOL],
         )
 
-        party_fingerprint = cls.compute_sha256_canton_hash(
-            PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key
-        ).hex()
+        party_fingerprint = cls._compute_party_fingerprint(public_key)
         party_id = DEFAULT_PARTY_NAME + "::" + party_fingerprint
 
         party_to_key_mapping = TopologyMapping(
@@ -271,9 +287,7 @@ class Transaction:
 
     @classmethod
     def party_to_participant(cls, public_key: bytes, validators_seeds : list[bytes]) -> bytes:
-        party_fingerprint = cls.compute_sha256_canton_hash(
-            PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key
-        ).hex()
+        party_fingerprint = cls._compute_party_fingerprint(public_key)
         party_id = DEFAULT_PARTY_NAME + "::" + party_fingerprint
 
         validators: List[PartyToParticipant.HostingParticipant] = []
@@ -285,9 +299,7 @@ class Transaction:
             # Generate random participant private ED25519 key for the validator
             private_key = SigningKey(validators_seeds[i])
             public_key_bytes = private_key.verify_key.encode()
-            participant_fingerprint = cls.compute_sha256_canton_hash(
-                PURPOSE_PUBLIC_KEY_FINGERPRINT, public_key_bytes
-            ).hex()
+            participant_fingerprint = cls._compute_party_fingerprint(public_key_bytes)
             participant_id = "participant" + str(i + 1) + "::" + participant_fingerprint
             validators.append(
                 PartyToParticipant.HostingParticipant(

@@ -154,17 +154,23 @@ def test_sign_preapproval_proposal(
 def _onboard_party(backend: BackendInterface,
                    scenario_navigator: NavigateWithScenario,
                    validator_seeds: list[bytes],
-                   attestation_keys: Optional[tuple[bytes,bytes]] = None) -> None:
+                   attestation_keys: Optional[tuple[bytes,bytes]] = None,
+                   der_key_format: bool = True) -> None:
     client = CantonCommandSender(backend)
 
     # Get public key
     rapdu = client.get_public_key(path="m/44'/6767'/0'/0'/0'")
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
+    raw_key = public_key
+    if der_key_format:
+        # Convert to DER format for inclusion in topology transactions
+        public_key = b"\x30\x2A\x30\x05\x06\x03\x2B\x65\x70\x03\x21\x00" + public_key
+
     # Create and hash transactions
     txs = [
-        Transaction.namespace_delegation(public_key),
-        Transaction.party_to_key(public_key),
+        Transaction.namespace_delegation(public_key, der_key_format),
+        Transaction.party_to_key(public_key, der_key_format),
         Transaction.party_to_participant(public_key, validator_seeds)
     ]
     multi_hash = Transaction.compute_multi_transaction_hash(
@@ -180,7 +186,7 @@ def _onboard_party(backend: BackendInterface,
     _, der_sig, _, challenge_sig_len, challenge_sig = unpack_sign_tx_response(
         client.get_async_response().data
     )
-    verify_signature(public_key, multi_hash, der_sig)
+    verify_signature(raw_key, multi_hash, der_sig)
 
     if attestation_keys:
         _verify_attestation(attestation_keys[1], multi_hash, challenge, challenge_sig, challenge_sig_len)
@@ -203,6 +209,9 @@ def test_sign_onboarding_attested(backend: BackendInterface, scenario_navigator:
     attest_key, attest_pub_key = read_attestation_keys(path)
     _onboard_party(backend, scenario_navigator, validator_seeds=[VALIDATOR_SEED_1],
                    attestation_keys=(attest_key, attest_pub_key))
+
+def test_sign_onboarding_raw_format_key(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
+    _onboard_party(backend, scenario_navigator, validator_seeds=[VALIDATOR_SEED_1], der_key_format=False)
 
 def test_sign_onboarding_single_validator(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
     _onboard_party(backend, scenario_navigator, validator_seeds=[VALIDATOR_SEED_1])

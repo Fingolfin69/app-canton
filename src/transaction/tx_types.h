@@ -49,6 +49,11 @@ typedef com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract InputCon
 #define TOPOLOGY_MAPPING_PARTY_TO_KEY_MAPPING_TAG \
     com_digitalasset_canton_protocol_v30_TopologyMapping_party_to_key_mapping_tag
 
+#define CRYPTO_KEY_FORMAT_RAW \
+    com_digitalasset_canton_crypto_v30_CryptoKeyFormat_CRYPTO_KEY_FORMAT_RAW
+#define CRYPTO_KEY_FORMAT_DER_X509 \
+    com_digitalasset_canton_crypto_v30_CryptoKeyFormat_CRYPTO_KEY_FORMAT_DER_X509_SUBJECT_PUBLIC_KEY_INFO
+
 typedef com_digitalasset_canton_protocol_v30_NamespaceDelegation NamespaceDelegation;
 typedef com_digitalasset_canton_protocol_v30_PartyToParticipant PartyToParticipant;
 typedef com_digitalasset_canton_protocol_v30_PartyToKeyMapping PartyToKeyMapping;
@@ -80,6 +85,7 @@ typedef com_daml_ledger_api_v2_Identifier Identifier;
 
 typedef com_digitalasset_canton_version_v1_UntypedVersionedMessage UntypedVersionedMessage;
 typedef com_digitalasset_canton_protocol_v30_TopologyTransaction TopologyTransaction;
+typedef com_digitalasset_canton_crypto_v30_CryptoKeyFormat CryptoKeyFormat;
 
 #define PARTY_ID_LEN 74  // 3 + 2 + 2*34 + 1 = 74 ldg::hex(fingerprint) + null terminator
 
