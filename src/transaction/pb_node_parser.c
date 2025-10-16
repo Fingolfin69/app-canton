@@ -165,9 +165,8 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
             cbVariant *msg = field->pData;
             msg->variant_id.funcs.decode = &count_identifier;
         } break;
-        case com_daml_ledger_api_v2_cb_Value_enum__tag: {
-            LEDGER_ASSERT(false, "Enum not implemented");
-        } break;
+        case com_daml_ledger_api_v2_cb_Value_enum__tag:
+            break;
         default:
             LEDGER_ASSERT(false, "Unknown Value type %d", field->tag);
     }
