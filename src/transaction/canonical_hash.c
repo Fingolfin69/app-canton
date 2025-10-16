@@ -15,6 +15,7 @@
 
 #include "constants.h"
 #include "mem.h"
+#include "utils.h"
 
 /* -------------------------------------------------------------------------- */
 /*  Spec constants                                                             */
@@ -55,7 +56,7 @@ static void clear_hash_error() {
     memset(HASH_ERR_INFO.err_msg, 0, sizeof(HASH_ERR_INFO.err_msg));
 }
 
-static bool is_hash_error() {
+bool is_hash_error() {
     return HASH_ERR_INFO.err_code != HASH_OK;
 }
 
@@ -72,27 +73,6 @@ static void set_hash_error(HashError err, const char *msg) {
     } else {
         HASH_ERR_INFO.err_msg[0] = '\0';  // Clear message if none provided
     }
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Helper functions                                                          */
-/* -------------------------------------------------------------------------- */
-
-static bool is_digit(char c) {
-    return c >= '0' && c <= '9';
-}
-
-static int atoint(const char *str) {
-    int res = 0;
-
-    for (int i = 0; str[i] != '\0'; i++) {
-        if (!is_digit(str[i])) {
-            return 0;
-        }
-        res = res * 10 + str[i] - '0';
-    }
-
-    return res;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -114,15 +94,9 @@ static void init_node_hash_store() {
     }
 }
 
-static int set_node_hash(const char *node_id, const uint8_t hash[32]) {
-    if (node_id == NULL) {
-        return -1;  // No node_id provided
-    }
-
-    int node_id_num = atoint(node_id);
-
+int set_node_hash(int node_id, const uint8_t hash[32]) {
     memcpy(G_hashed_nodes_store[G_hashed_nodes_store_count].hash, hash, 32);
-    G_hashed_nodes_store[G_hashed_nodes_store_count].id = node_id_num;
+    G_hashed_nodes_store[G_hashed_nodes_store_count].id = node_id;
 
     G_hashed_nodes_store_count++;
     G_hashed_nodes_store_count %= MAX_NODE_CHILDREN;
@@ -258,140 +232,13 @@ static void encode_repeated(HashWriter *hw,
     for (size_t i = 0; i < count; ++i) fn(hw, p + i * elem_sz);
 }
 
-static void encode_value(HashWriter *, const Value *);
-
 // Helper wrappers invoked by encode_repeated
 static void wrap_encode_string(HashWriter *hw, const void *ctx) {
     encode_string(hw, *(char *const *) ctx);
 }
-static void wrap_encode_value(HashWriter *hw, const void *ctx) {
-    encode_value(hw, (const Value *) ctx);
-}
+
 static void wrap_encode_identifier(HashWriter *hw, const void *ctx) {
     encode_identifier(hw, (const Identifier *) ctx);
-}
-
-static void encode_text_map_entry(HashWriter *hw, const TextMapEntry *e) {
-    encode_string(hw, e->key);
-    encode_value(hw, e->value);
-}
-static void wrap_encode_text_map_entry(HashWriter *hw, const void *ctx) {
-    encode_text_map_entry(hw, (const TextMapEntry *) ctx);
-}
-
-static void encode_record_field(HashWriter *hw, const RecordField *f) {
-    encode_optional(hw, f->label != NULL, (EncodeFn) wrap_encode_string, &f->label);
-    encode_value(hw, f->value);
-}
-static void wrap_encode_record_field(HashWriter *hw, const void *ctx) {
-    encode_record_field(hw, (const RecordField *) ctx);
-}
-
-static void encode_gen_map_entry(HashWriter *hw, const GenMapEntry *e) {
-    encode_value(hw, e->key);
-    encode_value(hw, e->value);
-}
-static void wrap_encode_gen_map_entry(HashWriter *hw, const void *ctx) {
-    encode_gen_map_entry(hw, (const GenMapEntry *) ctx);
-}
-
-static void encode_value(HashWriter *hw, const Value *v) {
-    switch (v->VALUE_ONEOF_FIELD) {
-        case VALUE_UNIT_TAG:
-            hw_put_byte(hw, 0x00);
-            return;
-        case VALUE_BOOL_TAG:
-            hw_put_byte(hw, 0x01);
-            encode_bool(hw, v->bool_);
-            return;
-        case VALUE_INT64_TAG:
-            hw_put_byte(hw, 0x02);
-            encode_int64(hw, v->int64);
-            return;
-        case VALUE_NUMERIC_TAG:
-            hw_put_byte(hw, 0x03);
-            encode_string(hw, v->numeric);
-            return;
-        case VALUE_TIMESTAMP_TAG:
-            hw_put_byte(hw, 0x04);
-            encode_int64(hw, v->timestamp);
-            return;
-        case VALUE_DATE_TAG:
-            hw_put_byte(hw, 0x05);
-            encode_int32(hw, v->date);
-            return;
-        case VALUE_PARTY_TAG:
-            hw_put_byte(hw, 0x06);
-            encode_string(hw, v->party);
-            return;
-        case VALUE_TEXT_TAG:
-            hw_put_byte(hw, 0x07);
-            encode_string(hw, v->text);
-            return;
-        case VALUE_CONTRACT_ID_TAG:
-            hw_put_byte(hw, 0x08);
-            encode_hex_string(hw, v->contract_id);
-            return;
-        case VALUE_OPTIONAL_TAG:
-            hw_put_byte(hw, 0x09);
-            encode_optional(hw,
-                            v->optional.value != NULL,
-                            (EncodeFn) encode_value,
-                            v->optional.value);
-            return;
-        case VALUE_LIST_TAG:
-            hw_put_byte(hw, 0x0A);
-            encode_repeated(hw,
-                            v->list.elements_count,
-                            v->list.elements,
-                            sizeof(Value),
-                            wrap_encode_value);
-            return;
-        case VALUE_TEXT_MAP_TAG:
-            hw_put_byte(hw, 0x0B);
-            encode_repeated(hw,
-                            v->text_map.entries_count,
-                            v->text_map.entries,
-                            sizeof(TextMapEntry),
-                            wrap_encode_text_map_entry);
-            return;
-        case VALUE_RECORD_TAG:
-            hw_put_byte(hw, 0x0C);
-            encode_optional(hw,
-                            v->record.has_record_id,
-                            wrap_encode_identifier,
-                            &v->record.record_id);
-            encode_repeated(hw,
-                            v->record.fields_count,
-                            v->record.fields,
-                            sizeof(RecordField),
-                            wrap_encode_record_field);
-            return;
-        case VALUE_VARIANT_TAG:
-            hw_put_byte(hw, 0x0D);
-            encode_optional(hw,
-                            v->variant.has_variant_id,
-                            wrap_encode_identifier,
-                            &v->variant.variant_id);
-            encode_string(hw, v->variant.constructor);
-            encode_value(hw, v->variant.value);
-            return;
-        case VALUE_ENUM_TAG:
-            hw_put_byte(hw, 0x0E);
-            encode_optional(hw, v->enum_.has_enum_id, wrap_encode_identifier, &v->enum_.enum_id);
-            encode_string(hw, v->enum_.constructor);
-            return;
-        case VALUE_GEN_MAP_TAG:
-            hw_put_byte(hw, 0x0F);
-            encode_repeated(hw,
-                            v->gen_map.entries_count,
-                            v->gen_map.entries,
-                            sizeof(GenMapEntry),
-                            wrap_encode_gen_map_entry);
-            return;
-        default:
-            set_hash_error(HASH_ERROR_UNSUPPORTED_VALUE, "Unsupported Value which_* tag");
-    }
 }
 
 static void split_dot_and_encode(HashWriter *hw, const char *dotstr) {
@@ -416,20 +263,6 @@ void encode_identifier(HashWriter *hw, const Identifier *id) {
     split_dot_and_encode(hw, id->entity_name);
 }
 
-static const uint8_t *find_seed(const char *node_id, const NodeSeed *seeds, size_t n) {
-    if (node_id == NULL) {
-        return NULL;  // No node_id provided, no seed to find
-    }
-
-    int node_id_num = atoint(node_id);
-
-    for (size_t i = 0; i < n; ++i) {
-        if (seeds[i].node_id == node_id_num) return seeds[i].seed->bytes;
-    }
-
-    return NULL;
-}
-
 static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *ids) {
     encode_int32(hw, (int32_t) count);
 
@@ -444,57 +277,33 @@ static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *
     }
 }
 
-void encode_create(HashWriter *hw,
-                   const Node_Create *c,
-                   const char *node_id,
-                   const NodeSeed *seeds,
-                   size_t n_seeds) {
+void encode_create_start(HashWriter *hw, const Node_CreateCb *c, const uint8_t *seed) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, c->lf_version);
     hw_put_byte(hw, 0x00);
-    const uint8_t *seed = find_seed(node_id, seeds, n_seeds);
     encode_optional(hw, seed != NULL, (EncodeFn) encode_hash, seed);
-    encode_hex_string(hw, c->contract_id);
-    encode_string(hw, c->package_name);
-    encode_identifier(hw, &c->template_id);
-    encode_value(hw, &c->argument);
-    encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
-    encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
-}
-
-void encode_create_cb_start(HashWriter *hw, const Node_CreateCbNoArg *c) {
-    hw_put_byte(hw, NODE_ENCODING_VERSION);
-    encode_string(hw, c->lf_version);
-    hw_put_byte(hw, 0x00);
-    // Optional false
-    hw_put_byte(hw, 0x00);
     encode_hex_string(hw, c->contract_id);
     encode_string(hw, c->package_name);
     encode_identifier(hw, (const com_daml_ledger_api_v2_Identifier *) &c->template_id);
 }
 
-void encode_create_cb_end(HashWriter *hw, const Node_CreateCbNoArg *c) {
+void encode_create_end(HashWriter *hw, const Node_CreateCb *c) {
     encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }
 
-static void encode_exercise(HashWriter *hw,
-                            const Node_Exercise *e,
-                            const char *node_id,
-                            const NodeSeed *seeds,
-                            size_t n_seeds) {
+void encode_exercise_start(HashWriter *hw, const Node_ExerciseCb *e, const uint8_t *seed) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, e->lf_version);
     hw_put_byte(hw, 0x01);
 
     // NOTE: Seed always present for exercise nodes
-    const uint8_t *seed = find_seed(node_id, seeds, n_seeds);
     LEDGER_ASSERT(seed != NULL, "Missing seed for exercise node");
     encode_hash(hw, seed);
     encode_hex_string(hw, e->contract_id);
     encode_string(hw, e->package_name);
     LEDGER_ASSERT(e->has_template_id, "Missing template_id in exercise node");
-    encode_identifier(hw, &e->template_id);
+    encode_identifier(hw, (Identifier *) &e->template_id);
     encode_repeated(hw, e->signatories_count, e->signatories, sizeof(char *), wrap_encode_string);
     encode_repeated(hw, e->stakeholders_count, e->stakeholders, sizeof(char *), wrap_encode_string);
     encode_repeated(hw,
@@ -504,10 +313,13 @@ static void encode_exercise(HashWriter *hw,
                     wrap_encode_string);
     encode_optional(hw, e->interface_id != NULL, wrap_encode_identifier, e->interface_id);
     encode_string(hw, e->choice_id);
-    LEDGER_ASSERT(e->has_chosen_value, "Missing chosen_value in exercise node");
-    encode_value(hw, &e->chosen_value);
+}
+
+void encode_exercise_middle(HashWriter *hw, const Node_ExerciseCb *e) {
     encode_bool(hw, e->consuming);
-    encode_optional(hw, e->has_exercise_result, (EncodeFn) encode_value, &e->exercise_result);
+}
+
+void encode_exercise_end(HashWriter *hw, const Node_ExerciseCb *e) {
     encode_repeated(hw,
                     e->choice_observers_count,
                     e->choice_observers,
@@ -521,7 +333,7 @@ static void encode_exercise(HashWriter *hw,
     encode_repeated_node_ids(hw, e->children_count, e->children);
 }
 
-static void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
+void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, f->lf_version);
     hw_put_byte(hw, 0x02);
@@ -538,7 +350,7 @@ static void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
                     wrap_encode_string);
 }
 
-static void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
+void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     hw_put_byte(hw, 0x03);
     if (r->children_count > MAX_NODE_CHILDREN) {
@@ -546,55 +358,6 @@ static void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
         return;
     }
     encode_repeated_node_ids(hw, r->children_count, r->children);
-}
-
-static void encode_node(HashWriter *hw, const Node *node, const NodeSeed *seeds, size_t n_seeds) {
-    if (node->NODE_VERSION_ONEOF_FIELD != NODE_V1_TAG) {
-        set_hash_error(HASH_ERROR_UNKNOWN_NODE_VERSION, "Unsupported Node version");
-        return;
-    }
-
-    const Node_V1 *v = &node->v1;
-    switch (v->NODE_V1_KIND_ONEOF_FIELD) {
-        case NODE_V1_CREATE_TAG:
-            encode_create(hw, &v->create, node->node_id, seeds, n_seeds);
-            break;
-        case NODE_V1_EXERCISE_TAG:
-            encode_exercise(hw, &v->exercise, node->node_id, seeds, n_seeds);
-            break;
-        case NODE_V1_FETCH_TAG:
-            encode_fetch(hw, &v->fetch);
-            break;
-        case NODE_V1_ROLLBACK_TAG:
-            encode_rollback(hw, &v->rollback);
-            break;
-        default:
-            set_hash_error(HASH_ERROR_UNKNOWN_NODE_TYPE, "Unknown Node.V1 which_* tag");
-    }
-}
-
-// Hash a referenced node‑id and write the 32‑byte digest
-static void encode_node_id_hash(HashWriter *hw,
-                                const Node *node,
-                                bool is_root_node,
-                                const NodeSeed *seeds,
-                                size_t n_seeds) {
-    HashWriter n_hw;
-    hw_init(&n_hw);
-    encode_node(&n_hw, node, seeds, n_seeds);
-    uint8_t h[32];
-    hw_finalize(&n_hw, h);
-
-    if (is_root_node) {
-        hw_put(hw, h, 32);
-    } else {
-        // Store node hash
-        if (set_node_hash(node->node_id, h) != 0) {
-            set_hash_error(HASH_ERROR_FAILED_TO_STORE_NODE_HASH, "Failed to memoize node id hash");
-        }
-    }
-
-    PRINTF("Node id %s hash: %.*H\n", node->node_id, 32, h);
 }
 
 static void encode_metadata(HashWriter *hw, const Metadata *m) {
@@ -632,30 +395,6 @@ int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
     encode_string(hw, tx->version);
     // Encode nodes count
     encode_int32(hw, (int32_t) tx->roots_count);
-
-    return 0;
-}
-
-// Hash a referenced node‑id and write the 32‑byte digest
-int hash_node(HashWriter *hw, const DamlTransaction *tx, const Node *node) {
-    bool is_root_node = false;
-
-    for (size_t i = 0; i < tx->roots_count; ++i) {
-        if (tx->roots[i] != NULL && node->node_id != NULL &&
-            strcmp(tx->roots[i], node->node_id) == 0) {
-            is_root_node = true;
-            break;
-        }
-    }
-
-    encode_node_id_hash(hw, node, is_root_node, tx->node_seeds, tx->node_seeds_count);
-
-    if (is_hash_error()) {
-        PRINTF("Error hashing node: '%s', code: %d\n",
-               HASH_ERR_INFO.err_msg,
-               HASH_ERR_INFO.err_code);
-        return HASH_ERR_INFO.err_code;
-    }
 
     return 0;
 }

@@ -19,7 +19,7 @@
 #include "canonical_hash.h"
 #include "pb_decode.h"
 #include "pb_node_display_parser.h"
-#include "pb_input_contract_parser.h"
+#include "pb_hashing_parser.h"
 
 typedef enum {
     RECEIVING_DAML_TX_PART,              /// Receiving part of DAML transaction
@@ -67,19 +67,8 @@ int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res = hash_node(&G_context.tx_info.hasher,
-                                &G_context.tx_info.tx_parts_ctx.daml_transaction,
-                                &G_context.tx_info.tx_parts_ctx.node);
-
-            release_node(&G_context.tx_info);
-
-            if (res != 0) {
-                PRINTF("Failed to hash DAML Node part: %d\n", res);
-                return SW_TX_HASH_FAIL;
-            }
-
             // Parse node for clear signing availability
-            res = parse_node_for_display(buf);
+            int res = parse_node_for_display(buf);
             if (res != 0) {
                 PRINTF("Failed to parse DAML Node for display: %d\n", res);
                 return SW_TX_PARSING_FAIL;
@@ -130,14 +119,12 @@ int process_prepared_tx_part(buffer_t *buf) {
         } break;
         case RECEIVING_METADATA_INPUT_CONTRACTS: {
             // Hash calculated inside callback during deserialization
-            parser_status_e status = proto_deserialize_cb_input_contract(buf, &G_context.tx_info);
+            parser_status_e status = proto_deserialize_input_contract(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Input Contract part: %d\n", status);
                 return SW_TX_PARSING_FAIL;
             }
-
-            release_cb_input_contract(&G_context.tx_info);
 
             G_context.tx_info.recv_node_idx++;
 

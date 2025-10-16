@@ -43,3 +43,24 @@ void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t 
     out[1] = SHA256_ALGO_LENGTH;
     memmove(out + 2, tmp, 32);
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Helper functions                                                          */
+/* -------------------------------------------------------------------------- */
+
+bool is_digit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+int atoint(const char *str) {
+    int res = 0;
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!is_digit(str[i])) {
+            return 0;
+        }
+        res = res * 10 + str[i] - '0';
+    }
+
+    return res;
+}

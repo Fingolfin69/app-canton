@@ -464,21 +464,24 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
 }
 
 static int parse_topology_transaction_for_display(buffer_t *buf) {
+    int32_t ret = 0;
     parser_status_e status = proto_deserialize_topology_transaction(buf, &G_context.tx_info);
+
     if (status != PARSING_OK) {
-        return status;
+        ret = status;
+        goto exit;
     }
 
     if (G_context.tx_info.tx_parts_ctx.topology_transaction.has_mapping == false) {
-        return 0;
+        ret = 0;
+        goto exit;
     }
 
     if (G_context.tx_info.tx_parts_ctx.topology_transaction.operation !=
         com_digitalasset_canton_protocol_v30_Enums_TopologyChangeOp_TOPOLOGY_CHANGE_OP_ADD_REPLACE) {
-        return SW_TOPOLOGY_UNSUPPORTED_OPERATION;
+        ret = SW_TOPOLOGY_UNSUPPORTED_OPERATION;
+        goto exit;
     }
-
-    int32_t ret = 0;
 
     switch (G_context.tx_info.tx_parts_ctx.topology_transaction.mapping.which_mapping) {
         case TOPOLOGY_MAPPING_NAMESPACE_DELEGATION_TAG:
@@ -502,8 +505,10 @@ static int parse_topology_transaction_for_display(buffer_t *buf) {
         default:
             PRINTF("Unknown mapping type in topology transaction: %d\n",
                    G_context.tx_info.tx_parts_ctx.topology_transaction.mapping.which_mapping);
-            return SW_TOPOLOGY_UNKNOWN_MAPPING_TYPE;
+            ret = SW_TOPOLOGY_UNKNOWN_MAPPING_TYPE;
     }
 
+exit:
+    release_topology_transaction(&G_context.tx_info);
     return ret;
 }

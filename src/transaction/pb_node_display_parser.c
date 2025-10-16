@@ -570,7 +570,7 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
 }
 
 // Decode an Optional value, which may contain another Value
-static bool decode_value_opt(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
@@ -591,6 +591,29 @@ static bool decode_value_opt(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
+static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    (void) field;
+
+    pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
+
+    // Read string from stream
+    char key_buffer[64] = {0};
+    size_t len =
+        stream->bytes_left < sizeof(key_buffer) ? stream->bytes_left : sizeof(key_buffer) - 1;
+
+    if (!pb_read(stream, (pb_byte_t *) key_buffer, len)) {
+        PRINTF("Failed to read string from stream\n");
+        return false;
+    }
+
+    PRINTF("Decoded TextMap key: %s\n", key_buffer);
+
+    // Push entry key onto path
+    push_path(ctx, key_buffer);
+
+    return true;
+}
+
 static bool decode_value_text_map(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
@@ -599,6 +622,8 @@ static bool decode_value_text_map(pb_istream_t *stream, const pb_field_t *field,
 
     cbTextMapEntry entry = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
 
+    entry.key.funcs.decode = &decode_textmap_key;
+    entry.key.arg = ctx;
     entry.value.cb_sum.funcs.decode = &decode_value_var;
     entry.value.cb_sum.arg = ctx;
 
@@ -606,9 +631,6 @@ static bool decode_value_text_map(pb_istream_t *stream, const pb_field_t *field,
         PRINTF("Failed to decode TextMap entry: %s\n", PB_GET_ERROR(stream));
         return false;
     }
-
-    // Push entry key onto path
-    push_path(ctx, entry.key);
 
     // Check if current field path matches any display configured field
     find_tx_field(ctx, &entry.value);
@@ -645,7 +667,7 @@ static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void
         case com_daml_ledger_api_v2_cb_Value_optional_tag: {
             pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
             cbOptional *msg = field->pData;
-            msg->value.funcs.decode = &decode_value_opt;
+            msg->value.funcs.decode = &decode_value;
             msg->value.arg = ctx;
             break;
         }

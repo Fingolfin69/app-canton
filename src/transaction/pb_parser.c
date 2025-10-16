@@ -47,21 +47,6 @@ parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_c
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
-    pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
-
-    PRINTF("Decoding Node from buffer of size %d bytes\n", buf->size);
-
-    if (!pb_decode(&stream,
-                   com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
-                   &tx_ctx->tx_parts_ctx.node)) {
-        PRINTF("Failed to decode Node: %s\n", PB_GET_ERROR(&stream));
-        return VALUE_PARSING_ERROR;
-    }
-
-    return PARSING_OK;
-}
-
 parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
@@ -120,12 +105,14 @@ void release_daml_tx(transaction_ctx_t *tx_ctx) {
                &tx_ctx->tx_parts_ctx.daml_transaction);
 }
 
-void release_node(transaction_ctx_t *tx_ctx) {
-    pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
-               &tx_ctx->tx_parts_ctx.node);
-}
-
 void release_metadata(transaction_ctx_t *tx_ctx) {
     pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_fields,
                &tx_ctx->tx_parts_ctx.metadata);
+}
+
+void release_topology_transaction(transaction_ctx_t *tx_ctx) {
+    pb_release(com_digitalasset_canton_version_v1_UntypedVersionedMessage_fields,
+               &tx_ctx->tx_parts_ctx.untyped_versioned_msg);
+    pb_release(com_digitalasset_canton_protocol_v30_TopologyTransaction_fields,
+               &tx_ctx->tx_parts_ctx.topology_transaction);
 }

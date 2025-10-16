@@ -304,7 +304,7 @@ typedef struct _com_digitalasset_canton_protocol_v30_SynchronizerParametersState
 } com_digitalasset_canton_protocol_v30_SynchronizerParametersState;
 
 typedef struct _com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast { 
-    char *synchronizer_id; 
+    char synchronizer_id[1024]; 
     bool has_signed_transactions;
     com_digitalasset_canton_protocol_v30_SignedTopologyTransactions signed_transactions; 
 } com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast;
@@ -400,7 +400,7 @@ extern "C" {
 #define com_digitalasset_canton_protocol_v30_MultiTransactionSignatures_init_default {{{NULL}, NULL}, {{NULL}, NULL}}
 #define com_digitalasset_canton_protocol_v30_SignedTopologyTransaction_init_default {NULL, {{NULL}, NULL}, 0, {{NULL}, NULL}}
 #define com_digitalasset_canton_protocol_v30_SignedTopologyTransactions_init_default {{{NULL}, NULL}}
-#define com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast_init_default {NULL, false, com_digitalasset_canton_protocol_v30_SignedTopologyTransactions_init_default}
+#define com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast_init_default {"", false, com_digitalasset_canton_protocol_v30_SignedTopologyTransactions_init_default}
 #define com_digitalasset_canton_protocol_v30_Enums_init_zero {0}
 #define com_digitalasset_canton_protocol_v30_NamespaceDelegation_init_zero {NULL, false, com_digitalasset_canton_crypto_v30_SigningPublicKey_init_zero, 0, 0, {com_digitalasset_canton_protocol_v30_NamespaceDelegation_CanSignAllMappings_init_zero}}
 #define com_digitalasset_canton_protocol_v30_NamespaceDelegation_CanSignAllMappings_init_zero {0}
@@ -426,7 +426,7 @@ extern "C" {
 #define com_digitalasset_canton_protocol_v30_MultiTransactionSignatures_init_zero {{{NULL}, NULL}, {{NULL}, NULL}}
 #define com_digitalasset_canton_protocol_v30_SignedTopologyTransaction_init_zero {NULL, {{NULL}, NULL}, 0, {{NULL}, NULL}}
 #define com_digitalasset_canton_protocol_v30_SignedTopologyTransactions_init_zero {{{NULL}, NULL}}
-#define com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast_init_zero {NULL, false, com_digitalasset_canton_protocol_v30_SignedTopologyTransactions_init_zero}
+#define com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast_init_zero {"", false, com_digitalasset_canton_protocol_v30_SignedTopologyTransactions_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define com_digitalasset_canton_protocol_v30_MultiTransactionSignatures_transaction_hashes_tag 1
@@ -717,7 +717,7 @@ X(a, CALLBACK, REPEATED, BYTES,    signed_transaction,   1)
 #define com_digitalasset_canton_protocol_v30_SignedTopologyTransactions_DEFAULT NULL
 
 #define com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast_FIELDLIST(X, a) \
-X(a, POINTER,  SINGULAR, STRING,   synchronizer_id,   1) \
+X(a, STATIC,   SINGULAR, STRING,   synchronizer_id,   1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  signed_transactions,   2)
 #define com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast_CALLBACK NULL
 #define com_digitalasset_canton_protocol_v30_TopologyTransactionsBroadcast_DEFAULT NULL
