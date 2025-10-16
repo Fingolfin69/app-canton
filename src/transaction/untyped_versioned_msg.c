@@ -48,6 +48,12 @@
 #define PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE ((uint8_t) 55)
 #define ONBOARDING_FLOW_DISPLAY_FIELDS_NB            5  // Max number of display fields for onboarding flow
 #define CHALLENGE_AND_DEADLINE_LEN                   24  // 16 bytes challenge + 8 bytes deadline
+#define ED25519_RAW_KEY_LEN                          32
+#define ED25519_DER_KEY_LEN                          44
+#define ED25519_DER_PREFIX_LEN                       12
+
+static const uint8_t ED25519_DER_PREFIX[ED25519_DER_PREFIX_LEN] =
+    {0x30, 0x2A, 0x30, 0x05, 0x06, 0x03, 0x2B, 0x65, 0x70, 0x03, 0x21, 0x00};
 
 // Separate const config from mutable state
 typedef struct {
@@ -314,21 +320,44 @@ static bool set_field_value(transaction_ctx_t *tx_info, size_t field_idx, const 
     return true;
 }
 
-static bool check_party_key_value(const uint8_t *key_to_check_bytes, size_t key_to_check_len) {
+static int check_party_key_value(const uint8_t *key_to_check_bytes,
+                                 size_t key_to_check_len,
+                                 CryptoKeyFormat key_format) {
     if (key_to_check_bytes == NULL || key_to_check_len == 0) {
-        return false;
+        return SW_TOPOLOGY_MISSING_PARTY_KEY;
     }
 
     PRINTF("Key to check: %.*H\n", key_to_check_len, key_to_check_bytes);
     PRINTF("Derived public key: %.*H\n", PUBKEY_LEN, G_context.tx_info.signature);
 
-    // Check against derived public key
-    if (key_to_check_len == PUBKEY_LEN &&
-        memcmp(key_to_check_bytes, G_context.tx_info.signature, PUBKEY_LEN) == 0) {
-        return true;
-    } else {
-        return false;
+    switch (key_format) {
+        case CRYPTO_KEY_FORMAT_RAW:
+            // Raw Ed25519 public key
+            if (key_to_check_len != ED25519_RAW_KEY_LEN) {
+                return SW_TOPOLOGY_PARTY_KEY_WRONG_FORMAT;
+            }
+            if (memcmp(key_to_check_bytes, G_context.tx_info.signature, ED25519_RAW_KEY_LEN) != 0) {
+                return SW_TOPOLOGY_PARTY_KEY_MISMATCH;
+            }
+            break;
+        case CRYPTO_KEY_FORMAT_DER_X509:
+            // DER-encoded (RFC 8410 / RFC 5280)
+            if (key_to_check_len != ED25519_DER_KEY_LEN) {
+                return SW_TOPOLOGY_PARTY_KEY_WRONG_FORMAT;
+            }
+            if (memcmp(key_to_check_bytes, ED25519_DER_PREFIX, ED25519_DER_PREFIX_LEN) != 0) {
+                return SW_TOPOLOGY_PARTY_KEY_WRONG_FORMAT;
+            }
+            if (memcmp(key_to_check_bytes + ED25519_DER_PREFIX_LEN,
+                       G_context.tx_info.signature,
+                       ED25519_RAW_KEY_LEN) != 0) {
+                return SW_TOPOLOGY_PARTY_KEY_MISMATCH;
+            }
+            break;
+        default:
+            return SW_TOPOLOGY_PARTY_KEY_WRONG_FORMAT;
     }
+    return 0;
 }
 
 static bool check_party_id_value(const char *party_id) {
@@ -358,24 +387,26 @@ static int process_namespace_delegation(const NamespaceDelegation *delegation,
     LEDGER_ASSERT(!has_parsed_namespace_delegation, "Multiple namespace delegations found");
     LEDGER_ASSERT(delegation != NULL, "NULL namespace delegation");
 
+    int ret = 0;
+
     if (delegation->has_target_key) {
         // Check key value against derived public key
-        if (!check_party_key_value(delegation->target_key.public_key.bytes,
-                                   delegation->target_key.public_key.size)) {
-            return SW_TOPOLOGY_PARTY_KEY_MISMATCH;
-        }
+        ret = check_party_key_value(delegation->target_key.public_key.bytes,
+                                    delegation->target_key.public_key.size,
+                                    delegation->target_key.format);
     } else {
-        return SW_TOPOLOGY_MISSING_TARGET_KEY;
+        ret = SW_TOPOLOGY_MISSING_TARGET_KEY;
     }
 
     has_parsed_namespace_delegation = true;
-    return 0;
+    return ret;
 }
 
 // Process party to key mapping
 static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
                                         transaction_ctx_t *tx_info) {
     UNUSED(tx_info);
+    int ret = 0;
     // Set party to key mapping specific fields
     if (mapping->party != NULL && !check_party_id_value(mapping->party)) {
         return SW_TOPOLOGY_PARTY_ID_MISMATCH;
@@ -385,15 +416,13 @@ static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
     if (mapping->signing_keys_count > 0) {
         com_digitalasset_canton_crypto_v30_SigningPublicKey *key = &mapping->signing_keys[0];
         // Check key value against derived public key
-        if (!check_party_key_value(key->public_key.bytes, key->public_key.size)) {
-            return SW_TOPOLOGY_PARTY_KEY_MISMATCH;
-        }
+        ret = check_party_key_value(key->public_key.bytes, key->public_key.size, key->format);
     } else {
-        return SW_TOPOLOGY_NO_SIGNING_KEYS;
+        ret = SW_TOPOLOGY_NO_SIGNING_KEYS;
     }
 
     has_parsed_party_to_key_mapping = true;
-    return 0;
+    return ret;
 }
 
 // Process party to participant mapping
