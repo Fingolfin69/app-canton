@@ -6,13 +6,13 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class GlobalKey(_message.Message):
-    __slots__ = ["hash", "key", "package_name", "template_id"]
-    HASH_FIELD_NUMBER: _ClassVar[int]
-    KEY_FIELD_NUMBER: _ClassVar[int]
-    PACKAGE_NAME_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("template_id", "package_name", "key", "hash")
     TEMPLATE_ID_FIELD_NUMBER: _ClassVar[int]
-    hash: bytes
-    key: _value_pb2.Value
-    package_name: str
+    PACKAGE_NAME_FIELD_NUMBER: _ClassVar[int]
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    HASH_FIELD_NUMBER: _ClassVar[int]
     template_id: _value_pb2.Identifier
+    package_name: str
+    key: _value_pb2.Value
+    hash: bytes
     def __init__(self, template_id: _Optional[_Union[_value_pb2.Identifier, _Mapping]] = ..., package_name: _Optional[str] = ..., key: _Optional[_Union[_value_pb2.Value, _Mapping]] = ..., hash: _Optional[bytes] = ...) -> None: ...

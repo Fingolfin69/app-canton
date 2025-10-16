@@ -5,7 +5,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class PackageReference(_message.Message):
-    __slots__ = ["package_id", "package_name", "package_version"]
+    __slots__ = ("package_id", "package_name", "package_version")
     PACKAGE_ID_FIELD_NUMBER: _ClassVar[int]
     PACKAGE_NAME_FIELD_NUMBER: _ClassVar[int]
     PACKAGE_VERSION_FIELD_NUMBER: _ClassVar[int]
