@@ -34,6 +34,7 @@
 #include "canonical_hash.h"
 #include "prepared_transaction.h"
 #include "untyped_versioned_msg.h"
+#include "mem.h"
 
 static int process_tx_chunk(buffer_t *cdata,
                             signing_type_e type,
@@ -104,6 +105,11 @@ static int process_tx_chunk(buffer_t *cdata,
                             bool more,
                             bool msg_end) {
     if (first) {  // first APDU, parse BIP32 path
+        // Quick fix for memory leaks between transactions :
+        // Reset all allocated memory.
+        // TODO : release memory more gracefully
+        app_mem_init();
+
         explicit_bzero(&G_context, sizeof(G_context));
         PRINTF("Processing first chunk of transaction\n");
         G_context.req_type = CONFIRM_TRANSACTION;
