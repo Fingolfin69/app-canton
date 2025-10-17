@@ -78,27 +78,27 @@ def _sign_and_verify_prepared_transaction(
     tx_json: str,
     custom_screen_text: Optional[str] = None,
     warning: bool = False,
+    snapshot_check: bool = True,
 ) -> None:
     client = CantonCommandSender(backend)
     path: str = "m/44'/6767'/0'/0'/0'"
 
     _, public_key, _, _ = unpack_get_public_key_response(client.get_public_key(path=path).data)
 
-    ser_tx, ser_nodes, ser_meta, ser_contracts = Transaction.serialize_from_json_into_tx_parts(tx_json)
+    serialized_parts = Transaction.serialize_from_json_into_tx_parts(tx_json)
     tx_hash = Transaction.get_hash_from_json(tx_json)
     print(f"Transaction hash: {tx_hash.hex()}")
-    print(f"Serialized transaction length: {len(ser_tx) + len(ser_nodes) + len(ser_meta) + len(ser_contracts)} bytes")
+    print(f"Serialized transaction length: {sum(len(part) for part in serialized_parts)} bytes")
 
-    with client.sign_tx_in_parts(path, ser_tx, ser_nodes, ser_meta, ser_contracts) as response:
+    with client.sign_tx_in_parts(path, *serialized_parts) as _:
         if warning:
             scenario_navigator.review_approve_with_warning(
-                path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text)
+                path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text, do_comparison=snapshot_check)
         else:
             scenario_navigator.review_approve(
-                path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text)
+                path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text, do_comparison=snapshot_check)
 
-    response = client.get_async_response().data
-    _, der_sig, _, _, _ = unpack_sign_tx_response(response)
+    _, der_sig, _, _, _ = unpack_sign_tx_response(client.get_async_response().data)
     verify_signature(public_key, tx_hash, der_sig)
 
 def test_sign_ping(
@@ -141,6 +141,17 @@ def test_sign_token_transfer_with_memo(
         custom_screen_text="Sign transaction to",
     )
 
+def test_sign_token_transfer_16_node_children(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
+    _sign_and_verify_prepared_transaction(
+        backend,
+        scenario_navigator,
+        tx_json="tests/tx_examples/token_transfer_big.json",
+        custom_screen_text="Sign transaction to",
+    )
+
+
 def test_sign_preapproval_proposal(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
@@ -151,21 +162,21 @@ def test_sign_preapproval_proposal(
         custom_screen_text="Sign transaction to",
     )
 
+
 def _onboard_party(backend: BackendInterface,
                    scenario_navigator: NavigateWithScenario,
                    validator_seeds: list[bytes],
                    attestation_keys: Optional[tuple[bytes,bytes]] = None,
-                   der_key_format: bool = True) -> None:
+                   der_key_format: bool = True,
+                   snapshot_check: bool = True) -> None:
     client = CantonCommandSender(backend)
 
     # Get public key
-    rapdu = client.get_public_key(path="m/44'/6767'/0'/0'/0'")
-    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
+    _, raw_key, _, _ = unpack_get_public_key_response(
+        client.get_public_key(path="m/44'/6767'/0'/0'/0'").data)
 
-    raw_key = public_key
-    if der_key_format:
-        # Convert to DER format for inclusion in topology transactions
-        public_key = b"\x30\x2A\x30\x05\x06\x03\x2B\x65\x70\x03\x21\x00" + public_key
+    # Convert to DER format for inclusion in topology transactions
+    public_key = b"\x30\x2A\x30\x05\x06\x03\x2B\x65\x70\x03\x21\x00" + raw_key if der_key_format else raw_key
 
     # Create and hash transactions
     txs = [
@@ -180,7 +191,8 @@ def _onboard_party(backend: BackendInterface,
     # Sign transactions
     challenge = os.urandom(24) if attestation_keys else None
     with client.sign_topology_tx(path="m/44'/6767'/0'/0'/0'", transactions=txs, challenge=challenge):
-        scenario_navigator.review_approve(path=ROOT_SCREENSHOT_PATH, custom_screen_text="Sign transaction to")
+        scenario_navigator.review_approve(path=ROOT_SCREENSHOT_PATH,
+                                          custom_screen_text="Sign transaction to", do_comparison=snapshot_check)
 
     # Verify signatures
     _, der_sig, _, challenge_sig_len, challenge_sig = unpack_sign_tx_response(
@@ -218,3 +230,15 @@ def test_sign_onboarding_single_validator(backend: BackendInterface, scenario_na
 
 def test_sign_onboarding_three_validators(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
     _onboard_party(backend, scenario_navigator, validator_seeds=[VALIDATOR_SEED_1, VALIDATOR_SEED_2, VALIDATOR_SEED_3])
+
+def test_sign_onboard_then_preapprove(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
+    for _ in range(10):
+        _onboard_party(backend, scenario_navigator,
+                       validator_seeds=[VALIDATOR_SEED_1, VALIDATOR_SEED_2, VALIDATOR_SEED_3], snapshot_check=False)
+        _sign_and_verify_prepared_transaction(
+            backend,
+            scenario_navigator,
+            tx_json="tests/tx_examples/preapproval_proposal.json",
+            custom_screen_text="Sign transaction to",
+            snapshot_check=False
+        )
