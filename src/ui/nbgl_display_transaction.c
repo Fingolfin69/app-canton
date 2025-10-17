@@ -43,7 +43,6 @@ static nbgl_contentTagValueList_t pairList;
 static void review_choice(bool confirm) {
     // Answer, display a status page and go back to main
     validate_transaction(confirm);
-    app_mem_free((void *) pairs[0].value);
     if (confirm) {
         nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_SIGNED, ui_menu_main);
     } else {

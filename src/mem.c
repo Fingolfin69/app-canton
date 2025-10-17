@@ -35,7 +35,6 @@ bool app_mem_init(void) {
 
 void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line) {
     void *new_ptr;
-
     if (ptr != NULL) {
         // Reallocate memory
         new_ptr = mem_alloc(mem_ctx, size);
@@ -50,7 +49,12 @@ void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line) {
     }
 
 #ifdef HAVE_MEMORY_PROFILING
-    PRINTF(MP_LOG_PREFIX "realloc;%u;0x%p;0x%p;%s:%u\n", size, ptr, new_ptr, file, line);
+    if (ptr != NULL) {
+        PRINTF(MP_LOG_PREFIX "free;0x%p;%s:%u\n", ptr, file, line);
+        PRINTF(MP_LOG_PREFIX "alloc;%u;0x%p;%s:%u\n", size, new_ptr, file, line);
+    } else {
+        PRINTF(MP_LOG_PREFIX "alloc;%u;0x%p;%s:%u\n", size, new_ptr, file, line);
+    }
 #else
     (void) file;
     (void) line;
