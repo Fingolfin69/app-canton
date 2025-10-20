@@ -75,15 +75,15 @@ MUST_CHECK void *app_mem_alloc_impl(size_t size, const char *file, int line) {
 }
 
 void app_mem_free_impl(void *ptr, const char *file, int line) {
+    if (ptr == NULL) {
+        return;
+    }
 #ifdef HAVE_MEMORY_PROFILING
     PRINTF(MP_LOG_PREFIX "free;0x%p;%s:%u\n", ptr, file, line);
 #else
     (void) file;
     (void) line;
 #endif
-    if (ptr == NULL) {
-        return;
-    }
 
     mem_free(mem_ctx, ptr);
 }

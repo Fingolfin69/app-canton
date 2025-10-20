@@ -253,30 +253,34 @@ MUST_CHECK static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, con
     return NULL;
 }
 
-// Helper function to initialize transaction pairs used for display
-MUST_CHECK bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
-    LEDGER_ASSERT(tx_info != NULL, "NULL transaction context passed to init_transaction_pairs");
-
-    // Free existing pairs if any
-    if (tx_info->pairs != NULL) {
-        app_mem_free(tx_info->pairs);
+// Helper function to clean-up transaction pairs used for display
+void cleanup_display_items(void) {
+    if (G_context.tx_info.pairs != NULL) {
+        app_mem_free(G_context.tx_info.pairs);
+        G_context.tx_info.pairs = NULL;
     }
 
-    // Free existing allocated items strings if any
-    if (tx_info->display_items_strings != NULL) {
+    if (G_context.tx_info.display_items_strings != NULL) {
         // Free individual strings first
-        for (size_t i = 0; i < tx_info->pairs_count; i++) {
-            if (tx_info->display_items_strings[i] != NULL) {
-                app_mem_free(tx_info->display_items_strings[i]);
+        for (size_t i = 0; i < G_context.tx_info.pairs_count; i++) {
+            if (G_context.tx_info.display_items_strings[i] != NULL) {
+                app_mem_free(G_context.tx_info.display_items_strings[i]);
             }
         }
-        app_mem_free(tx_info->display_items_strings);
+        app_mem_free(G_context.tx_info.display_items_strings);
+        G_context.tx_info.display_items_strings = NULL;
     }
 
+    G_context.tx_info.pairs_count = 0;
+}
+
+// Helper function to initialize transaction pairs used for display
+MUST_CHECK bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
     // Allocate new arrays
     tx_info->pairs_count = 0;
     tx_info->pairs =
         (nbgl_contentTagValue_t *) app_mem_alloc(count * sizeof(nbgl_contentTagValue_t));
+    memset(tx_info->pairs, 0, count * sizeof(nbgl_contentTagValue_t));
     tx_info->display_items_strings = (char **) app_mem_alloc(count * sizeof(char *));
 
     if (tx_info->pairs == NULL || tx_info->display_items_strings == NULL) {
@@ -847,6 +851,13 @@ MUST_CHECK int format_and_populate_display_items(pb_callback_context_t *ctx) {
                 app_mem_free(state->value);
                 state->value = NULL;
                 state->value_len = 0;
+            }
+         } else {
+                // Free any allocated value
+                if (state->value != NULL) {
+                    app_mem_free(state->value);
+                    state->value = NULL;
+                    state->value_len = 0;
             }
         }
     }
