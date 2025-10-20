@@ -35,9 +35,6 @@
 #include "menu.h"
 #include "utils.h"
 
-#define BLIND_SIGN_PAIR_LIST_NB 1
-
-static nbgl_contentTagValue_t pairs[BLIND_SIGN_PAIR_LIST_NB];
 static nbgl_contentTagValueList_t pairList;
 
 // called when long press button on 3rd page is long-touched or when reject footer is touched
@@ -66,10 +63,14 @@ MUST_CHECK int ui_display_transaction_bs_choice(bool is_blind_signed) {
         PRINTF("Hash: %.*H\n", sizeof(G_context.tx_info.m_hash), G_context.tx_info.m_hash);
         // Setup data to display
         size_t hex_hash_length = 2 * G_context.tx_info.m_hash_len + 1;
-        pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
-        LEDGER_ASSERT(pairs[0].value != NULL, "Memory full");
-        pairs[0].item = "Transaction hash";
-        SNPRINTF((char *) pairs[0].value,
+        G_context.tx_info.pairs =
+            (nbgl_contentTagValue_t *) app_mem_alloc(sizeof(nbgl_contentTagValue_t));
+        LEDGER_ASSERT(G_context.tx_info.pairs != NULL, "Memory full");
+        memset(G_context.tx_info.pairs, 0, sizeof(nbgl_contentTagValue_t));
+        G_context.tx_info.pairs[0].item = "Transaction hash";
+        G_context.tx_info.pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
+        LEDGER_ASSERT(G_context.tx_info.pairs[0].value != NULL, "Memory full");
+        SNPRINTF((char *) G_context.tx_info.pairs[0].value,
                  hex_hash_length,
                  "%.*H",
                  G_context.tx_info.m_hash_len,
@@ -78,7 +79,7 @@ MUST_CHECK int ui_display_transaction_bs_choice(bool is_blind_signed) {
         // Setup list
         pairList.nbMaxLinesForValue = 0;
         pairList.nbPairs = BLIND_SIGN_PAIR_LIST_NB;
-        pairList.pairs = pairs;
+        pairList.pairs = G_context.tx_info.pairs;
 
         // Start blind-signing review flow
         nbgl_useCaseReviewBlindSigning(TYPE_TRANSACTION,
