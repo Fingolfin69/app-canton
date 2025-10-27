@@ -223,7 +223,7 @@ static void sign_challenge(void) {
 
     // Initialize private key structure
     cx_ecfp_256_private_key_t privkey = {.curve = CX_CURVE_Ed25519, .d_len = 32};
-    memcpy(privkey.d, TEST_ATTESTATION_KEY, 32);
+    memcpy(privkey.d, ATTESTATION_KEY, 32);
 
     // Prepare data to sign: multi-hash + challenge + deadline
     memcpy(data_to_sign, G_context.tx_info.m_hash, HASH_LEN);
