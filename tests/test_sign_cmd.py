@@ -131,6 +131,17 @@ def test_sign_token_transfer(
         custom_screen_text="Sign transaction to",
     )
 
+def test_sign_token_transfer_lower_case(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+) -> None:
+    _sign_and_verify_prepared_transaction(
+        backend,
+        scenario_navigator,
+        tx_json="tests/tx_examples/token_transfer_lower_case.json",
+        custom_screen_text="Sign transaction to",
+    )
+
+
 def test_sign_token_transfer_with_memo(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
@@ -141,13 +152,13 @@ def test_sign_token_transfer_with_memo(
         custom_screen_text="Sign transaction to",
     )
 
-def test_sign_token_transfer_16_node_children(
+def test_sign_token_transfer_32_node_children(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
     _sign_and_verify_prepared_transaction(
         backend,
         scenario_navigator,
-        tx_json="tests/tx_examples/token_transfer_big.json",
+        tx_json="tests/tx_examples/token_transfer_32_children.json",
         custom_screen_text="Sign transaction to",
     )
 

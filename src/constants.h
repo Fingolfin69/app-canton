@@ -28,7 +28,7 @@
 /**
  * Maximum number of child nodes per transaction node.
  */
-#define MAX_NODE_CHILDREN 16
+#define MAX_NODE_CHILDREN 32
 
 /**
  * Maximum signature length (bytes).
