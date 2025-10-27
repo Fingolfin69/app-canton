@@ -129,6 +129,8 @@ static const identifier_config_t NATIVE_COIN_TRANSFER_RECORD = {
 static const char *INSTRUMENT_ID_TO_TICKER_MAPPING[] = {
     "Amulet",
     NATIVE_COIN_TICKER,  // Canton Coin
+    "amulet",
+    NATIVE_COIN_TICKER,  // Canton Coin lowercase
 };
 
 /* -------------------------------------------------------------------------- */
@@ -258,7 +260,7 @@ static void format_token_amount_field(pb_callback_context_t *ctx, char **value) 
                 ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].display = false;
 
                 // If matched "Amulet" update review title and finish to mention Canton Coin
-                if (strcmp(instrument_id, NATIVE_COIN_INSTRUMENT_ID) == 0) {
+                if (strcmp(ticker, NATIVE_COIN_TICKER) == 0) {
                     ctx->review_title = NATIVE_COIN_TRANSFER_REVIEW_TITLE;
                     ctx->review_finish = NATIVE_COIN_TRANSFER_REVIEW_FINISH;
                 }
@@ -544,10 +546,15 @@ static bool decode_record_id_field(pb_istream_t *stream, const pb_field_t *field
 // Decode a record field, pushing and popping the field path as needed
 static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     UNUSED(field);
-    PRINTF("Decoding Record field\n");
-    cbRecordField rf = {};
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
+    if (ctx->tx_fields == NULL) {
+        // No display configuration set, skip decoding
+        return true;
+    }
+
+    PRINTF("Decoding Record field\n");
+    cbRecordField rf = {};
     rf.label.funcs.decode = &decode_record_field_label;
     rf.label.arg = ctx;
 
