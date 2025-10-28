@@ -42,8 +42,9 @@
 /* Function pointers type                                                     */
 /* -------------------------------------------------------------------------- */
 
-typedef struct pb_callback_context_t pb_callback_context_t;  // forward declaration
-typedef void (*field_format_callback_t)(pb_callback_context_t *ctx, char **value);
+typedef struct pb_callback_context_t pb_callback_context_t;
+typedef struct tx_field_t tx_field_t;
+typedef void (*field_format_callback_t)(pb_callback_context_t *ctx, tx_field_t *field);
 
 /* -------------------------------------------------------------------------- */
 /* Structures                                                                 */
@@ -60,13 +61,13 @@ typedef struct {
     bool mandatory;
 } field_config_t;
 
-typedef struct {
+struct tx_field_t {
     char *value;                   // Dynamically allocated field value
     size_t value_len;              // Length of the field
     const field_config_t *config;  // Pointer to const config
     bool found;                    // Mutable state
     bool display;                  // Whether the field should be displayed
-} tx_field_t;
+};
 
 typedef struct {
     const identifier_config_t *identifier;
@@ -90,9 +91,9 @@ struct pb_callback_context_t {
 /* -------------------------------------------------------------------------- */
 
 static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void **arg);
-static void format_amount_field(pb_callback_context_t *ctx, char **value);
-static void format_token_amount_field(pb_callback_context_t *ctx, char **value);
-static void format_native_amount_field(pb_callback_context_t *ctx, char **value);
+static void format_amount_field(pb_callback_context_t *ctx, tx_field_t *field);
+static void format_token_amount_field(pb_callback_context_t *ctx, tx_field_t *field);
+static void format_native_amount_field(pb_callback_context_t *ctx, tx_field_t *field);
 
 /* -------------------------------------------------------------------------- */
 /* Review titles for different transaction types                              */
@@ -206,19 +207,19 @@ static tx_field_t tx_fields[MAX_DISPLAY_FIELDS_NB];
 /* -------------------------------------------------------------------------- */
 
 // Remove all trailing zeros and possible dot if integer for amount fields
-static void format_amount_field(pb_callback_context_t *ctx, char **value) {
+static void format_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
     UNUSED(ctx);
-    PRINTF("Formatting amount field with value: %s\n", *value);
-    size_t len = strlen(*value);
+    PRINTF("Formatting amount field with value: %s\n", field->value);
+    size_t len = strlen(field->value);
 
-    if (value == NULL || len == 0) {
+    if (field->value == NULL || len == 0) {
         PRINTF("Value is NULL or empty, skipping formatting\n");
         return;
     }
 
-    char *dot = strchr(*value, '.');
+    char *dot = strchr(field->value, '.');
     if (dot != NULL) {
-        char *end = *value + len - 1;
+        char *end = field->value + len - 1;
         while (end > dot && *end == '0') {
             *end-- = '\0';
         }
@@ -227,55 +228,52 @@ static void format_amount_field(pb_callback_context_t *ctx, char **value) {
         }
     }
 
-    PRINTF("Formatted amount: %s\n", *value);
+    PRINTF("Formatted amount: %s\n", field->value);
 }
 
-static void format_token_amount_field(pb_callback_context_t *ctx, char **value) {
+static void format_token_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
     // Call the generic amount formatter first
-    format_amount_field(ctx, value);
-    // Check if instrument id to ticker mapping is needed
-    if (strcmp(*value, "0") != 0 && strchr(*value, '.') == NULL) {
-        // Look for the instrument id in the mapping
-        for (size_t i = 0; i < sizeof(INSTRUMENT_ID_TO_TICKER_MAPPING) / (2 * sizeof(char *));
-             i++) {
-            const char *instrument_id = (const char *) PIC(INSTRUMENT_ID_TO_TICKER_MAPPING[2 * i]);
-            const char *ticker = (const char *) PIC(INSTRUMENT_ID_TO_TICKER_MAPPING[2 * i + 1]);
-            // Check if stored instrument id in available display items matches
-            if (ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].found &&
-                ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value != NULL &&
-                strcmp(ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value,
-                       instrument_id) == 0) {
-                // Append ticker to value
-                size_t new_len = strlen(*value) + 1 + strlen(ticker) + 1;
-                char *new_value = (char *) app_mem_alloc(new_len);
-                if (new_value == NULL) {
-                    PRINTF("Memory allocation failed in format_token_amount_field\n");
-                    return;
-                }
-                SNPRINTF(new_value, new_len, "%s %s", *value, ticker);
-                app_mem_free(*value);
-                *value = new_value;
-
-                // If matched no need to display the instrument id field, update nb_fields
-                ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].display = false;
-
-                // If matched "Amulet" update review title and finish to mention Canton Coin
-                if (strcmp(ticker, NATIVE_COIN_TICKER) == 0) {
-                    ctx->review_title = NATIVE_COIN_TRANSFER_REVIEW_TITLE;
-                    ctx->review_finish = NATIVE_COIN_TRANSFER_REVIEW_FINISH;
-                }
-
-                break;
+    format_amount_field(ctx, field);
+    // Look for the instrument id in the mapping to add the ticker if found
+    for (size_t i = 0; i < sizeof(INSTRUMENT_ID_TO_TICKER_MAPPING) / (2 * sizeof(char *)); i++) {
+        const char *instrument_id = (const char *) PIC(INSTRUMENT_ID_TO_TICKER_MAPPING[2 * i]);
+        const char *ticker = (const char *) PIC(INSTRUMENT_ID_TO_TICKER_MAPPING[2 * i + 1]);
+        // Check if stored instrument id in available display items matches
+        if (ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].found &&
+            ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value != NULL &&
+            strcmp(ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].value, instrument_id) ==
+                0) {
+            // Append ticker to value
+            size_t new_len = strlen(field->value) + 1 + strlen(ticker) + 1;
+            char *new_value = (char *) app_mem_alloc(new_len);
+            if (new_value == NULL) {
+                PRINTF("Memory allocation failed in format_token_amount_field\n");
+                return;
             }
+            SNPRINTF(new_value, new_len, "%s %s", field->value, ticker);
+            app_mem_free(field->value);
+            field->value = new_value;
+            field->value_len = new_len;
+
+            // If matched no need to display the instrument id field, update nb_fields
+            ctx->tx_fields[TOKEN_TRANSFER_INSTRUMENT_ID_FIELD_INDEX].display = false;
+
+            // If matched "Amulet" update review title and finish to mention Canton Coin
+            if (strcmp(ticker, NATIVE_COIN_TICKER) == 0) {
+                ctx->review_title = NATIVE_COIN_TRANSFER_REVIEW_TITLE;
+                ctx->review_finish = NATIVE_COIN_TRANSFER_REVIEW_FINISH;
+            }
+
+            break;
         }
     }
 }
 
-static void format_native_amount_field(pb_callback_context_t *ctx, char **value) {
+static void format_native_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
     // Call the generic amount formatter first
-    format_amount_field(ctx, value);
+    format_amount_field(ctx, field);
     // Append "CC" ticker for Canton Coin
-    size_t new_len = strlen(*value) + 1 + strlen(NATIVE_COIN_TICKER) + 1;
+    size_t new_len = strlen(field->value) + 1 + strlen(NATIVE_COIN_TICKER) + 1;
     // Allocate new string
     char *new_value = (char *) app_mem_alloc(new_len);
     if (new_value == NULL) {
@@ -283,10 +281,12 @@ static void format_native_amount_field(pb_callback_context_t *ctx, char **value)
         return;
     }
     // Format the new value
-    SNPRINTF(new_value, new_len, "%s %s", *value, NATIVE_COIN_TICKER);
+    SNPRINTF(new_value, new_len, "%s %s", field->value, NATIVE_COIN_TICKER);
+
     // Free old value and update pointer
-    app_mem_free(*value);
-    *value = new_value;
+    app_mem_free(field->value);
+    field->value = new_value;
+    field->value_len = new_len;
 }
 
 /* -------------------------------------------------------------------------- */
