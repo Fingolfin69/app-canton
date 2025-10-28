@@ -102,6 +102,8 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
             PRINTF("Pair %d: %s: %s\n", i, pairList.pairs[i].item, pairList.pairs[i].value);
         }
 
+        PRINTF("Hash : %.*H\n", G_context.tx_info.m_hash_len, G_context.tx_info.m_hash);
+
         // Start review flow
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &pairList,
