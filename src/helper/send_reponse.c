@@ -51,6 +51,8 @@ MUST_CHECK int helper_send_response_sig() {
     if (G_context.tx_info.has_challenge_signature) {
         PRINTF("Also sending challenge signature\n");
         resp[offset++] = G_context.tx_info.challenge_signature_len;
+        LEDGER_ASSERT(offset + G_context.tx_info.challenge_signature_len <= sizeof(resp),
+                      "Buffer overflow in helper_send_response_sig");
         memmove(resp + offset,
                 G_context.tx_info.challenge_signature,
                 G_context.tx_info.challenge_signature_len);
