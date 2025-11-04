@@ -320,6 +320,9 @@ static void decode_value_primitive_variants(cbValue *v) {
             hw_put_byte(&ctx.node_hw, 0x08);
             encode_hex_string(&ctx.node_hw, v->contract_id);
         } break;
+        default: {
+            // Not a primitive variant, nothing to do here.
+        } break;
     }
 }
 
