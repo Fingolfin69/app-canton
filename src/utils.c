@@ -28,7 +28,10 @@
 #define SHA256_ALGO_PREFIX ((uint8_t) 0x12)
 #define SHA256_ALGO_LENGTH ((uint8_t) 0x20)
 
-void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[CANTON_HASH_LEN]) {
+void canton_hash(uint8_t purpose,
+                 const uint8_t *data,
+                 size_t data_len,
+                 uint8_t out[CANTON_HASH_LEN]) {
     LEDGER_ASSERT(out != NULL, "NULL out pointer passed to canton_hash");
     LEDGER_ASSERT(data != NULL || data_len == 0,
                   "NULL data with non-zero length passed to canton_hash");

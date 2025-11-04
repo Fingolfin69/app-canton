@@ -377,13 +377,6 @@ static void set_field_value(tx_field_t *field_state, const char *value) {
         memcpy(field_state->value, value, value_len);
         field_state->value_len = value_len;
         field_state->found = true;
-tate->
-    return;
-value = (char *) app_mem_alloc(value_len);
-    if (field_state->value != NULL) {
-        memcpy(field_state->value, value, value_len);
-        field_state->value_len = value_len;
-        field_state->found = true;
     }
 
     return;

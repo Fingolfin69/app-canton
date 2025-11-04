@@ -483,8 +483,8 @@ void finalize_hash_metadata(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
 }
 
 void finalize_hash(const uint8_t tx_hash[SHA256_HASH_LEN],
-                  const uint8_t md_hash[SHA256_HASH_LEN],
-                  uint8_t out[SHA256_HASH_LEN]) {
+                   const uint8_t md_hash[SHA256_HASH_LEN],
+                   uint8_t out[SHA256_HASH_LEN]) {
     HashWriter hw;
 
     hw_init(&hw);

@@ -84,8 +84,7 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
             }
         } break;
         case RECEIVING_METADATA: {
-            finalize_hash_transaction(&G_context.tx_info.hasher,
-                                                G_context.tx_info.partial_tx_hash);
+            finalize_hash_transaction(&G_context.tx_info.hasher, G_context.tx_info.partial_tx_hash);
             release_daml_tx(&G_context.tx_info);
 
             parser_status_e status = proto_deserialize_metadata(buf, &G_context.tx_info);
@@ -148,8 +147,8 @@ static MUST_CHECK int process_prepared_tx_finalize() {
 
     // Finalize hash
     finalize_hash(G_context.tx_info.partial_tx_hash,
-                        G_context.tx_info.partial_md_hash,
-                        G_context.tx_info.m_hash);
+                  G_context.tx_info.partial_md_hash,
+                  G_context.tx_info.m_hash);
 
     G_context.tx_info.m_hash_len = 32;
 

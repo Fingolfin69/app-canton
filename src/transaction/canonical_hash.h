@@ -20,8 +20,8 @@ MUST_CHECK int hash_metadata(HashWriter *hw, const Metadata *md);
 void finalize_hash_metadata(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]);
 
 void finalize_hash(const uint8_t tx_hash[SHA256_HASH_LEN],
-                             const uint8_t md_hash[SHA256_HASH_LEN],
-                             uint8_t out[SHA256_HASH_LEN]);
+                   const uint8_t md_hash[SHA256_HASH_LEN],
+                   uint8_t out[SHA256_HASH_LEN]);
 
 void hw_init(HashWriter *hw);
 void hw_put(HashWriter *hw, const void *p, size_t n);

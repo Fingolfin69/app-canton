@@ -18,8 +18,8 @@
 #include <stdint.h>   // uint*_t
 #include <stddef.h>   // size_t
 #include <stdbool.h>  // bool
-#include <string.h>   // memmove
-#include <stdlib.h>   // qsort
+#include <string.h>
+#include <stdlib.h>  // qsort
 
 #include "mem.h"
 #include "os.h"
@@ -168,6 +168,7 @@ MUST_CHECK static bool read_challenge_and_deadline(buffer_t *cdata) {
 MUST_CHECK bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
     LEDGER_ASSERT(cdata != NULL, "Null buffer passed to process_untyped_versioned_msg_tx_init");
 
+    uint8_t chain_code[MAX_CHAINCODE_LEN] = {0};
     init_hash_storage();
     LEDGER_ASSERT(
         init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB) == true,
@@ -184,7 +185,7 @@ MUST_CHECK bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
     cx_err_t error = derive_public_key(G_context.bip32_path,
                                        G_context.bip32_path_len,
                                        G_context.tx_info.signature,
-                                       NULL);
+                                       chain_code);
 
     LEDGER_ASSERT(error == CX_OK, "Failed to derive public key");
 
@@ -423,7 +424,7 @@ static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
 
     int ret = 0;
     // Set party to key mapping specific fields
-    if (mapping->party != NULL && !check_party_id_value(mapping->party)) {
+    if (!check_party_id_value(mapping->party)) {
         return SW_TOPOLOGY_PARTY_ID_MISMATCH;
     }
 
