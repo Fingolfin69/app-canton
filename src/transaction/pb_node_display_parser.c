@@ -564,10 +564,15 @@ MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
     LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_field_label");
     LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_record_field_label");
     UNUSED(field);
+
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     // Read string from stream
-    if (!pb_read(stream, (pb_byte_t *) label_buffer, stream->bytes_left)) {
     char label_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
+
+    size_t len =
+        stream->bytes_left < sizeof(label_buffer) ? stream->bytes_left : sizeof(label_buffer) - 1;
+
+    if (!pb_read(stream, (pb_byte_t *) label_buffer, len)) {
         PRINTF("Failed to read string from stream\n");
         return false;
     }
