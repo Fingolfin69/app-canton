@@ -26,7 +26,7 @@
 #include "globals.h"
 #include "sw.h"
 
-int helper_send_response_pubkey() {
+MUST_CHECK int helper_send_response_pubkey() {
     uint8_t resp[1 + PUBKEY_LEN + 1 + CHAINCODE_LEN] = {0};
     size_t offset = 0;
 
@@ -40,7 +40,7 @@ int helper_send_response_pubkey() {
     return io_send_response_pointer(resp, offset, SW_OK);
 }
 
-int helper_send_response_sig() {
+MUST_CHECK int helper_send_response_sig() {
     uint8_t resp[1 + MAX_DER_SIG_LEN + 1 + 1 + MAX_DER_SIG_LEN] = {0};
     size_t offset = 0;
 

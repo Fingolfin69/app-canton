@@ -3,7 +3,10 @@
 #include <stdint.h>   // uint*_t
 #include <stdbool.h>  // bool
 
-#include "types.h"
+// Mark functions whose return values must be checked.
+// So it should be used on all functions that return something other
+// than void.
+#define MUST_CHECK __attribute__((warn_unused_result))
 
 /**
  * Compute SHA-256 fingerprint with a purpose byte as domain separator.
@@ -42,7 +45,7 @@ void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t 
  * @param c Character to check.
  * @return true if the character is a digit, false otherwise.
  */
-bool is_digit(char c);
+MUST_CHECK bool is_digit(char c);
 
 /**
  * @brief Convert a string of digits to an integer.
@@ -51,4 +54,4 @@ bool is_digit(char c);
  * @param str Null-terminated string to convert.
  * @return The integer value, or 0 on error.
  */
-int atoint(const char *str);
+MUST_CHECK int atoint(const char *str);

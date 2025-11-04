@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>  // bool
+#include "utils.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #define ICON_APP_CANTON  C_app_canton_14px
@@ -23,7 +24,7 @@ typedef void (*action_validate_cb)(bool);
  * @return 0 if success, negative integer otherwise.
  *
  */
-int ui_display_party_id(void);
+MUST_CHECK int ui_display_party_id(void);
 
 /**
  * Display transaction information on the device and ask confirmation to sign.
@@ -31,7 +32,7 @@ int ui_display_party_id(void);
  * @return 0 if success, negative integer otherwise.
  *
  */
-int ui_display_transaction(void);
+MUST_CHECK int ui_display_transaction(void);
 
 /**
  * Display blind-sign transaction information on the device and ask confirmation to sign.
@@ -39,4 +40,4 @@ int ui_display_transaction(void);
  * @return 0 if success, negative integer otherwise.
  *
  */
-int ui_display_blind_signed_transaction(void);
+MUST_CHECK int ui_display_blind_signed_transaction(void);

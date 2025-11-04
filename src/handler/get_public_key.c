@@ -35,10 +35,10 @@
 
 #define PRIVKEY_LEN 32
 
-cx_err_t derive_public_key(uint32_t *bip32_path,
-                           uint8_t bip32_path_len,
-                           uint8_t *raw_public_key,
-                           uint8_t *chain_code) {
+MUST_CHECK cx_err_t derive_public_key(uint32_t *bip32_path,
+                                      uint8_t bip32_path_len,
+                                      uint8_t *raw_public_key,
+                                      uint8_t *chain_code) {
     uint8_t rawPubkey[PUBKEY_LEN + PRIVKEY_LEN + 1] = {0};
 
     cx_err_t error = bip32_derive_with_seed_get_pubkey_256(HDW_ED25519_SLIP10,
@@ -66,7 +66,7 @@ cx_err_t derive_public_key(uint32_t *bip32_path,
     return CX_OK;
 }
 
-int handler_get_public_key(buffer_t *cdata, bool display) {
+MUST_CHECK int handler_get_public_key(buffer_t *cdata, bool display) {
     explicit_bzero(&G_context, sizeof(G_context));
     G_context.req_type = CONFIRM_ADDRESS;
     G_context.state = STATE_NONE;

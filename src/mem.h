@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "utils.h"
 
 #ifdef HAVE_MEMORY_PROFILING
 #define MP_FILE __FILE__
@@ -18,8 +19,8 @@
 #define pb_realloc(ptr, size) app_mem_realloc_impl(ptr, size, MP_FILE, MP_LINE)
 #define pb_free(ptr)          app_mem_free_impl(ptr, MP_FILE, MP_LINE)
 
-bool app_mem_init(void);
-void *app_mem_alloc_impl(size_t size, const char *file, int line);
-void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line);
+MUST_CHECK bool app_mem_init(void);
+MUST_CHECK void *app_mem_alloc_impl(size_t size, const char *file, int line);
+MUST_CHECK void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line);
 void app_mem_free_impl(void *ptr, const char *file, int line);
 void app_mem_stat();

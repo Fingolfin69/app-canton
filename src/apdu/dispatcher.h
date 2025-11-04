@@ -2,6 +2,7 @@
 
 #include "parser.h"
 #include "types.h"
+#include "utils.h"
 
 /**
  * Dispatch APDU command received to the right handler.
@@ -12,4 +13,4 @@
  * @return zero or positive integer if success, negative integer otherwise.
  *
  */
-int apdu_dispatcher(const command_t *cmd);
+MUST_CHECK int apdu_dispatcher(const command_t *cmd);

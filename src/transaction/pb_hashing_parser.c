@@ -2,7 +2,6 @@
 
 #include "buffer.h"
 #include "canonical_hash.h"
-#include "utils.h"
 #include "types.h"
 #include "com/daml/ledger/api/v2/interactive/device.pb.h"
 
@@ -27,13 +26,13 @@ typedef struct {
 
 static cb_parser_ctx_t ctx;
 
-static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg);
+MUST_CHECK static bool decode_value_variant(pb_istream_t *stream,
 
 /* -------------------------------------------------------------------------- */
 /* Callbacks for counting number of elements                                  */
 /* -------------------------------------------------------------------------- */
 
-static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -51,7 +50,7 @@ static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
-static bool count_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_record_field(pb_istream_t *stream,
     (void) field;
     (void) arg;
 
@@ -69,7 +68,7 @@ static bool count_record_field(pb_istream_t *stream, const pb_field_t *field, vo
     return true;
 }
 
-static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -87,7 +86,7 @@ static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void 
     return true;
 }
 
-static bool count_text_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_text_map_entry(pb_istream_t *stream,
     (void) field;
     (void) arg;
 
@@ -105,7 +104,7 @@ static bool count_text_map_entry(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool count_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_gen_map_entry(pb_istream_t *stream,
     (void) field;
     (void) arg;
 
@@ -123,7 +122,7 @@ static bool count_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, v
     return true;
 }
 
-static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) stream;
     (void) field;
     (void) arg;
@@ -174,7 +173,7 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
     return true;
 }
 
-static bool count_value_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_value_helper(pb_istream_t *stream) {
     cbValue c = com_daml_ledger_api_v2_cb_Value_init_zero;
     pb_istream_t saved_stream = *stream;
 
@@ -193,7 +192,7 @@ static bool count_value_helper(pb_istream_t *stream) {
     return true;
 }
 
-static bool count_gen_map_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_gen_map_helper(pb_istream_t *stream) {
     cbGenMapEntry e = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
     pb_istream_t saved_stream = *stream;
 
@@ -212,7 +211,7 @@ static bool count_gen_map_helper(pb_istream_t *stream) {
     return true;
 }
 
-static bool count_text_map_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_text_map_helper(pb_istream_t *stream) {
     cbTextMapEntry e = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
     pb_istream_t saved_stream = *stream;
 
@@ -231,7 +230,7 @@ static bool count_text_map_helper(pb_istream_t *stream) {
     return true;
 }
 
-static bool count_record_field_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_record_field_helper(pb_istream_t *stream) {
     cbRecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
     rf.value.cb_sum.funcs.decode = &count_value;
 
@@ -301,7 +300,9 @@ static void decode_value_primitive_variants(cbValue *v) {
     }
 }
 
-static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
+                                                 const pb_field_t *field,
+                                                 void **arg) {
     (void) field;
     (void) arg;
 
@@ -324,7 +325,9 @@ static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *fi
     return true;
 }
 
-static bool decode_variant_constructor(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_variant_constructor(pb_istream_t *stream,
+                                                  const pb_field_t *field,
+                                                  void **arg) {
     (void) field;
     (void) arg;
 
@@ -345,7 +348,9 @@ static bool decode_variant_constructor(pb_istream_t *stream, const pb_field_t *f
     return true;
 }
 
-static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_textmap_key(pb_istream_t *stream,
+                                          const pb_field_t *field,
+                                          void **arg) {
     (void) field;
     (void) arg;
 
@@ -366,7 +371,9 @@ static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, vo
     return true;
 }
 
-static bool decode_node_id_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_node_id_field(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
     (void) field;
     (void) arg;
 
@@ -399,7 +406,9 @@ static bool decode_node_id_field(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_field(pb_istream_t *stream,
+                                           const pb_field_t *field,
+                                           void **arg) {
     (void) field;
     (void) arg;
 
@@ -427,7 +436,7 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
     return true;
 }
 
-static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -452,7 +461,7 @@ static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
-static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -478,7 +487,9 @@ static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **a
     return true;
 }
 
-static bool decode_text_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_text_map_entry(pb_istream_t *stream,
+                                             const pb_field_t *field,
+                                             void **arg) {
     (void) field;
     (void) arg;
 
@@ -506,7 +517,9 @@ static bool decode_text_map_entry(pb_istream_t *stream, const pb_field_t *field,
     return true;
 }
 
-static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_gen_map_entry(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
     (void) field;
     (void) arg;
 
@@ -546,7 +559,7 @@ static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool decode_enum(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_enum(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -574,7 +587,9 @@ static bool decode_enum(pb_istream_t *stream, const pb_field_t *field, void **ar
     return true;
 }
 
-static bool decode_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_identifier(pb_istream_t *stream,
+                                         const pb_field_t *field,
+                                         void **arg) {
     (void) field;
     (void) arg;
 
@@ -612,9 +627,9 @@ static bool decode_record_id(pb_istream_t *stream, const pb_field_t *field, void
     return res;
 }
 
-static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg) {
-    (void) stream;
-    (void) field;
+MUST_CHECK static bool decode_value_variant(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
     (void) arg;
 
     PRINTF("Decoding value variant %d\n", field->tag);
@@ -677,7 +692,7 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
         } break;
         case com_daml_ledger_api_v2_cb_Value_enum__tag: {
             hw_put_byte(&ctx.node_hw, 0x0E);
-            decode_enum(stream, field, arg);
+            return decode_enum(stream, field, arg);
         } break;
         default:
             LEDGER_ASSERT(false, "Unknown Value type %d", field->tag);
@@ -690,7 +705,9 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
 /*  Callbacks to decode Transaction nodes                                      */
 /* -------------------------------------------------------------------------- */
 
-static bool decode_value_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_value_field(pb_istream_t *stream,
+                                          const pb_field_t *field,
+                                          void **arg) {
     (void) field;
     (void) arg;
 
@@ -715,7 +732,7 @@ static bool decode_value_field(pb_istream_t *stream, const pb_field_t *field, vo
     return true;
 }
 
-static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -776,7 +793,7 @@ static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **
     return true;
 }
 
-static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -846,7 +863,7 @@ static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void 
     return true;
 }
 
-static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -867,7 +884,7 @@ static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **a
     return true;
 }
 
-static bool decode_rollback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_rollback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
 
@@ -888,8 +905,9 @@ static bool decode_rollback(pb_istream_t *stream, const pb_field_t *field, void 
     return true;
 }
 
-static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
-    (void) stream;
+MUST_CHECK static bool node_decode_callback(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
 
     switch (field->tag) {
         case NODE_V1_EXERCISE_TAG: {
@@ -915,9 +933,9 @@ static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool versioned_node_decode_callback(pb_istream_t *stream,
-                                           const pb_field_t *field,
-                                           void **arg) {
+MUST_CHECK static bool versioned_node_decode_callback(pb_istream_t *stream,
+                                                      const pb_field_t *field,
+                                                      void **arg) {
     (void) stream;
     (void) arg;
 

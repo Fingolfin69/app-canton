@@ -45,7 +45,11 @@ static int process_transaction_hash(buffer_t *buffer);
 
 buffer_t buf = {.ptr = NULL, .size = 0, .offset = 0};
 
-int handler_sign_tx(buffer_t *cdata, signing_type_e type, bool first, bool more, bool msg_end) {
+MUST_CHECK int handler_sign_tx(buffer_t *cdata,
+                               signing_type_e type,
+                               bool first,
+                               bool more,
+                               bool msg_end) {
     int result = process_tx_chunk(cdata, type, first, more, msg_end);
     if (result != 0) {
         return io_send_sw(result);  // Send the error code via io_send_sw
@@ -108,7 +112,7 @@ static int process_tx_chunk(buffer_t *cdata,
         // Quick fix for memory leaks between transactions :
         // Reset all allocated memory.
         // TODO : release memory more gracefully
-        app_mem_init();
+        LEDGER_ASSERT(app_mem_init() == true, "Failed to initialize memory");
 
         explicit_bzero(&G_context, sizeof(G_context));
         PRINTF("Processing first chunk of transaction\n");
@@ -178,7 +182,7 @@ static int process_tx_chunk(buffer_t *cdata,
     return 0;
 }
 
-static int process_transaction_hash(buffer_t *buffer) {
+static MUST_CHECK int process_transaction_hash(buffer_t *buffer) {
     if (G_context.state != STATE_PARSED) {
         PRINTF("Invalid state: expected STATE_PARSED, got %d\n", G_context.state);
         return SW_BAD_STATE;

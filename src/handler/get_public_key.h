@@ -7,6 +7,7 @@
 #include "buffer.h"
 
 #include "types.h"
+#include "utils.h"
 
 /**
  * Handler for GET_PUBLIC_KEY command. If successfully parse BIP32 path,
@@ -23,7 +24,7 @@
  * @return zero or positive integer if success, negative integer otherwise.
  *
  */
-int handler_get_public_key(buffer_t *cdata, bool display);
+MUST_CHECK int handler_get_public_key(buffer_t *cdata, bool display);
 
 /**
  * @brief Derives the public key and chain code from the given BIP32 path.
@@ -39,7 +40,7 @@ int handler_get_public_key(buffer_t *cdata, bool display);
  * @return cx_err_t
  *   CX_OK on success, an error code otherwise.
  */
-cx_err_t derive_public_key(uint32_t *bip32_path,
-                           uint8_t bip32_path_len,
-                           uint8_t *raw_public_key,
-                           uint8_t *chain_code);
+MUST_CHECK cx_err_t derive_public_key(uint32_t *bip32_path,
+                                      uint8_t bip32_path_len,
+                                      uint8_t *raw_public_key,
+                                      uint8_t *chain_code);

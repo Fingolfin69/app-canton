@@ -140,7 +140,7 @@ static int compare_hashes_hex(const void *a, const void *b) {
     return strcmp(hex_a, hex_b);
 }
 
-static bool read_challenge_and_deadline(buffer_t *cdata) {
+MUST_CHECK static bool read_challenge_and_deadline(buffer_t *cdata) {
     // Check challenge presence
     if (!buffer_can_read(cdata, 1)) {
         return true;  // Challenge not present, not an error
@@ -162,9 +162,11 @@ static bool read_challenge_and_deadline(buffer_t *cdata) {
     return true;
 }
 
-bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
+MUST_CHECK bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
     init_hash_storage();
-    init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB);
+    LEDGER_ASSERT(
+        init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB) == true,
+        "Failed to initialize transaction pairs");
     G_context.tx_info.pairs_count = 0;
     has_parsed_namespace_delegation = false;
     has_parsed_party_to_participant = false;
@@ -250,7 +252,7 @@ static void sign_challenge(void) {
     return;
 }
 
-int process_untyped_versioned_msg_tx(buffer_t *buf) {
+MUST_CHECK int process_untyped_versioned_msg_tx(buffer_t *buf) {
     UNUSED(buf);
     uint8_t h[HASH_LEN] = {0};
 
@@ -292,7 +294,9 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
 }
 
 // Helper function to set field value
-static bool set_field_value(transaction_ctx_t *tx_info, size_t field_idx, const char *value) {
+MUST_CHECK static bool set_field_value(transaction_ctx_t *tx_info,
+                                       size_t field_idx,
+                                       const char *value) {
     uint8_t idx = tx_info->pairs_count;
 
     // Input validation
@@ -360,7 +364,7 @@ static int check_party_key_value(const uint8_t *key_to_check_bytes,
     return 0;
 }
 
-static bool check_party_id_value(const char *party_id) {
+MUST_CHECK static bool check_party_id_value(const char *party_id) {
     if (party_id == NULL) {
         return false;
     }
@@ -430,7 +434,8 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
                                         transaction_ctx_t *tx_info) {
     // Set party to participant specific fields
     if (mapping->party != NULL) {
-        set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party);
+        LEDGER_ASSERT(set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party) == true,
+                      "Failed to set party field");
     } else {
         return SW_TOPOLOGY_MISSING_PARTY;
     }
@@ -441,7 +446,10 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
             if (field_idx >= ONBOARDING_FLOW_DISPLAY_FIELDS_NB - 1) {
                 break;  // Prevent overflow
             }
-            set_field_value(tx_info, field_idx, mapping->participants[i].participant_uid);
+            LEDGER_ASSERT(
+                set_field_value(tx_info, field_idx, mapping->participants[i].participant_uid) ==
+                    true,
+                "Failed to set participant field");
         }
     } else {
         return SW_TOPOLOGY_NO_PARTICIPANTS;
@@ -456,7 +464,8 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
                  "%u out of %u",
                  mapping->threshold,
                  mapping->participants_count);
-        set_field_value(tx_info, THRESHOLD_FIELD_IDX, threshold_str);
+        LEDGER_ASSERT(set_field_value(tx_info, THRESHOLD_FIELD_IDX, threshold_str) == true,
+                      "Failed to set threshold field");
     }
 
     has_parsed_party_to_participant = true;

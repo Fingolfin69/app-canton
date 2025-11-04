@@ -35,7 +35,7 @@ void process_prepared_tx_init() {
     tx_state = RECEIVING_DAML_TX_PART;
 }
 
-int process_prepared_tx_part(buffer_t *buf) {
+MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
     switch (tx_state) {
         case RECEIVING_DAML_TX_PART: {
             parser_status_e status = proto_deserialize_daml_tx(buf, &G_context.tx_info);
@@ -141,7 +141,7 @@ int process_prepared_tx_part(buffer_t *buf) {
     return 0;
 }
 
-static int process_prepared_tx_finalize() {
+static MUST_CHECK int process_prepared_tx_finalize() {
     if (G_context.state != STATE_PARSED) {
         PRINTF("Invalid state: expected STATE_PARSED, got %d\n", G_context.state);
         return SW_BAD_STATE;

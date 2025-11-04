@@ -52,7 +52,7 @@ bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
-int atoint(const char *str) {
+MUST_CHECK int atoint(const char *str) {
     int res = 0;
 
     for (int i = 0; str[i] != '\0'; i++) {

@@ -56,7 +56,7 @@ static void clear_hash_error() {
     memset(HASH_ERR_INFO.err_msg, 0, sizeof(HASH_ERR_INFO.err_msg));
 }
 
-bool is_hash_error() {
+MUST_CHECK bool is_hash_error() {
     return HASH_ERR_INFO.err_code != HASH_OK;
 }
 
@@ -104,7 +104,7 @@ int set_node_hash(int node_id, const uint8_t hash[32]) {
     return 0;
 }
 
-static int get_node_hash(const char *node_id, uint8_t out[32]) {
+static MUST_CHECK int get_node_hash(const char *node_id, uint8_t out[SHA256_HASH_LEN]) {
     if (node_id == NULL) {
         return -1;  // No node_id provided
     }
@@ -384,7 +384,7 @@ static void encode_metadata(HashWriter *hw, const Metadata *m) {
     encode_int32(hw, m->input_contracts_count);
 }
 
-int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
+MUST_CHECK int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
     // Reset error state
     clear_hash_error();
     init_node_hash_store();
@@ -407,7 +407,7 @@ int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]) {
     return 0;
 }
 
-int hash_metadata(HashWriter *hw, const Metadata *md) {
+MUST_CHECK int hash_metadata(HashWriter *hw, const Metadata *md) {
     hw_init(hw);
     hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
     encode_metadata(hw, md);

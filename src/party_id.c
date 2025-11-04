@@ -29,7 +29,9 @@
 
 #include "tx_types.h"
 
-bool party_id_from_pubkey(const uint8_t public_key[static 32], uint8_t *out, size_t out_len) {
+MUST_CHECK bool party_id_from_pubkey(const uint8_t public_key[static 32],
+                                     uint8_t *out,
+                                     size_t out_len) {
     uint8_t tmp[34] = {0};
 
     LEDGER_ASSERT(out != NULL, "NULL out");

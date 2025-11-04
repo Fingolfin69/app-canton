@@ -14,7 +14,7 @@ void bw_init(ByteWriter *bw, void *buf, size_t cap) {
     bw->overflow = false;
 }
 
-size_t bw_size(const ByteWriter *bw) {
+MUST_CHECK size_t bw_size(const ByteWriter *bw) {
     return (size_t) (bw->ptr - bw->base);
 }
 

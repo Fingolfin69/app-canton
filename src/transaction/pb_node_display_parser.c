@@ -18,7 +18,6 @@
 #include "validate.h"
 #include "canonical_hash.h"
 #include "pb_decode.h"
-#include "utils.h"
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
@@ -294,7 +293,7 @@ static void format_native_amount_field(pb_callback_context_t *ctx, tx_field_t *f
 /* -------------------------------------------------------------------------- */
 
 // Helper function to find field state by path
-static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, const char *path) {
+MUST_CHECK static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, const char *path) {
     if (ctx->tx_fields == NULL) return NULL;
 
     for (size_t i = 0; i < ctx->nb_fields; i++) {
@@ -307,7 +306,7 @@ static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, const char *pa
 }
 
 // Helper function to initialize transaction pairs used for display
-bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
+MUST_CHECK bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
     // Free existing pairs if any
     if (tx_info->pairs != NULL) {
         app_mem_free(tx_info->pairs);
@@ -342,17 +341,32 @@ bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
 
 // Helper function to set field value safely with context-managed memory
 static void set_field_value(tx_field_t *field_state, const char *value) {
-    if (value != NULL) {
-        size_t value_len = strlen(value) + 1;
+    LEDGER_ASSERT(field_state != NULL, "NULL field state passed to set_field_value");
+    LEDGER_ASSERT(value != NULL, "NULL value passed to set_field_value");
 
-        // Allocate memory for the value in the field state
-        field_state->value = (char *) app_mem_alloc(value_len);
-        if (field_state->value != NULL) {
-            memcpy(field_state->value, value, value_len);
-            field_state->value_len = value_len;
-            field_state->found = true;
-        }
+    if (strlen(value) == 0) {
+        PRINTF("Empty value passed to set_field_value, skipping\n");
+        return;
     }
+
+    size_t value_len = strlen(value) + 1;
+
+    // Allocate memory for the value in the field state
+    field_state->value = (char *) app_mem_alloc(value_len);
+    if (field_state->value != NULL) {
+        memcpy(field_state->value, value, value_len);
+        field_state->value_len = value_len;
+        field_state->found = true;
+tate->
+    return;
+value = (char *) app_mem_alloc(value_len);
+    if (field_state->value != NULL) {
+        memcpy(field_state->value, value, value_len);
+        field_state->value_len = value_len;
+        field_state->found = true;
+    }
+
+    return;
 }
 
 // Helper function to set display configuration from a const array.
@@ -375,7 +389,8 @@ static void set_display_config(pb_callback_context_t *ctx, const display_config_
 
     ctx->tx_fields = tx_fields;
 
-    init_transaction_pairs(ctx->tx_info, ctx->nb_fields);
+    LEDGER_ASSERT(init_transaction_pairs(ctx->tx_info, ctx->nb_fields) == true,
+                  "Failed to initialize transaction pairs");
 
     // If pre-approval proposal, add static field for asset
     if (strcmp((const char *) PIC(ctx->review_title), PREAPPROVAL_PROPOSAL_REVIEW_TITLE) == 0) {
@@ -389,7 +404,7 @@ static void set_display_config(pb_callback_context_t *ctx, const display_config_
 }
 
 // Helper function to match identifiers
-static bool match_identifier(const Identifier *id, const identifier_config_t *config) {
+MUST_CHECK static bool match_identifier(const Identifier *id, const identifier_config_t *config) {
     return strcmp(id->module_name, (char *) PIC(config->module_name)) == 0 &&
            strcmp(id->entity_name, (char *) PIC(config->entity_name)) == 0;
 }
@@ -509,7 +524,9 @@ static void pop_path(pb_callback_context_t *ctx) {
 /* -------------------------------------------------------------------------- */
 
 // Decode the label field of a record field
-static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
+                                                 const pb_field_t *field,
+                                                 void **arg) {
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     // Read string from stream
@@ -524,7 +541,9 @@ static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *fi
 }
 
 // Decode the record ID field to identify the record type
-static bool decode_record_id_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_id_field(pb_istream_t *stream,
+                                              const pb_field_t *field,
+                                              void **arg) {
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     com_daml_ledger_api_v2_Identifier id = {};
@@ -544,7 +563,9 @@ static bool decode_record_id_field(pb_istream_t *stream, const pb_field_t *field
 }
 
 // Decode a record field, pushing and popping the field path as needed
-static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_field(pb_istream_t *stream,
+                                           const pb_field_t *field,
+                                           void **arg) {
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
@@ -577,7 +598,7 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
 }
 
 // Decode an Optional value, which may contain another Value
-static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
@@ -598,8 +619,9 @@ static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **a
     return true;
 }
 
-static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, void **arg) {
-    (void) field;
+MUST_CHECK static bool decode_textmap_key(pb_istream_t *stream,
+                                          const pb_field_t *field,
+                                          void **arg) {
 
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
@@ -621,7 +643,9 @@ static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, vo
     return true;
 }
 
-static bool decode_value_text_map(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_value_text_map(pb_istream_t *stream,
+                                             const pb_field_t *field,
+                                             void **arg) {
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
@@ -651,7 +675,7 @@ static bool decode_value_text_map(pb_istream_t *stream, const pb_field_t *field,
 }
 
 // Decode a value variant, handling Record types specifically
-static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     cbValue *topmsg = field->message;
     (void) topmsg;
 
@@ -714,9 +738,9 @@ static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, 
 }
 
 // Callback to decode versioned node messages, attaching Node-level callback
-static bool versioned_node_decode_callback(pb_istream_t *stream,
-                                           const pb_field_t *field,
-                                           void **arg) {
+MUST_CHECK static bool versioned_node_decode_callback(pb_istream_t *stream,
+                                                      const pb_field_t *field,
+                                                      void **arg) {
     UNUSED(stream);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node *node = field->message;
@@ -734,7 +758,7 @@ static bool versioned_node_decode_callback(pb_istream_t *stream,
 /*  Entry point for parsing transaction display information                   */
 /* -------------------------------------------------------------------------- */
 
-int parse_node_for_display(buffer_t *buf) {
+MUST_CHECK int parse_node_for_display(buffer_t *buf) {
     // Only parse if we haven't already found all fields
     if (G_context.tx_info.clear_signing_available) {
         return 0;

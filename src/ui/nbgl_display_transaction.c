@@ -55,7 +55,7 @@ static void review_choice(bool confirm) {
 // - Format the amount and address strings in g_amount and g_address buffers
 // - Display the first screen of the transaction review
 // - Display a warning if the transaction is blind-signed
-int ui_display_transaction_bs_choice(bool is_blind_signed) {
+MUST_CHECK int ui_display_transaction_bs_choice(bool is_blind_signed) {
     if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
@@ -117,11 +117,11 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
 }
 
 // Flow used to display a blind-signed transaction
-int ui_display_blind_signed_transaction(void) {
+MUST_CHECK int ui_display_blind_signed_transaction(void) {
     return ui_display_transaction_bs_choice(true);
 }
 
 // Flow used to display a clear-signed transaction
-int ui_display_transaction() {
+MUST_CHECK int ui_display_transaction() {
     return ui_display_transaction_bs_choice(false);
 }

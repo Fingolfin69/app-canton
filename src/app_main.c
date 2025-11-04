@@ -45,7 +45,7 @@ void app_main() {
 
     io_init();
 
-    app_mem_init();
+    LEDGER_ASSERT(app_mem_init() == true, "Failed to initialize memory");
 
     ui_menu_main();
 

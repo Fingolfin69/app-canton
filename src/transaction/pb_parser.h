@@ -1,7 +1,7 @@
 #pragma once
 
 #include "buffer.h"
-
+#include "utils.h"
 #include "types.h"
 
 /**
@@ -15,7 +15,7 @@
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx);
+MUST_CHECK parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
  * Deserialize DamlTransaction.Node protobuf message in structure.
@@ -28,7 +28,7 @@ parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_c
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx);
+MUST_CHECK parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
  * Deserialize Metadata protobuf message in structure.
@@ -41,7 +41,7 @@ parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx)
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx);
+MUST_CHECK parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx);
 
 /**
  * Deserialize TopologyTransaction protobuf message in structure.
@@ -54,7 +54,8 @@ parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e proto_deserialize_topology_transaction(buffer_t *buf, transaction_ctx_t *tx_ctx);
+MUST_CHECK parser_status_e proto_deserialize_topology_transaction(buffer_t *buf,
+                                                                  transaction_ctx_t *tx_ctx);
 
 /**
  * Release dynamically allocated memory for DamlTransaction protobuf message.

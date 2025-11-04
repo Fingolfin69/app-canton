@@ -5,6 +5,7 @@
 
 #include "buffer.h"
 #include "types.h"
+#include "utils.h"
 
 /**
  * Handler for SIGN_TX command. If successfully parse BIP32 path
@@ -25,8 +26,8 @@
  * @return zero or positive integer if success, negative integer otherwise.
  *
  */
-int handler_sign_tx(buffer_t *cdata,
-                    signing_type_e signing_type,
-                    bool first,
-                    bool more,
-                    bool msg_end);
+MUST_CHECK int handler_sign_tx(buffer_t *cdata,
+                               signing_type_e signing_type,
+                               bool first,
+                               bool more,
+                               bool msg_end);

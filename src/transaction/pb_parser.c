@@ -17,7 +17,6 @@
 #include "buffer.h"
 
 #include "pb_parser.h"
-#include "utils.h"
 #include "types.h"
 #include "com/daml/ledger/api/v2/interactive/device.pb.h"
 #include "com/digitalasset/canton/version/v1/untyped_versioned_message.pb.h"
@@ -32,7 +31,7 @@
 #include "ledger_assert.h"
 #endif
 
-parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+MUST_CHECK parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Daml transaction from buffer of size %d bytes\n", buf->size);
@@ -47,7 +46,7 @@ parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_c
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+MUST_CHECK parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Metadata from buffer of size %d bytes\n", buf->size);
@@ -62,7 +61,8 @@ parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_topology_transaction(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+MUST_CHECK parser_status_e proto_deserialize_topology_transaction(buffer_t *buf,
+                                                                  transaction_ctx_t *tx_ctx) {
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Topology Transaction from buffer of size %d bytes\n", buf->size);

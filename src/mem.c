@@ -22,7 +22,7 @@ static mem_ctx_t mem_ctx = NULL;
 #define MP_LOG_PREFIX "==MP "
 #endif
 
-bool app_mem_init(void) {
+MUST_CHECK bool app_mem_init(void) {
     void *buf = mem_buffer;
     size_t buf_size = sizeof(mem_buffer);
 
@@ -33,7 +33,7 @@ bool app_mem_init(void) {
     return mem_ctx != NULL;
 }
 
-void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line) {
+MUST_CHECK void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line) {
     void *new_ptr;
     if (ptr != NULL) {
         // Reallocate memory
@@ -62,7 +62,7 @@ void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line) {
     return new_ptr;
 }
 
-void *app_mem_alloc_impl(size_t size, const char *file, int line) {
+MUST_CHECK void *app_mem_alloc_impl(size_t size, const char *file, int line) {
     void *ptr;
     ptr = mem_alloc(mem_ctx, size);
 #ifdef HAVE_MEMORY_PROFILING

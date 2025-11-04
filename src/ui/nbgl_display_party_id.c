@@ -47,7 +47,7 @@ static void review_choice(bool confirm) {
     }
 }
 
-int ui_display_party_id() {
+MUST_CHECK int ui_display_party_id() {
     if (G_context.req_type != CONFIRM_ADDRESS || G_context.state != STATE_NONE) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
