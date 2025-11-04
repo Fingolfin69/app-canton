@@ -27,7 +27,7 @@
 
 void validate_pubkey(bool choice) {
     if (choice) {
-        helper_send_response_pubkey();
+        LEDGER_ASSERT(helper_send_response_pubkey() >= 0, "Failed to send pubkey response");
     } else {
         io_send_sw(SW_DENY);
     }
@@ -71,7 +71,7 @@ void validate_transaction(bool choice) {
             G_context.state = STATE_NONE;
             io_send_sw(SW_SIGNATURE_FAIL);
         } else {
-            helper_send_response_sig();
+            LEDGER_ASSERT(helper_send_response_sig() >= 0, "Failed to send signature response");
         }
     } else {
         G_context.state = STATE_NONE;
