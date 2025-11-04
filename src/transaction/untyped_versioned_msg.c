@@ -40,6 +40,7 @@
 #include "send_response.h"
 #include "party_id.h"
 #include "crypto_data.h"
+#include "constants.h"
 
 #define HASH_LEN                                     34
 #define HEX_LEN                                      (HASH_LEN * 2 + 1)
@@ -70,6 +71,7 @@ typedef struct {
 #define PARTICIPANT_1_FIELD_IDX 1
 #define PARTICIPANT_2_FIELD_IDX 2
 #define PARTICIPANT_3_FIELD_IDX 3
+#define MAX_PARTICIPANTS        3
 #define THRESHOLD_FIELD_IDX     4
 
 // Const configurations (stored in flash)
@@ -454,7 +456,7 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
     }
 
     if (mapping->participants_count > 0 && mapping->participants[0].participant_uid != NULL) {
-        for (size_t i = 0; i < mapping->participants_count && i < 3; i++) {
+        for (size_t i = 0; i < mapping->participants_count && i < MAX_PARTICIPANTS; i++) {
             size_t field_idx = PARTICIPANT_1_FIELD_IDX + i;
             if (field_idx >= ONBOARDING_FLOW_DISPLAY_FIELDS_NB - 1) {
                 break;  // Prevent overflow
@@ -470,7 +472,7 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
 
     // If participants_count > 1, display threshold, otherwise skip it (it's always 1)
     if (mapping->participants_count > 1) {
-        char threshold_str[16];
+        char threshold_str[DEFAULT_DECODE_BUFFER_SIZE] = {0};
         // Set threshold as ratio threshold/participants_count
         SNPRINTF(threshold_str,
                  sizeof(threshold_str),

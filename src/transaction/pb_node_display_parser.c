@@ -566,8 +566,8 @@ MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     // Read string from stream
-    char label_buffer[64] = {0};
     if (!pb_read(stream, (pb_byte_t *) label_buffer, stream->bytes_left)) {
+    char label_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
         PRINTF("Failed to read string from stream\n");
         return false;
     }
@@ -674,7 +674,7 @@ MUST_CHECK static bool decode_textmap_key(pb_istream_t *stream,
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
     // Read string from stream
-    char key_buffer[64] = {0};
+    char key_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
     size_t len =
         stream->bytes_left < sizeof(key_buffer) ? stream->bytes_left : sizeof(key_buffer) - 1;
 

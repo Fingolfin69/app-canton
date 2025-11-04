@@ -334,7 +334,7 @@ MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
     LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_field_label");
 
     // Read string from stream
-    char label_buffer[64] = {0};
+    char label_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
     size_t len =
         stream->bytes_left < sizeof(label_buffer) ? stream->bytes_left : sizeof(label_buffer) - 1;
 
@@ -360,7 +360,7 @@ MUST_CHECK static bool decode_variant_constructor(pb_istream_t *stream,
     LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_variant_constructor");
 
     // Read string from stream
-    char constructor_buffer[64] = {0};
+    char constructor_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
     size_t len = stream->bytes_left < sizeof(constructor_buffer) ? stream->bytes_left
                                                                  : sizeof(constructor_buffer) - 1;
 
@@ -384,7 +384,7 @@ MUST_CHECK static bool decode_textmap_key(pb_istream_t *stream,
     LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_textmap_key");
 
     // Read string from stream
-    char key_buffer[64] = {0};
+    char key_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
     size_t len =
         stream->bytes_left < sizeof(key_buffer) ? stream->bytes_left : sizeof(key_buffer) - 1;
 
@@ -1026,10 +1026,10 @@ parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx)
         PRINTF("Decode failed: %s\n", PB_GET_ERROR(&stream));
     }
 
-    uint8_t node_hash[32];
+    uint8_t node_hash[SHA256_HASH_LEN];
     hw_finalize(&ctx.node_hw, node_hash);
 
-    PRINTF("Node id %d hash: %.*H\n", ctx.node_id, 32, node_hash);
+    PRINTF("Node id %d hash: %.*H\n", ctx.node_id, SHA256_HASH_LEN, node_hash);
 
     if (ctx.is_root_node) {
         encode_hash(&tx_ctx->hasher, node_hash);
@@ -1069,11 +1069,11 @@ parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_
         return VALUE_PARSING_ERROR;
     }
 
-    uint8_t node_hash[32];
+    uint8_t node_hash[SHA256_HASH_LEN];
     hw_finalize(&ctx.node_hw, node_hash);
 
     encode_int64(&tx_ctx->hasher, tx_ctx->tx_parts_ctx.input_contract.created_at);
-    PRINTF("Contract hash: %.*H\n", 32, node_hash);
+    PRINTF("Contract hash: %.*H\n", SHA256_HASH_LEN, node_hash);
     encode_hash(&tx_ctx->hasher, node_hash);
 
     pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,

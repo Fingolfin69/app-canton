@@ -2,6 +2,7 @@
 
 #include <stdint.h>   // uint*_t
 #include <stdbool.h>  // bool
+#include "constants.h"
 
 // Mark functions whose return values must be checked.
 // So it should be used on all functions that return something other
@@ -16,7 +17,10 @@
  * @param[in]  data_len  Length of input buffer
  * @param[out] out       32-byte output buffer for the digest
  */
-void canton_fingerprint(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[32]);
+void canton_fingerprint(uint8_t purpose,
+                        const uint8_t *data,
+                        size_t data_len,
+                        uint8_t out[SHA256_HASH_LEN]);
 
 /**
  * @brief Compute a fingerprint and add a 2-byte prefix to indicate SHA-256 with length.
@@ -26,7 +30,10 @@ void canton_fingerprint(uint8_t purpose, const uint8_t *data, size_t data_len, u
  * @param[in]  data_len  Length of input buffer
  * @param[out] out       34-byte output buffer for the prefixed digest
  */
-void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[34]);
+void canton_hash(uint8_t purpose,
+                 const uint8_t *data,
+                 size_t data_len,
+                 uint8_t out[CANTON_HASH_LEN]);
 
 /**
  * @brief Safe snprintf macro that disables -Wformat for the snprintf call.

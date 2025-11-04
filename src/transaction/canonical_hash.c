@@ -21,9 +21,10 @@
 /*  Spec constants                                                             */
 /* -------------------------------------------------------------------------- */
 
-static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0x30};
+static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[UINT32_T_LEN] = {0x00, 0x00, 0x00, 0x30};
 #define HASHING_SCHEME_VERSION ((uint8_t) 2) /* 0x02 */
 #define NODE_ENCODING_VERSION  ((uint8_t) 1) /* 0x01 */
+#define MAX_ERROR_MSG_LEN      32
 
 /* -------------------------------------------------------------------------- */
 /*  Error handling                                                            */
@@ -42,7 +43,7 @@ typedef enum {
 } HashError;
 
 typedef struct {
-    uint8_t err_msg[32];
+    uint8_t err_msg[MAX_ERROR_MSG_LEN];
     int err_code;
 } HashErrorInfo;
 
@@ -81,7 +82,7 @@ static void set_hash_error(HashError err, const char *msg) {
 
 typedef struct {
     int32_t id;
-    uint8_t hash[32];
+    uint8_t hash[SHA256_HASH_LEN];
 } PrecomputedNodeHash;
 
 static PrecomputedNodeHash G_hashed_nodes_store[MAX_NODE_CHILDREN] = {0};
@@ -115,7 +116,7 @@ static MUST_CHECK int get_node_hash(const char *node_id, uint8_t out[SHA256_HASH
 
     for (size_t i = 0; i < MAX_NODE_CHILDREN; ++i) {
         if (G_hashed_nodes_store[i].id == node_id_num) {
-            memcpy(out, G_hashed_nodes_store[i].hash, 32);
+            memcpy(out, G_hashed_nodes_store[i].hash, SHA256_HASH_LEN);
             return 0;
         }
     }
@@ -139,7 +140,7 @@ void hw_put(HashWriter *hw, const void *p, size_t n) {
     CX_ASSERT(cx_hash_update((cx_hash_t *) &hw->ctx, p, n));
 }
 
-void hw_finalize(HashWriter *hw, uint8_t out[32]) {
+void hw_finalize(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
     CX_ASSERT(cx_hash_final((cx_hash_t *) &hw->ctx, out));
 }
 
@@ -149,20 +150,23 @@ void hw_put_byte(HashWriter *hw, uint8_t b) {
 
 // Big‑endian helpers
 void hw_put_u32_be(HashWriter *hw, uint32_t v) {
-    uint8_t t[4] = {(uint8_t) (v >> 24), (uint8_t) (v >> 16), (uint8_t) (v >> 8), (uint8_t) v};
-    hw_put(hw, t, 4);
+    uint8_t t[UINT32_T_LEN] = {(uint8_t) (v >> 24),
+                               (uint8_t) (v >> 16),
+                               (uint8_t) (v >> 8),
+                               (uint8_t) v};
+    hw_put(hw, t, UINT32_T_LEN);
 }
 
 void hw_put_u64_be(HashWriter *hw, uint64_t v) {
-    uint8_t t[8] = {(uint8_t) (v >> 56),
-                    (uint8_t) (v >> 48),
-                    (uint8_t) (v >> 40),
-                    (uint8_t) (v >> 32),
-                    (uint8_t) (v >> 24),
-                    (uint8_t) (v >> 16),
-                    (uint8_t) (v >> 8),
-                    (uint8_t) v};
-    hw_put(hw, t, 8);
+    uint8_t t[UINT64_T_LEN] = {(uint8_t) (v >> 56),
+                               (uint8_t) (v >> 48),
+                               (uint8_t) (v >> 40),
+                               (uint8_t) (v >> 32),
+                               (uint8_t) (v >> 24),
+                               (uint8_t) (v >> 16),
+                               (uint8_t) (v >> 8),
+                               (uint8_t) v};
+    hw_put(hw, t, UINT64_T_LEN);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -194,8 +198,8 @@ void encode_string(HashWriter *hw, const char *s) {
     encode_bytes(hw, (const uint8_t *) s, (int32_t) strlen(s));
 }
 
-void encode_hash(HashWriter *hw, const uint8_t h[32]) {
-    hw_put(hw, h, 32);
+void encode_hash(HashWriter *hw, const uint8_t h[SHA256_HASH_LEN]) {
+    hw_put(hw, h, SHA256_HASH_LEN);
 }
 
 // hex‑decode helper
@@ -272,13 +276,13 @@ static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *
     encode_int32(hw, (int32_t) count);
 
     for (size_t i = 0; i < count; ++i) {
-        uint8_t hash[32];
+        uint8_t hash[SHA256_HASH_LEN];
         if (get_node_hash(ids[i], hash) != 0) {
             LEDGER_ASSERT(false, "Node id hash not found in store");
             set_hash_error(HASH_ERROR_FAILED_TO_LOAD_NODE_HASH, "Node id hash not found in store");
             return;
         };
-        hw_put(hw, hash, 32);
+        hw_put(hw, hash, SHA256_HASH_LEN);
     }
 }
 
@@ -455,7 +459,7 @@ MUST_CHECK int hash_metadata(HashWriter *hw, const Metadata *md) {
     LEDGER_ASSERT(md != NULL, "Null Metadata passed to hash_metadata");
 
     hw_init(hw);
-    hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+    hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, UINT32_T_LEN);
     encode_metadata(hw, md);
 
     if (is_hash_error()) {

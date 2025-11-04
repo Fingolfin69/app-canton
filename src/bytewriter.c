@@ -7,6 +7,7 @@
 
 #include "constants.h"
 #include "mem.h"
+#include "ledger_assert.h"
 
 void bw_init(ByteWriter *bw, void *buf, size_t cap) {
     LEDGER_ASSERT(bw != NULL, "NULL ByteWriter pointer passed to bw_init");
@@ -42,17 +43,20 @@ void bw_put_byte(ByteWriter *bw, uint8_t b) {
 
 // Big‑endian helpers
 void bw_put_u32_be(ByteWriter *bw, uint32_t v) {
-    uint8_t t[4] = {(uint8_t) (v >> 24), (uint8_t) (v >> 16), (uint8_t) (v >> 8), (uint8_t) v};
-    bw_put(bw, t, 4);
+    uint8_t t[UINT32_T_LEN] = {(uint8_t) (v >> 24),
+                               (uint8_t) (v >> 16),
+                               (uint8_t) (v >> 8),
+                               (uint8_t) v};
+    bw_put(bw, t, UINT32_T_LEN);
 }
 void bw_put_u64_be(ByteWriter *bw, uint64_t v) {
-    uint8_t t[8] = {(uint8_t) (v >> 56),
-                    (uint8_t) (v >> 48),
-                    (uint8_t) (v >> 40),
-                    (uint8_t) (v >> 32),
-                    (uint8_t) (v >> 24),
-                    (uint8_t) (v >> 16),
-                    (uint8_t) (v >> 8),
-                    (uint8_t) v};
-    bw_put(bw, t, 8);
+    uint8_t t[UINT64_T_LEN] = {(uint8_t) (v >> 56),
+                               (uint8_t) (v >> 48),
+                               (uint8_t) (v >> 40),
+                               (uint8_t) (v >> 32),
+                               (uint8_t) (v >> 24),
+                               (uint8_t) (v >> 16),
+                               (uint8_t) (v >> 8),
+                               (uint8_t) v};
+    bw_put(bw, t, UINT64_T_LEN);
 }

@@ -20,6 +20,7 @@
 #include <string.h>   // memmove
 
 #include "types.h"
+#include "utils.h"
 
 #include "os.h"
 #include "cx.h"
@@ -27,15 +28,13 @@
 #define SHA256_ALGO_PREFIX ((uint8_t) 0x12)
 #define SHA256_ALGO_LENGTH ((uint8_t) 0x20)
 
-void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[34]) {
-    LEDGER_ASSERT(out != NULL, "NULL out");
-    LEDGER_ASSERT(data != NULL || data_len == 0, "NULL data with non-zero length");
+void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[CANTON_HASH_LEN]) {
     LEDGER_ASSERT(out != NULL, "NULL out pointer passed to canton_hash");
     LEDGER_ASSERT(data != NULL || data_len == 0,
                   "NULL data with non-zero length passed to canton_hash");
     cx_sha256_t ctx;
-    uint8_t purpose_be[4] = {0, 0, 0, purpose};
-    uint8_t tmp[32] = {0};
+    uint8_t purpose_be[UINT32_T_LEN] = {0, 0, 0, purpose};
+    uint8_t tmp[SHA256_HASH_LEN] = {0};
     CX_ASSERT(cx_sha256_init_no_throw(&ctx));
     CX_ASSERT(cx_hash_update((cx_hash_t *) &ctx, purpose_be, sizeof(purpose_be)));
     if (data_len > 0) {
@@ -44,7 +43,7 @@ void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t 
     CX_ASSERT(cx_hash_final((cx_hash_t *) &ctx, tmp));
     out[0] = SHA256_ALGO_PREFIX;
     out[1] = SHA256_ALGO_LENGTH;
-    memmove(out + 2, tmp, 32);
+    memmove(out + 2, tmp, SHA256_HASH_LEN);
 }
 
 /* -------------------------------------------------------------------------- */

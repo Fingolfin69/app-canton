@@ -36,7 +36,9 @@
 #include "menu.h"
 #include "utils.h"
 
-static nbgl_contentTagValue_t pairs[1];
+#define BLIND_SIGN_PAIR_LIST_NB 1
+
+static nbgl_contentTagValue_t pairs[BLIND_SIGN_PAIR_LIST_NB];
 static nbgl_contentTagValueList_t pairList;
 
 // called when long press button on 3rd page is long-touched or when reject footer is touched
@@ -76,7 +78,7 @@ MUST_CHECK int ui_display_transaction_bs_choice(bool is_blind_signed) {
 
         // Setup list
         pairList.nbMaxLinesForValue = 0;
-        pairList.nbPairs = 1;
+        pairList.nbPairs = BLIND_SIGN_PAIR_LIST_NB;
         pairList.pairs = pairs;
 
         // Start blind-signing review flow
