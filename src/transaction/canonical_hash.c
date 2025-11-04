@@ -94,14 +94,14 @@ static void init_node_hash_store() {
     }
 }
 
-int set_node_hash(int node_id, const uint8_t hash[32]) {
-    memcpy(G_hashed_nodes_store[G_hashed_nodes_store_count].hash, hash, 32);
+void set_node_hash(int node_id, const uint8_t hash[SHA256_HASH_LEN]) {
+    memcpy(G_hashed_nodes_store[G_hashed_nodes_store_count].hash, hash, SHA256_HASH_LEN);
     G_hashed_nodes_store[G_hashed_nodes_store_count].id = node_id;
 
     G_hashed_nodes_store_count++;
     G_hashed_nodes_store_count %= MAX_NODE_CHILDREN;
 
-    return 0;
+    return;
 }
 
 static MUST_CHECK int get_node_hash(const char *node_id, uint8_t out[SHA256_HASH_LEN]) {
@@ -396,15 +396,25 @@ MUST_CHECK int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
     // Encode nodes count
     encode_int32(hw, (int32_t) tx->roots_count);
 
+    if (is_hash_error()) {
+        PRINTF("Error hashing transaction: '%s', code: %d\n",
+               HASH_ERR_INFO.err_msg,
+               HASH_ERR_INFO.err_code);
+        return HASH_ERR_INFO.err_code;
+    }
+
     return 0;
 }
 
-int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]) {
+void finalize_hash_transaction(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to finalize_hash_transaction");
+    LEDGER_ASSERT(out != NULL, "Null output buffer passed to finalize_hash_transaction");
+
     hw_finalize(hw, out);
 
     PRINTF("TX hash: %.*H\n", 32, out);
 
-    return 0;
+    return;
 }
 
 MUST_CHECK int hash_metadata(HashWriter *hw, const Metadata *md) {
@@ -422,24 +432,28 @@ MUST_CHECK int hash_metadata(HashWriter *hw, const Metadata *md) {
     return 0;
 }
 
-int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]) {
+void finalize_hash_metadata(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to finalize_hash_metadata");
+
     hw_finalize(hw, out);
 
-    PRINTF("Metadata hash: %.*H\n", 32, out);
+    PRINTF("Metadata hash: %.*H\n", SHA256_HASH_LEN, out);
 
-    return 0;
+    return;
 }
 
-int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t out[32]) {
+void finalize_hash(const uint8_t tx_hash[SHA256_HASH_LEN],
+                  const uint8_t md_hash[SHA256_HASH_LEN],
+                  uint8_t out[SHA256_HASH_LEN]) {
     HashWriter hw;
 
     hw_init(&hw);
-    hw_put(&hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+    hw_put(&hw, PREPARED_TRANSACTION_HASH_PURPOSE, UINT32_T_LEN);
     hw_put_byte(&hw, HASHING_SCHEME_VERSION);
-    hw_put(&hw, tx_hash, 32);
-    hw_put(&hw, md_hash, 32);
+    hw_put(&hw, tx_hash, SHA256_HASH_LEN);
+    hw_put(&hw, md_hash, SHA256_HASH_LEN);
 
     hw_finalize(&hw, out);
 
-    return 0;
+    return;
 }

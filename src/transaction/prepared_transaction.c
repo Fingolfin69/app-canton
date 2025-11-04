@@ -82,14 +82,9 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
             }
         } break;
         case RECEIVING_METADATA: {
-            int res = finalize_hash_transaction(&G_context.tx_info.hasher,
+            finalize_hash_transaction(&G_context.tx_info.hasher,
                                                 G_context.tx_info.partial_tx_hash);
             release_daml_tx(&G_context.tx_info);
-
-            if (res != 0) {
-                PRINTF("Failed to finalize DAML transaction hash: %d\n", res);
-                return SW_TX_HASH_FAIL;
-            }
 
             parser_status_e status = proto_deserialize_metadata(buf, &G_context.tx_info);
 
@@ -98,7 +93,7 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            res =
+            int res =
                 hash_metadata(&G_context.tx_info.hasher, &G_context.tx_info.tx_parts_ctx.metadata);
 
             release_metadata(&G_context.tx_info);
@@ -147,24 +142,14 @@ static MUST_CHECK int process_prepared_tx_finalize() {
         return SW_BAD_STATE;
     }
 
-    int res = finalize_hash_metadata(&G_context.tx_info.hasher, G_context.tx_info.partial_md_hash);
-
-    if (res != 0) {
-        PRINTF("Failed to finalize Metadata hash: %d\n", res);
-        return SW_TX_HASH_FAIL;
-    }
+    finalize_hash_metadata(&G_context.tx_info.hasher, G_context.tx_info.partial_md_hash);
 
     // Finalize hash
-    res = finalize_hash(G_context.tx_info.partial_tx_hash,
+    finalize_hash(G_context.tx_info.partial_tx_hash,
                         G_context.tx_info.partial_md_hash,
                         G_context.tx_info.m_hash);
 
     G_context.tx_info.m_hash_len = 32;
-
-    if (res != 0) {
-        PRINTF("Failed to compute transaction hash: %d\n", res);
-        return SW_TX_HASH_FAIL;
-    }
 
     return 0;
 }
