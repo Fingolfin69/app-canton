@@ -210,13 +210,20 @@ static void format_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
     LEDGER_ASSERT(ctx != NULL, "NULL context passed to format_amount_field");
     LEDGER_ASSERT(field != NULL, "NULL field passed to format_amount_field");
     UNUSED(ctx);
-    PRINTF("Formatting amount field with value: %s\n", field->value);
-    size_t len = strlen(field->value);
 
-    if (field->value == NULL || len == 0) {
-        PRINTF("Value is NULL or empty, skipping formatting\n");
+    if (field->value == NULL) {
+        PRINTF("Value is NULL, skipping formatting\n");
         return;
     }
+
+    size_t len = strlen(field->value);
+
+    if (len == 0) {
+        PRINTF("Value is empty, skipping formatting\n");
+        return;
+    }
+
+    PRINTF("Formatting amount field with value: %s\n", field->value);
 
     char *dot = strchr(field->value, '.');
     if (dot != NULL) {
