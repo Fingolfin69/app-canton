@@ -30,7 +30,6 @@
 #include "constants.h"
 #include "globals.h"
 #include "sw.h"
-// #include "address.h"
 #include "validate.h"
 #include "tx_types.h"
 #include "menu.h"
