@@ -93,9 +93,6 @@ MUST_CHECK int handler_sign_tx(buffer_t *cdata,
         } else {
             return io_send_sw(SW_OK);
         }
-
-        // return (G_context.state == STATE_PARSED) ? ui_display_blind_signed_transaction()
-        //                                          : io_send_sw(SW_OK);
     } else {
         // Invalid state
         PRINTF("Invalid state after processing chunk: %d\n", G_context.state);
