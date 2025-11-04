@@ -7,6 +7,7 @@
 
 #include "pb_decode.h"
 #include "ledger_assert.h"
+#include "constants.h"
 
 #define VALUE_ELEM_COUNT_NONE -1
 
@@ -642,7 +643,7 @@ MUST_CHECK static bool decode_identifier(pb_istream_t *stream,
     return true;
 }
 
-static bool decode_record_id(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_id(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
     LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_id");
@@ -1018,6 +1019,7 @@ parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx)
                    com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
                    &tx_ctx->tx_parts_ctx.node)) {
         PRINTF("Decode failed: %s\n", PB_GET_ERROR(&stream));
+        return VALUE_PARSING_ERROR;
     }
 
     uint8_t node_hash[SHA256_HASH_LEN];
