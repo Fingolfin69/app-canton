@@ -207,6 +207,8 @@ static tx_field_t tx_fields[MAX_DISPLAY_FIELDS_NB];
 
 // Remove all trailing zeros and possible dot if integer for amount fields
 static void format_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to format_amount_field");
+    LEDGER_ASSERT(field != NULL, "NULL field passed to format_amount_field");
     UNUSED(ctx);
     PRINTF("Formatting amount field with value: %s\n", field->value);
     size_t len = strlen(field->value);
@@ -231,6 +233,9 @@ static void format_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
 }
 
 static void format_token_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to format_token_amount_field");
+    LEDGER_ASSERT(field != NULL, "NULL field passed to format_token_amount_field");
+
     // Call the generic amount formatter first
     format_amount_field(ctx, field);
     // Look for the instrument id in the mapping to add the ticker if found
@@ -269,6 +274,9 @@ static void format_token_amount_field(pb_callback_context_t *ctx, tx_field_t *fi
 }
 
 static void format_native_amount_field(pb_callback_context_t *ctx, tx_field_t *field) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to format_native_amount_field");
+    LEDGER_ASSERT(field != NULL, "NULL field passed to format_native_amount_field");
+
     // Call the generic amount formatter first
     format_amount_field(ctx, field);
     // Append "CC" ticker for Canton Coin
@@ -294,6 +302,9 @@ static void format_native_amount_field(pb_callback_context_t *ctx, tx_field_t *f
 
 // Helper function to find field state by path
 MUST_CHECK static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, const char *path) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to find_field_by_path");
+    LEDGER_ASSERT(path != NULL, "NULL path passed to find_field_by_path");
+
     if (ctx->tx_fields == NULL) return NULL;
 
     for (size_t i = 0; i < ctx->nb_fields; i++) {
@@ -307,6 +318,8 @@ MUST_CHECK static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, con
 
 // Helper function to initialize transaction pairs used for display
 MUST_CHECK bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
+    LEDGER_ASSERT(tx_info != NULL, "NULL transaction context passed to init_transaction_pairs");
+
     // Free existing pairs if any
     if (tx_info->pairs != NULL) {
         app_mem_free(tx_info->pairs);
@@ -371,6 +384,9 @@ value = (char *) app_mem_alloc(value_len);
 
 // Helper function to set display configuration from a const array.
 static void set_display_config(pb_callback_context_t *ctx, const display_config_t *config_source) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to set_display_config");
+    LEDGER_ASSERT(config_source != NULL, "NULL config source passed to set_display_config");
+
     PRINTF("Setting display config with %d fields\n", config_source->fields_count);
 
     const field_config_t *const *source =
@@ -405,12 +421,18 @@ static void set_display_config(pb_callback_context_t *ctx, const display_config_
 
 // Helper function to match identifiers
 MUST_CHECK static bool match_identifier(const Identifier *id, const identifier_config_t *config) {
+    LEDGER_ASSERT(id != NULL, "NULL identifier passed to match_identifier");
+    LEDGER_ASSERT(config != NULL, "NULL config passed to match_identifier");
+
     return strcmp(id->module_name, (char *) PIC(config->module_name)) == 0 &&
            strcmp(id->entity_name, (char *) PIC(config->entity_name)) == 0;
 }
 
 // Identify transaction type and set display configuration accordingly
 static void find_tx_type_and_config(pb_callback_context_t *ctx, const Identifier *id) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to find_tx_type_and_config");
+    LEDGER_ASSERT(id != NULL, "NULL identifier passed to find_tx_type_and_config");
+
     if (ctx->tx_fields != NULL) {
         // Already set, no need to find again
         return;
@@ -428,6 +450,9 @@ static void find_tx_type_and_config(pb_callback_context_t *ctx, const Identifier
 
 // Lookup field in hash map and set value for display if found. Discriminate field types if needed.
 static void find_tx_field(pb_callback_context_t *ctx, cbValue *value) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to find_tx_field");
+    LEDGER_ASSERT(value != NULL, "NULL value passed to find_tx_field");
+
     if (ctx->tx_fields != NULL) {
         PRINTF("Looking up field path: %s\n", ctx->field_path);
         tx_field_t *state = find_field_by_path(ctx, ctx->field_path);
@@ -461,6 +486,8 @@ static void find_tx_field(pb_callback_context_t *ctx, cbValue *value) {
 
 // Function to allocate memory for the display field path
 static void init_field_path(pb_callback_context_t *ctx) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to init_field_path");
+
     if (ctx->field_path != NULL) {
         app_mem_free(ctx->field_path);
     }
@@ -470,6 +497,8 @@ static void init_field_path(pb_callback_context_t *ctx) {
 
 // Function to free memory for the display field path
 static void free_field_path(pb_callback_context_t *ctx) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to free_field_path");
+
     if (ctx->field_path != NULL) {
         app_mem_free(ctx->field_path);
         ctx->field_path = NULL;
@@ -478,6 +507,9 @@ static void free_field_path(pb_callback_context_t *ctx) {
 
 // Push a new segment onto the field path with escaping for dots
 static void push_path(pb_callback_context_t *ctx, const char *new_segment) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to push_path");
+    // new_segment can be NULL (early return)
+
     if (!ctx->tx_fields || !ctx->field_path || !new_segment) return;
 
     size_t current_len = strlen(ctx->field_path);
@@ -505,6 +537,8 @@ static void push_path(pb_callback_context_t *ctx, const char *new_segment) {
 
 // Pop the last segment from the field path considering escaping
 static void pop_path(pb_callback_context_t *ctx) {
+    LEDGER_ASSERT(ctx != NULL, "NULL context passed to pop_path");
+
     if (!ctx->tx_fields || !ctx->field_path) return;
 
     // Find last unescaped dot
@@ -527,6 +561,8 @@ static void pop_path(pb_callback_context_t *ctx) {
 MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
                                                  const pb_field_t *field,
                                                  void **arg) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_field_label");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_record_field_label");
     UNUSED(field);
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     // Read string from stream
@@ -544,7 +580,10 @@ MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
 MUST_CHECK static bool decode_record_id_field(pb_istream_t *stream,
                                               const pb_field_t *field,
                                               void **arg) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_id_field");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_record_id_field");
     UNUSED(field);
+
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     com_daml_ledger_api_v2_Identifier id = {};
 
@@ -566,7 +605,10 @@ MUST_CHECK static bool decode_record_id_field(pb_istream_t *stream,
 MUST_CHECK static bool decode_record_field(pb_istream_t *stream,
                                            const pb_field_t *field,
                                            void **arg) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_field");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_record_field");
     UNUSED(field);
+
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
     if (ctx->tx_fields == NULL) {
@@ -599,7 +641,10 @@ MUST_CHECK static bool decode_record_field(pb_istream_t *stream,
 
 // Decode an Optional value, which may contain another Value
 MUST_CHECK static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_value");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_value");
     UNUSED(field);
+
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
     PRINTF("Decoding Optional value\n");
@@ -622,6 +667,9 @@ MUST_CHECK static bool decode_value(pb_istream_t *stream, const pb_field_t *fiel
 MUST_CHECK static bool decode_textmap_key(pb_istream_t *stream,
                                           const pb_field_t *field,
                                           void **arg) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_textmap_key");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_textmap_key");
+    UNUSED(field);
 
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
@@ -647,6 +695,9 @@ MUST_CHECK static bool decode_value_text_map(pb_istream_t *stream,
                                              const pb_field_t *field,
                                              void **arg) {
     UNUSED(field);
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_value_text_map");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_value_text_map");
+
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
 
     PRINTF("Decoding TextMap value\n");
@@ -676,6 +727,10 @@ MUST_CHECK static bool decode_value_text_map(pb_istream_t *stream,
 
 // Decode a value variant, handling Record types specifically
 MUST_CHECK static bool decode_value_var(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_value_var");
+    LEDGER_ASSERT(field != NULL, "NULL field passed to decode_value_var");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to decode_value_var");
+
     cbValue *topmsg = field->message;
     (void) topmsg;
 
@@ -720,6 +775,9 @@ MUST_CHECK static bool decode_value_var(pb_istream_t *stream, const pb_field_t *
 // Callback to decode Node messages, focusing on Exercise and Create nodes
 static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     UNUSED(stream);
+    LEDGER_ASSERT(field != NULL, "NULL field passed to node_decode_callback");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to node_decode_callback");
+
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     com_daml_ledger_api_v2_interactive_transaction_v1_cb_NodeDisplay *node = field->message;
 
@@ -742,6 +800,9 @@ MUST_CHECK static bool versioned_node_decode_callback(pb_istream_t *stream,
                                                       const pb_field_t *field,
                                                       void **arg) {
     UNUSED(stream);
+    LEDGER_ASSERT(field != NULL, "NULL field passed to versioned_node_decode_callback");
+    LEDGER_ASSERT(arg != NULL, "NULL arg passed to versioned_node_decode_callback");
+
     pb_callback_context_t *ctx = (pb_callback_context_t *) (*arg);
     com_daml_ledger_api_v2_interactive_DeviceDamlTransactionDisplay_Node *node = field->message;
 
@@ -759,6 +820,8 @@ MUST_CHECK static bool versioned_node_decode_callback(pb_istream_t *stream,
 /* -------------------------------------------------------------------------- */
 
 MUST_CHECK int parse_node_for_display(buffer_t *buf) {
+    LEDGER_ASSERT(buf != NULL, "NULL buffer passed to parse_node_for_display");
+
     // Only parse if we haven't already found all fields
     if (G_context.tx_info.clear_signing_available) {
         return 0;

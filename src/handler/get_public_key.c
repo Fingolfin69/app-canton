@@ -39,6 +39,9 @@ MUST_CHECK cx_err_t derive_public_key(uint32_t *bip32_path,
                                       uint8_t bip32_path_len,
                                       uint8_t *raw_public_key,
                                       uint8_t *chain_code) {
+    LEDGER_ASSERT(bip32_path != NULL, "NULL bip32_path");
+    LEDGER_ASSERT(raw_public_key != NULL, "NULL raw_public_key");
+    LEDGER_ASSERT(chain_code != NULL, "NULL chain_code");
     uint8_t rawPubkey[PUBKEY_LEN + PRIVKEY_LEN + 1] = {0};
 
     cx_err_t error = bip32_derive_with_seed_get_pubkey_256(HDW_ED25519_SLIP10,
@@ -67,6 +70,7 @@ MUST_CHECK cx_err_t derive_public_key(uint32_t *bip32_path,
 }
 
 MUST_CHECK int handler_get_public_key(buffer_t *cdata, bool display) {
+    LEDGER_ASSERT(cdata != NULL, "cdata is NULL");
     explicit_bzero(&G_context, sizeof(G_context));
     G_context.req_type = CONFIRM_ADDRESS;
     G_context.state = STATE_NONE;

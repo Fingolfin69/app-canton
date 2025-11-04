@@ -30,6 +30,9 @@
 void canton_hash(uint8_t purpose, const uint8_t *data, size_t data_len, uint8_t out[34]) {
     LEDGER_ASSERT(out != NULL, "NULL out");
     LEDGER_ASSERT(data != NULL || data_len == 0, "NULL data with non-zero length");
+    LEDGER_ASSERT(out != NULL, "NULL out pointer passed to canton_hash");
+    LEDGER_ASSERT(data != NULL || data_len == 0,
+                  "NULL data with non-zero length passed to canton_hash");
     cx_sha256_t ctx;
     uint8_t purpose_be[4] = {0, 0, 0, purpose};
     uint8_t tmp[32] = {0};
@@ -53,6 +56,8 @@ bool is_digit(char c) {
 }
 
 MUST_CHECK int atoint(const char *str) {
+    LEDGER_ASSERT(str != NULL, "NULL string pointer passed to atoint");
+
     int res = 0;
 
     for (int i = 0; str[i] != '\0'; i++) {

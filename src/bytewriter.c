@@ -9,16 +9,25 @@
 #include "mem.h"
 
 void bw_init(ByteWriter *bw, void *buf, size_t cap) {
+    LEDGER_ASSERT(bw != NULL, "NULL ByteWriter pointer passed to bw_init");
+    LEDGER_ASSERT(buf != NULL, "NULL buffer pointer passed to bw_init");
+    LEDGER_ASSERT(cap > 0, "Zero capacity passed to bw_init");
+
     bw->base = bw->ptr = (uint8_t *) buf;
     bw->end = bw->base + cap;
     bw->overflow = false;
 }
 
 MUST_CHECK size_t bw_size(const ByteWriter *bw) {
+    LEDGER_ASSERT(bw != NULL, "NULL ByteWriter pointer passed to bw_size");
+
     return (size_t) (bw->ptr - bw->base);
 }
 
 void bw_put(ByteWriter *bw, const void *p, size_t n) {
+    LEDGER_ASSERT(bw != NULL, "NULL ByteWriter pointer passed to bw_put");
+    LEDGER_ASSERT(p != NULL, "NULL pointer passed to bw_put");
+
     if (bw->overflow || bw->ptr + n > bw->end) {
         bw->overflow = true;
         return;

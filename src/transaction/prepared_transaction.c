@@ -36,6 +36,8 @@ void process_prepared_tx_init() {
 }
 
 MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
+    LEDGER_ASSERT(buf != NULL, "Null buffer passed to process_prepared_tx_part");
+
     switch (tx_state) {
         case RECEIVING_DAML_TX_PART: {
             parser_status_e status = proto_deserialize_daml_tx(buf, &G_context.tx_info);

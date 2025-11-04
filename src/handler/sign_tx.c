@@ -108,6 +108,7 @@ static int process_tx_chunk(buffer_t *cdata,
                             bool first,
                             bool more,
                             bool msg_end) {
+    LEDGER_ASSERT(cdata != NULL, "cdata is NULL");
     if (first) {  // first APDU, parse BIP32 path
         // Quick fix for memory leaks between transactions :
         // Reset all allocated memory.
@@ -183,6 +184,7 @@ static int process_tx_chunk(buffer_t *cdata,
 }
 
 static MUST_CHECK int process_transaction_hash(buffer_t *buffer) {
+    LEDGER_ASSERT(buffer != NULL, "buffer is NULL");
     if (G_context.state != STATE_PARSED) {
         PRINTF("Invalid state: expected STATE_PARSED, got %d\n", G_context.state);
         return SW_BAD_STATE;

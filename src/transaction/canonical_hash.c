@@ -105,6 +105,8 @@ void set_node_hash(int node_id, const uint8_t hash[SHA256_HASH_LEN]) {
 }
 
 static MUST_CHECK int get_node_hash(const char *node_id, uint8_t out[SHA256_HASH_LEN]) {
+    LEDGER_ASSERT(out != NULL, "Null output buffer passed to get_node_hash");
+
     if (node_id == NULL) {
         return -1;  // No node_id provided
     }
@@ -131,6 +133,9 @@ void hw_init(HashWriter *hw) {
 }
 
 void hw_put(HashWriter *hw, const void *p, size_t n) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hw_put");
+    LEDGER_ASSERT(p != NULL, "Null pointer passed to hw_put");
+    LEDGER_ASSERT(n > 0, "Zero length passed to hw_put");
     CX_ASSERT(cx_hash_update((cx_hash_t *) &hw->ctx, p, n));
 }
 
@@ -278,6 +283,10 @@ static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *
 }
 
 void encode_create_start(HashWriter *hw, const Node_CreateCb *c, const uint8_t *seed) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_create_start");
+    LEDGER_ASSERT(c != NULL, "Null create node passed to encode_create_start");
+    // Seed is optional for create nodes, can be NULL
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, c->lf_version);
     hw_put_byte(hw, 0x00);
@@ -288,11 +297,17 @@ void encode_create_start(HashWriter *hw, const Node_CreateCb *c, const uint8_t *
 }
 
 void encode_create_end(HashWriter *hw, const Node_CreateCb *c) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_create_end");
+    LEDGER_ASSERT(c != NULL, "Null create node passed to encode_create_end");
+
     encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }
 
 void encode_exercise_start(HashWriter *hw, const Node_ExerciseCb *e, const uint8_t *seed) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_exercise_start");
+    LEDGER_ASSERT(e != NULL, "Null exercise node passed to encode_exercise_start");
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, e->lf_version);
     hw_put_byte(hw, 0x01);
@@ -316,10 +331,16 @@ void encode_exercise_start(HashWriter *hw, const Node_ExerciseCb *e, const uint8
 }
 
 void encode_exercise_middle(HashWriter *hw, const Node_ExerciseCb *e) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_exercise_middle");
+    LEDGER_ASSERT(e != NULL, "Null exercise node passed to encode_exercise_middle");
+
     encode_bool(hw, e->consuming);
 }
 
 void encode_exercise_end(HashWriter *hw, const Node_ExerciseCb *e) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_exercise_end");
+    LEDGER_ASSERT(e != NULL, "Null exercise node passed to encode_exercise_end");
+
     encode_repeated(hw,
                     e->choice_observers_count,
                     e->choice_observers,
@@ -334,6 +355,9 @@ void encode_exercise_end(HashWriter *hw, const Node_ExerciseCb *e) {
 }
 
 void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_fetch");
+    LEDGER_ASSERT(f != NULL, "Null fetch node passed to encode_fetch");
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, f->lf_version);
     hw_put_byte(hw, 0x02);
@@ -351,6 +375,9 @@ void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
 }
 
 void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_rollback");
+    LEDGER_ASSERT(r != NULL, "Null rollback node passed to encode_rollback");
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     hw_put_byte(hw, 0x03);
     if (r->children_count > MAX_NODE_CHILDREN) {
@@ -361,6 +388,9 @@ void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
 }
 
 static void encode_metadata(HashWriter *hw, const Metadata *m) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_metadata");
+    LEDGER_ASSERT(m != NULL, "Null metadata passed to encode_metadata");
+
     hw_put_byte(hw, 0x01);
     encode_repeated(hw,
                     m->submitter_info.act_as_count,
@@ -385,6 +415,9 @@ static void encode_metadata(HashWriter *hw, const Metadata *m) {
 }
 
 MUST_CHECK int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hash_transaction");
+    LEDGER_ASSERT(tx != NULL, "Null DamlTransaction passed to hash_transaction");
+
     // Reset error state
     clear_hash_error();
     init_node_hash_store();
@@ -418,6 +451,9 @@ void finalize_hash_transaction(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
 }
 
 MUST_CHECK int hash_metadata(HashWriter *hw, const Metadata *md) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hash_metadata");
+    LEDGER_ASSERT(md != NULL, "Null Metadata passed to hash_metadata");
+
     hw_init(hw);
     hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
     encode_metadata(hw, md);

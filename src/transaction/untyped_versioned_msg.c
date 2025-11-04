@@ -109,6 +109,7 @@ static void init_hash_storage(void) {
         app_mem_free(tx_hashes);
     }
     tx_hashes = app_mem_alloc(MAX_HASHES * sizeof(uint8_t[HASH_LEN]));
+    LEDGER_ASSERT(tx_hashes != NULL, "Failed to allocate memory for hash storage");
     hash_count = 0;
 }
 
@@ -163,6 +164,8 @@ MUST_CHECK static bool read_challenge_and_deadline(buffer_t *cdata) {
 }
 
 MUST_CHECK bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
+    LEDGER_ASSERT(cdata != NULL, "Null buffer passed to process_untyped_versioned_msg_tx_init");
+
     init_hash_storage();
     LEDGER_ASSERT(
         init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB) == true,
@@ -297,6 +300,9 @@ MUST_CHECK int process_untyped_versioned_msg_tx(buffer_t *buf) {
 MUST_CHECK static bool set_field_value(transaction_ctx_t *tx_info,
                                        size_t field_idx,
                                        const char *value) {
+    LEDGER_ASSERT(tx_info != NULL, "Null transaction context passed to set_field_value");
+    LEDGER_ASSERT(value != NULL, "Null value passed to set_field_value");
+
     uint8_t idx = tx_info->pairs_count;
 
     // Input validation
@@ -410,6 +416,9 @@ static int process_namespace_delegation(const NamespaceDelegation *delegation,
 static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
                                         transaction_ctx_t *tx_info) {
     UNUSED(tx_info);
+    LEDGER_ASSERT(!has_parsed_party_to_key_mapping, "Multiple party to key mappings found");
+    LEDGER_ASSERT(mapping != NULL, "NULL party to key mapping");
+
     int ret = 0;
     // Set party to key mapping specific fields
     if (mapping->party != NULL && !check_party_id_value(mapping->party)) {
@@ -432,6 +441,10 @@ static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
 // Process party to participant mapping
 static int process_party_to_participant(const PartyToParticipant *mapping,
                                         transaction_ctx_t *tx_info) {
+    LEDGER_ASSERT(!has_parsed_party_to_participant, "Multiple party to participant mappings found");
+    LEDGER_ASSERT(tx_info != NULL,
+                  "NULL transaction context passed to process_party_to_participant");
+
     // Set party to participant specific fields
     if (mapping->party != NULL) {
         LEDGER_ASSERT(set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party) == true,
@@ -473,6 +486,8 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
 }
 
 static int parse_topology_transaction_for_display(buffer_t *buf) {
+    LEDGER_ASSERT(buf != NULL, "NULL buffer passed to parse_topology_transaction_for_display");
+
     int32_t ret = 0;
     parser_status_e status = proto_deserialize_topology_transaction(buf, &G_context.tx_info);
 
