@@ -6,13 +6,7 @@
 #include "com/daml/ledger/api/v2/interactive/device.pb.h"
 
 #include "pb_decode.h"
-
-#if defined(TEST) || defined(FUZZ)
-#include "assert.h"
-#define LEDGER_ASSERT(x, y) assert(x)
-#else
 #include "ledger_assert.h"
-#endif
 
 #define VALUE_ELEM_COUNT_NONE -1
 

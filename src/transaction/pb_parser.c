@@ -23,13 +23,7 @@
 #include "com/digitalasset/canton/protocol/v30/topology.pb.h"
 
 #include "pb_decode.h"
-
-#if defined(TEST) || defined(FUZZ)
-#include "assert.h"
-#define LEDGER_ASSERT(x, y) assert(x)
-#else
 #include "ledger_assert.h"
-#endif
 
 MUST_CHECK parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
     LEDGER_ASSERT(buf != NULL, "Null buffer passed to proto_deserialize_daml_tx");
