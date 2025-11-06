@@ -2,11 +2,21 @@
 # Copied from https://github.com/LedgerHQ/app-ledger-sync/blob/develop/attestations/generateCryptoData.py and updated.
 import argparse
 import logging
-from typing import List
+from typing import List, Tuple
 from createKey import check_file, check_exec, setLogger
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_keys_bytes(key_file: str) -> Tuple[bytes, bytes]:
+    """Extract private and public key bytes from a PEM file."""
+    check_file(key_file)
+    stdout = check_exec(f"openssl pkey -inform pem -in {key_file} -noout -text")
+    lines = [line.strip().replace(":", "") for line in stdout.splitlines()]
+    private_hex = "".join(lines[2:5])
+    public_hex = "".join(lines[6:9])
+    return bytes.fromhex(private_hex), bytes.fromhex(public_hex)
 
 
 def format_data(prefix: str, data: List[str], step: int = 16) -> None:
@@ -55,19 +65,21 @@ def main() -> None:
     cmd = f"openssl pkey -inform pem -in {key_file} -noout -text"
     stdout = check_exec(cmd)
 
+    # Get key bytes
+    private_key, public_key = get_keys_bytes(key_file)
+
     # Generate ATTESTATION_KEY
     prefix = f"static const uint8_t {env}_ATTESTATION_KEY[] ="
-    key_bytes = "".join(stdout.split("\n")[2:5]).replace(" ", "").split(':')
+    key_hex = private_key.hex()
     if args.env == "prod":
-        print(f"PROD_ATTESTATION_KEY='0x{',0x'.join(key_bytes)}'")
+        print(f"PROD_ATTESTATION_KEY='0x{',0x'.join(key_hex)}'")
     else:
-        format_data(prefix, key_bytes)
+        format_data(prefix, key_hex)
 
     # Generate ATTESTATION_PUBKEY
     prefix = f"static const uint8_t {env}_ATTESTATION_PUBKEY[] ="
-    key_bytes = "".join(stdout.split("\n")[6:11]).replace(" ", "").split(':')
-    format_data(prefix, key_bytes)
-
+    key_hex = public_key.hex()
+    format_data(prefix, key_hex)
 
 if __name__ == "__main__":
     main()

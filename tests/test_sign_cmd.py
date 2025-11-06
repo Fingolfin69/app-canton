@@ -15,10 +15,10 @@ from application_client.canton_response_unpacker import (
     unpack_get_public_key_response,
     unpack_sign_tx_response,
 )
-from utils import (
-    verify_signature,
-    read_attestation_keys,
-)
+from utils import verify_signature
+
+# pylint: disable=import-error
+from generateCryptoData import get_keys_bytes
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
@@ -228,8 +228,7 @@ def _verify_attestation(attest_pub_key: bytes, multi_hash: bytes, challenge: Opt
     verify_signature(attest_pub_key, multi_hash + challenge, challenge_sig)
 
 def test_sign_onboarding_attested(backend: BackendInterface, scenario_navigator: NavigateWithScenario) -> None:
-    path: Path = Path(__file__).parent.parent / "src" / "crypto_data.h"
-    attest_key, attest_pub_key = read_attestation_keys(path)
+    attest_key, attest_pub_key = get_keys_bytes("attestations/data/test/priv-key.pem")
     _onboard_party(backend, scenario_navigator, validator_seeds=[VALIDATOR_SEED_1],
                    attestation_keys=(attest_key, attest_pub_key))
 
