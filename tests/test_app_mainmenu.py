@@ -14,18 +14,18 @@ def test_app_mainmenu(device: Device, navigator: Navigator, test_name: str) -> N
             NavInsID.RIGHT_CLICK,
             NavInsID.BOTH_CLICK,
             NavInsID.RIGHT_CLICK,
+            NavInsID.BOTH_CLICK,
+            NavInsID.RIGHT_CLICK,
+            NavInsID.BOTH_CLICK,
+            NavInsID.RIGHT_CLICK,
             NavInsID.RIGHT_CLICK,
             NavInsID.BOTH_CLICK,
             NavInsID.RIGHT_CLICK,
         ]
-    elif device.type == DeviceType.STAX:
+    elif device.type in [DeviceType.STAX, DeviceType.FLEX]:
         instructions += [
             NavInsID.USE_CASE_HOME_SETTINGS,
-            NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT,
-        ]
-    elif device.type is DeviceType.FLEX:
-        instructions += [
-            NavInsID.USE_CASE_HOME_SETTINGS,
+            NavInsID.USE_CASE_SETTINGS_NEXT,
             NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT,
         ]
 

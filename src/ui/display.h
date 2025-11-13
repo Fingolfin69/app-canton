@@ -2,6 +2,7 @@
 
 #include <stdbool.h>  // bool
 #include "utils.h"
+#include "glyphs.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #define ICON_APP_CANTON  C_app_canton_14px
@@ -12,11 +13,6 @@
 #define ICON_APP_HOME    ICON_APP_CANTON
 #define ICON_APP_WARNING C_Warning_64px
 #endif
-
-/**
- * Callback to reuse action with approve/reject in step FLOW.
- */
-typedef void (*action_validate_cb)(bool);
 
 /**
  * Display party id on the device and ask confirmation to export.
@@ -41,3 +37,10 @@ MUST_CHECK int ui_display_transaction(void);
  *
  */
 MUST_CHECK int ui_display_blind_signed_transaction(void);
+
+/**
+ * Display an error message indicating that blind signing is not enabled.
+ *
+ * @return Status word indicating incorrect data.
+ */
+MUST_CHECK int ui_error_blind_signing(void);

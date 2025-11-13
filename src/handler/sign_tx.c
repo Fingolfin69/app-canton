@@ -23,6 +23,7 @@
 #include "os.h"
 #include "cx.h"
 #include "buffer.h"
+#include "status_words.h"
 
 #include "sign_tx.h"
 #include "sw.h"
@@ -87,6 +88,8 @@ MUST_CHECK int handler_sign_tx(buffer_t *cdata,
         if (G_context.state == STATE_PARSED) {
             if (G_context.tx_info.clear_signing_available == true) {
                 return ui_display_transaction();
+            } else if (N_storage.allow_blind_sign == BlindSignDisabled) {
+                return ui_error_blind_signing();
             } else {
                 return ui_display_blind_signed_transaction();
             }

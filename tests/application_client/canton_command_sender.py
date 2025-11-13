@@ -38,6 +38,7 @@ class InsType(IntEnum):
 
 class Errors(IntEnum):
     SW_DENY = 0x6985
+    SW_INCORRECT_DATA = 0x6A80
     SW_WRONG_P1P2 = 0x6A86
     SW_WRONG_DATA_LENGTH = 0x6A87
     SW_INS_NOT_SUPPORTED = 0x6D00
@@ -51,7 +52,6 @@ class Errors(IntEnum):
     SW_TX_HASH_FAIL = 0xB006
     SW_BAD_STATE = 0xB007
     SW_SIGNATURE_FAIL = 0xB008
-
 
 def split_message(message: bytes, max_size: int) -> List[bytes]:
     return [message[x : x + max_size] for x in range(0, len(message), max_size)]
