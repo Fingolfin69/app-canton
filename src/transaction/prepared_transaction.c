@@ -47,13 +47,11 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res = hash_transaction(&G_context.tx_info.hasher,
-                                       &G_context.tx_info.tx_parts_ctx.daml_transaction);
-
-            if (res != 0) {
-                PRINTF("Failed to hash DAML transaction part: %d\n", res);
-                return SW_TX_HASH_FAIL;
-            }
+            // No need to check for hashing errors here, set_hash_error is not called in
+            // this function. Critical errors are handled with assertions (CX_ASSERT,
+            // LEDGER_ASSERT).
+            hash_transaction(&G_context.tx_info.hasher,
+                             &G_context.tx_info.tx_parts_ctx.daml_transaction);
 
             G_context.tx_info.recv_node_idx = 0;
             tx_state = G_context.tx_info.tx_parts_ctx.daml_transaction.nodes_count == 0
@@ -62,6 +60,7 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
         } break;
 
         case RECEIVING_DAML_NODES: {
+            // Hash calculated inside callback during deserialization
             parser_status_e status = proto_deserialize_node(buf, &G_context.tx_info);
 
             if (status != PARSING_OK) {
@@ -69,8 +68,16 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
+            // A hashing error might have occurred during deserialization :
+            // We hash fields on the fly inside callbacks for DAML nodes.
+            int res = get_hash_error();
+            if (res != HASH_OK) {
+                PRINTF("Failed to hash DAML Node. Hash error code : %d\n", res);
+                return SW_TX_HASH_FAIL;
+            }
+
             // Parse node for clear signing availability
-            int res = parse_node_for_display(buf);
+            res = parse_node_for_display(buf);
             if (res != 0) {
                 PRINTF("Failed to parse DAML Node for display: %d\n", res);
                 return SW_TX_PARSING_FAIL;
@@ -84,6 +91,9 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
             }
         } break;
         case RECEIVING_METADATA: {
+            // No need to check for hashing errors here, set_hash_error is not called in
+            // this function. Critical errors are handled with assertions (CX_ASSERT,
+            // LEDGER_ASSERT).
             finalize_hash_transaction(&G_context.tx_info.hasher, G_context.tx_info.partial_tx_hash);
             release_daml_tx(&G_context.tx_info);
 
@@ -94,15 +104,12 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
                 return SW_TX_PARSING_FAIL;
             }
 
-            int res =
-                hash_metadata(&G_context.tx_info.hasher, &G_context.tx_info.tx_parts_ctx.metadata);
+            // No need to check for hashing errors here, set_hash_error is not called in
+            // this function. Critical errors are handled with assertions (CX_ASSERT,
+            // LEDGER_ASSERT).
+            hash_metadata(&G_context.tx_info.hasher, &G_context.tx_info.tx_parts_ctx.metadata);
 
             release_metadata(&G_context.tx_info);
-
-            if (res != 0) {
-                PRINTF("Failed to hash Metadata part: %d\n", res);
-                return SW_TX_HASH_FAIL;
-            }
 
             G_context.tx_info.recv_node_idx = 0;
 
@@ -120,6 +127,14 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Input Contract part: %d\n", status);
                 return SW_TX_PARSING_FAIL;
+            }
+
+            // A hashing error might have occurred during deserialization :
+            // We hash fields on the fly inside callbacks for input contracts.
+            int res = get_hash_error();
+            if (res != HASH_OK) {
+                PRINTF("Failed to hash metadata. Hash error code : %d\n", res);
+                return SW_TX_HASH_FAIL;
             }
 
             G_context.tx_info.recv_node_idx++;
@@ -143,9 +158,10 @@ static MUST_CHECK int process_prepared_tx_finalize() {
         return SW_BAD_STATE;
     }
 
+    // Finalize metadata hash (critical errors handled with assertions)
     finalize_hash_metadata(&G_context.tx_info.hasher, G_context.tx_info.partial_md_hash);
 
-    // Finalize hash
+    // Finalize hash (critical errors handled with assertions)
     finalize_hash(G_context.tx_info.partial_tx_hash,
                   G_context.tx_info.partial_md_hash,
                   G_context.tx_info.m_hash);

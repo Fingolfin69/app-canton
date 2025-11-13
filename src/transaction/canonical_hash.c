@@ -30,18 +30,6 @@ static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[UINT32_T_LEN] = {0x00, 0x
 /*  Error handling                                                            */
 /* -------------------------------------------------------------------------- */
 
-typedef enum {
-    HASH_OK = 0,
-    HASH_ERROR_BUFFER_OVERFLOW = 1,
-    HASH_ERROR_INVALID_HASH_STRING = 2,
-    HASH_ERROR_UNSUPPORTED_VALUE = 3,
-    HASH_ERROR_UNKNOWN_NODE_VERSION = 4,
-    HASH_ERROR_UNKNOWN_NODE_TYPE = 5,
-    HASH_ERROR_FAILED_TO_STORE_NODE_HASH = 6,
-    HASH_ERROR_FAILED_TO_LOAD_NODE_HASH = 7,
-    HASH_ERROR_MAX_NODE_CHILDREN_EXCEEDED = 8,
-} HashError;
-
 typedef struct {
     uint8_t err_msg[MAX_ERROR_MSG_LEN];
     int err_code;
@@ -57,8 +45,11 @@ static void clear_hash_error() {
     memset(HASH_ERR_INFO.err_msg, 0, sizeof(HASH_ERR_INFO.err_msg));
 }
 
-MUST_CHECK bool is_hash_error() {
-    return HASH_ERR_INFO.err_code != HASH_OK;
+MUST_CHECK int get_hash_error() {
+    if (HASH_ERR_INFO.err_code != HASH_OK) {
+        PRINTF("Hash error: '%s', code: %d\n", HASH_ERR_INFO.err_msg, HASH_ERR_INFO.err_code);
+    }
+    return HASH_ERR_INFO.err_code;
 }
 
 static void set_hash_error(HashError err, const char *msg) {
@@ -211,6 +202,7 @@ static uint8_t hex_val(char c) {
 
 void encode_hex_string(HashWriter *hw, const char *hex) {
     size_t len = strlen(hex);
+
     if (len % 2 != 0) {
         set_hash_error(HASH_ERROR_INVALID_HASH_STRING, "Hex string must have even length");
         return;
@@ -278,7 +270,6 @@ static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *
     for (size_t i = 0; i < count; ++i) {
         uint8_t hash[SHA256_HASH_LEN];
         if (get_node_hash(ids[i], hash) != 0) {
-            LEDGER_ASSERT(false, "Node id hash not found in store");
             set_hash_error(HASH_ERROR_FAILED_TO_LOAD_NODE_HASH, "Node id hash not found in store");
             return;
         };
@@ -418,7 +409,7 @@ static void encode_metadata(HashWriter *hw, const Metadata *m) {
     encode_int32(hw, m->input_contracts_count);
 }
 
-MUST_CHECK int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
+void hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
     LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hash_transaction");
     LEDGER_ASSERT(tx != NULL, "Null DamlTransaction passed to hash_transaction");
 
@@ -432,15 +423,6 @@ MUST_CHECK int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
     encode_string(hw, tx->version);
     // Encode nodes count
     encode_int32(hw, (int32_t) tx->roots_count);
-
-    if (is_hash_error()) {
-        PRINTF("Error hashing transaction: '%s', code: %d\n",
-               HASH_ERR_INFO.err_msg,
-               HASH_ERR_INFO.err_code);
-        return HASH_ERR_INFO.err_code;
-    }
-
-    return 0;
 }
 
 void finalize_hash_transaction(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
@@ -450,26 +432,15 @@ void finalize_hash_transaction(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
     hw_finalize(hw, out);
 
     PRINTF("TX hash: %.*H\n", 32, out);
-
-    return;
 }
 
-MUST_CHECK int hash_metadata(HashWriter *hw, const Metadata *md) {
+void hash_metadata(HashWriter *hw, const Metadata *md) {
     LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hash_metadata");
     LEDGER_ASSERT(md != NULL, "Null Metadata passed to hash_metadata");
 
     hw_init(hw);
     hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, UINT32_T_LEN);
     encode_metadata(hw, md);
-
-    if (is_hash_error()) {
-        PRINTF("Error hashing metadata: '%s', code: %d\n",
-               HASH_ERR_INFO.err_msg,
-               HASH_ERR_INFO.err_code);
-        return HASH_ERR_INFO.err_code;
-    }
-
-    return 0;
 }
 
 void finalize_hash_metadata(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
@@ -478,8 +449,6 @@ void finalize_hash_metadata(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
     hw_finalize(hw, out);
 
     PRINTF("Metadata hash: %.*H\n", SHA256_HASH_LEN, out);
-
-    return;
 }
 
 void finalize_hash(const uint8_t tx_hash[SHA256_HASH_LEN],
@@ -494,6 +463,4 @@ void finalize_hash(const uint8_t tx_hash[SHA256_HASH_LEN],
     hw_put(&hw, md_hash, SHA256_HASH_LEN);
 
     hw_finalize(&hw, out);
-
-    return;
 }

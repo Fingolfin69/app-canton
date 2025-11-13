@@ -7,6 +7,7 @@ serializes each component into protobuf binary format or prints the hex represen
 """
 
 import json
+from pathlib import Path
 
 # pylint: disable=no-name-in-module, import-error
 from google.protobuf.json_format import Parse # type: ignore
@@ -22,12 +23,32 @@ from com.daml.ledger.api.v2.interactive.device_pb2 import (
     DeviceMetadata,
 )  # type: ignore
 
+def load_json(input_str: str):
+    """Load JSON from either a JSON string or a file path."""
+
+    # Try to parse as JSON first (safe for long strings)
+    try:
+        return json.loads(input_str)
+    except json.JSONDecodeError:
+        pass  # if not JSON string, then maybe file path
+
+    # Otherwise try as file path, but safely
+    try:
+        p = Path(input_str)
+        if p.is_file():
+            with p.open("r", encoding="utf-8") as f:
+                return json.load(f)
+    except OSError:
+        pass  # Path too long, illegal chars, etc.
+
+    raise ValueError(
+        "Input is neither valid JSON content nor a readable JSON file path."
+    )
 
 def split_transaction(json_file: str) -> tuple[bytes, list[bytes], bytes, list[bytes]]:
     """Read JSON transaction file and serialize into parts."""
 
-    with open(json_file, "r", encoding="utf-8") as file:
-        json_tx = json.load(file)
+    json_tx = load_json(json_file)
 
     # Determine if the JSON is a full PrepareSubmissionResponse or just a PreparedTransaction
     prepared_transaction = json_tx.get("prepared_transaction") or json_tx.get("preparedTransaction") or json_tx.get("json")

@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from typing import Optional
@@ -197,6 +198,47 @@ def test_sign_ping(
         blind_sign=True,
         test_name=test_name,
     )
+
+def test_sign_hex_string_hash_error(backend: BackendInterface) -> None:
+    # Load json
+    with open("tests/tx_examples/external_sign_ping.json", "r", encoding="utf-8") as f:
+        tx_json = f.read()
+    # Load json as data object
+    tx_data = json.loads(tx_json)
+    # Replace contract_id value (odd length hex string)
+    tx_data["prepared_transaction"]["transaction"]["nodes"][0]["v1"]["create"]["contract_id"] = (
+    "004c3409aa2e8f8e22604d58ea6211f667df2bae4abc7984a95d76b3d120b8bd8ff"
+    )
+    tx_json_invalid = json.dumps(tx_data, indent=4)
+    serialized_parts = Transaction.serialize_from_json_into_tx_parts(tx_json_invalid)
+    path = "m/44'/6767'/0'/0'/0'"
+    client = CantonCommandSender(backend)
+    with pytest.raises(ExceptionRAPDU) as e:
+        with client.sign_tx_in_parts(path, *serialized_parts):
+            pass
+    assert e.value.status == Errors.SW_TX_HASH_FAIL
+
+def test_sign_max_nodes_hash_error(backend: BackendInterface) -> None:
+    # Load json
+    with open("tests/tx_examples/token_transfer_32_children.json", "r", encoding="utf-8") as f:
+        tx_json = f.read()
+    # Load json as data object
+    tx_data = json.loads(tx_json)
+    # Replace children value (more than 32 children)
+    tx_data["json"]["transaction"]["nodes"][5]["v1"]["exercise"]["children"] = (
+        ["12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
+         "22", "23", "24", "25", "26", "27", "28", "22", "23", "24",
+         "25", "26", "27", "28", "12", "13", "14", "15", "16", "17",
+         "18", "19", "29"]
+    )
+    tx_json_invalid = json.dumps(tx_data, indent=4)
+    serialized_parts = Transaction.serialize_from_json_into_tx_parts(tx_json_invalid)
+    path = "m/44'/6767'/0'/0'/0'"
+    client = CantonCommandSender(backend)
+    with pytest.raises(ExceptionRAPDU) as e:
+        with client.sign_tx_in_parts(path, *serialized_parts):
+            pass
+    assert e.value.status == Errors.SW_TX_HASH_FAIL
 
 def test_sign_native_transfer(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
