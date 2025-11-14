@@ -50,9 +50,9 @@ ICON_FLEX = icons/app_canton_40px.gif
 ICON_HOME_NANO = glyphs/home_canton_14px.gif
 
 # Attestations for challenge signature during party onboarding.
-PROD_PRIVATE_KEY?=0
-ifneq ($(PROD_PRIVATE_KEY),0)
-    DEFINES += PROD_PRIVATE_KEY=${PROD_PRIVATE_KEY}
+PROD_CANTON_PRIVATE_KEY?=0
+ifneq ($(PROD_CANTON_PRIVATE_KEY),0)
+    DEFINES += PROD_PRIVATE_KEY=${PROD_CANTON_PRIVATE_KEY}
 endif
 
 # Application allowed derivation curves.
