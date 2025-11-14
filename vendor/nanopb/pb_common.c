@@ -60,7 +60,7 @@ static bool load_descriptor_values(pb_field_iter_t *iter)
             uint32_t word1 = PB_PROGMEM_READU32(((uint32_t *)PIC(((pb_msgdesc_t *)PIC(iter->descriptor))->field_info))[iter->field_info_index + 1]);
             uint32_t word2 = PB_PROGMEM_READU32(((uint32_t *)PIC(((pb_msgdesc_t *)PIC(iter->descriptor))->field_info))[iter->field_info_index + 2]);
             uint32_t word3 = PB_PROGMEM_READU32(((uint32_t *)PIC(((pb_msgdesc_t *)PIC(iter->descriptor))->field_info))[iter->field_info_index + 3]);
-            uint32_t word4 = PB_PROGMEM_READU32(((uint32_t *)PIC(((pb_msgdesc_t *)PIC(iter->descriptor))->field_info))[iter->field_info_index + 4]);            
+            uint32_t word4 = PB_PROGMEM_READU32(((uint32_t *)PIC(((pb_msgdesc_t *)PIC(iter->descriptor))->field_info))[iter->field_info_index + 4]);
 
             iter->array_size = (pb_size_t)word4;
             iter->tag = (pb_size_t)(((word0 >> 2) & 0x3F) | ((word1 >> 8) << 6));
