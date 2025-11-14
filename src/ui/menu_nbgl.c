@@ -46,13 +46,81 @@ static const nbgl_contentInfoList_t infoList = {
     .infoContents = INFO_CONTENTS,
 };
 
+enum {
+    BLIND_SIGNING_IDX = 0,
+    NB_SETTINGS_SWITCHES,
+};
+static nbgl_layoutSwitch_t G_switches[NB_SETTINGS_SWITCHES];
+
+enum {
+    BLIND_SIGNING_TOKEN = FIRST_USER_TOKEN,
+};
+
+static void settings_controls_callback(int token, uint8_t index, int page);
+
+// settings menu definition
+#define SETTING_CONTENTS_NB 1
+static const nbgl_content_t contents[SETTING_CONTENTS_NB] = {
+    {.type = SWITCHES_LIST,
+     .content.switchesList.nbSwitches = NB_SETTINGS_SWITCHES,
+     .content.switchesList.switches = G_switches,
+     .contentActionCallback = settings_controls_callback}};
+
+static const nbgl_genericContents_t settingContents = {.callbackCallNeeded = false,
+                                                       .contentsList = contents,
+                                                       .nbContents = SETTING_CONTENTS_NB};
+
+static void settings_controls_callback(int token, uint8_t index, int page) {
+    UNUSED(index);
+    UNUSED(page);
+    uint8_t new_setting;
+    switch (token) {
+        case BLIND_SIGNING_TOKEN:
+            // Write in NVM the opposite of what the current toggle is
+            new_setting = (G_switches[BLIND_SIGNING_IDX].initState != ON_STATE);
+            G_switches[BLIND_SIGNING_IDX].initState = (nbgl_state_t) new_setting;
+            nvm_write((void*) &N_storage.allow_blind_sign, &new_setting, sizeof(new_setting));
+            break;
+        default:
+            PRINTF("Unreachable\n");
+            break;
+    }
+}
+
+void set_switches_states(void) {
+    G_switches[BLIND_SIGNING_IDX].text = "Blind signing";
+    G_switches[BLIND_SIGNING_IDX].subText = "Enable blind signing";
+    G_switches[BLIND_SIGNING_IDX].token = BLIND_SIGNING_TOKEN;
+#ifdef HAVE_PIEZO_SOUND
+    G_switches[BLIND_SIGNING_IDX].tuneId = TUNE_TAP_CASUAL;
+#endif
+    if (N_storage.allow_blind_sign == BlindSignDisabled) {
+        G_switches[BLIND_SIGNING_IDX].initState = OFF_STATE;
+    } else {
+        G_switches[BLIND_SIGNING_IDX].initState = ON_STATE;
+    }
+}
+
 // home page definition
 void ui_menu_main(void) {
+    set_switches_states();
     nbgl_useCaseHomeAndSettings(APPNAME,
                                 &ICON_APP_HOME,
                                 NULL,
                                 INIT_HOME_PAGE,
+                                &settingContents,
+                                &infoList,
                                 NULL,
+                                app_quit);
+}
+
+void ui_menu_settings(void) {
+    set_switches_states();
+    nbgl_useCaseHomeAndSettings(APPNAME,
+                                &ICON_APP_HOME,
+                                NULL,
+                                0,
+                                &settingContents,
                                 &infoList,
                                 NULL,
                                 app_quit);

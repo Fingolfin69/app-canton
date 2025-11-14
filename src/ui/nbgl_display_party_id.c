@@ -34,7 +34,9 @@
 #include "tx_types.h"
 #include "menu.h"
 
-static nbgl_layoutTagValue_t pairs[1];
+#define NB_PAIR_LIST 1
+
+static nbgl_layoutTagValue_t pairs[NB_PAIR_LIST];
 static nbgl_layoutTagValueList_t pairList;
 static uint8_t g_party_id[PARTY_ID_LEN];
 
@@ -47,7 +49,7 @@ static void review_choice(bool confirm) {
     }
 }
 
-int ui_display_party_id() {
+MUST_CHECK int ui_display_party_id() {
     if (G_context.req_type != CONFIRM_ADDRESS || G_context.state != STATE_NONE) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
@@ -62,7 +64,7 @@ int ui_display_party_id() {
     pairs[0].value = (const char*) g_party_id;
 
     pairList.nbMaxLinesForValue = 0;
-    pairList.nbPairs = 1;
+    pairList.nbPairs = NB_PAIR_LIST;
     pairList.pairs = pairs;
 
     nbgl_useCaseReviewLight(TYPE_OPERATION,

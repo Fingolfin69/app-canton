@@ -47,8 +47,8 @@ typedef enum {
  * Structure for public key context information.
  */
 typedef struct {
-    uint8_t raw_public_key[32];  /// format (1), x-coordinate (32), y-coodinate (32)
-    uint8_t chain_code[32];      /// for public key derivation
+    uint8_t raw_public_key[ED25519_RAW_PUBLIC_KEY_LEN];  /// ED25519 public key raw format
+    uint8_t chain_code[MAX_CHAINCODE_LEN];               /// for public key derivation
 } pubkey_ctx_t;
 
 /**
@@ -58,18 +58,18 @@ typedef struct {
     uint8_t raw_tx[MAX_TRANSACTION_LEN];  /// raw transaction serialized
     size_t raw_tx_len;                    /// length of raw transaction
 
-    transaction_parts_ctx_t tx_parts_ctx;  /// transaction parts context
-    HashWriter hasher;                     // Dynamically allocated hasher
-    uint8_t partial_tx_hash[32];           // Incomplete tx hash
-    uint8_t partial_md_hash[32];           // Incomplete md hash
+    transaction_parts_ctx_t tx_parts_ctx;      /// transaction parts context
+    HashWriter hasher;                         // Dynamically allocated hasher
+    uint8_t partial_tx_hash[SHA256_HASH_LEN];  // Incomplete tx hash
+    uint8_t partial_md_hash[SHA256_HASH_LEN];  // Incomplete md hash
     int32_t
         recv_node_idx;  // Index of the current entity being processed ('Node' or 'InputContract')
 
-    uint8_t m_hash[34];                            /// message hash digest
-    uint8_t m_hash_len;                            /// length of message hash digest
-    uint8_t signature[MAX_DER_SIG_LEN];            /// transaction signature encoded in DER
+    uint8_t m_hash[CANTON_HASH_LEN];  /// message hash digest (can either be SHA-256 or Canton hash)
+    uint8_t m_hash_len;               /// length of message hash digest
+    uint8_t signature[ED25519_SIG_LEN];            /// transaction signature (ED25519)
     uint8_t signature_len;                         /// length of transaction signature
-    uint8_t challenge_signature[MAX_DER_SIG_LEN];  /// challenge signature (r,s) raw format
+    uint8_t challenge_signature[ED25519_SIG_LEN];  /// challenge signature (ED25519)
     uint8_t challenge_signature_len;               /// length of challenge signature
     bool has_challenge_signature;                  /// whether challenge signature is present
 

@@ -33,7 +33,7 @@
 #include "sign_tx.h"
 #include "params.h"
 
-int apdu_dispatcher(const command_t *cmd) {
+MUST_CHECK int apdu_dispatcher(const command_t *cmd) {
     LEDGER_ASSERT(cmd != NULL, "NULL cmd");
 
     if (cmd->cla != CLA) {

@@ -2,18 +2,12 @@
 
 #include "buffer.h"
 #include "canonical_hash.h"
-#include "utils.h"
 #include "types.h"
 #include "com/daml/ledger/api/v2/interactive/device.pb.h"
 
 #include "pb_decode.h"
-
-#if defined(TEST) || defined(FUZZ)
-#include "assert.h"
-#define LEDGER_ASSERT(x, y) assert(x)
-#else
 #include "ledger_assert.h"
-#endif
+#include "constants.h"
 
 #define VALUE_ELEM_COUNT_NONE -1
 
@@ -27,15 +21,18 @@ typedef struct {
 
 static cb_parser_ctx_t ctx;
 
-static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg);
+MUST_CHECK static bool decode_value_variant(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg);
 
 /* -------------------------------------------------------------------------- */
 /* Callbacks for counting number of elements                                  */
 /* -------------------------------------------------------------------------- */
 
-static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_identifier");
 
     com_daml_ledger_api_v2_cb_Identifier id = com_daml_ledger_api_v2_cb_Identifier_init_zero;
 
@@ -51,9 +48,12 @@ static bool count_identifier(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
-static bool count_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_record_field(pb_istream_t *stream,
+                                          const pb_field_t *field,
+                                          void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_record_field");
 
     cbRecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
 
@@ -69,9 +69,10 @@ static bool count_record_field(pb_istream_t *stream, const pb_field_t *field, vo
     return true;
 }
 
-static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_list_elem");
 
     cbValue v = com_daml_ledger_api_v2_cb_Value_init_zero;
 
@@ -87,9 +88,12 @@ static bool count_list_elem(pb_istream_t *stream, const pb_field_t *field, void 
     return true;
 }
 
-static bool count_text_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_text_map_entry(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_text_map_entry");
 
     cbTextMapEntry e = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
 
@@ -105,9 +109,12 @@ static bool count_text_map_entry(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool count_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_gen_map_entry(pb_istream_t *stream,
+                                           const pb_field_t *field,
+                                           void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_gen_map_entry");
 
     cbGenMapEntry e = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
 
@@ -123,10 +130,10 @@ static bool count_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, v
     return true;
 }
 
-static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) stream;
-    (void) field;
     (void) arg;
+    LEDGER_ASSERT(field != NULL, "NULL field passed to count_value");
 
     ctx.value_elem_count = 0;
 
@@ -174,7 +181,9 @@ static bool count_value(pb_istream_t *stream, const pb_field_t *field, void **ar
     return true;
 }
 
-static bool count_value_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_value_helper(pb_istream_t *stream) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_value_helper");
+
     cbValue c = com_daml_ledger_api_v2_cb_Value_init_zero;
     pb_istream_t saved_stream = *stream;
 
@@ -193,7 +202,9 @@ static bool count_value_helper(pb_istream_t *stream) {
     return true;
 }
 
-static bool count_gen_map_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_gen_map_helper(pb_istream_t *stream) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_gen_map_helper");
+
     cbGenMapEntry e = com_daml_ledger_api_v2_cb_GenMap_Entry_init_zero;
     pb_istream_t saved_stream = *stream;
 
@@ -212,7 +223,9 @@ static bool count_gen_map_helper(pb_istream_t *stream) {
     return true;
 }
 
-static bool count_text_map_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_text_map_helper(pb_istream_t *stream) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_text_map_helper");
+
     cbTextMapEntry e = com_daml_ledger_api_v2_cb_TextMap_Entry_init_zero;
     pb_istream_t saved_stream = *stream;
 
@@ -231,7 +244,9 @@ static bool count_text_map_helper(pb_istream_t *stream) {
     return true;
 }
 
-static bool count_record_field_helper(pb_istream_t *stream) {
+MUST_CHECK static bool count_record_field_helper(pb_istream_t *stream) {
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to count_record_field_helper");
+
     cbRecordField rf = com_daml_ledger_api_v2_cb_RecordField_init_zero;
     rf.value.cb_sum.funcs.decode = &count_value;
 
@@ -253,6 +268,8 @@ static bool count_record_field_helper(pb_istream_t *stream) {
 /* -------------------------------------------------------------------------- */
 
 static void decode_value_primitive_variants(cbValue *v) {
+    LEDGER_ASSERT(v != NULL, "NULL cbValue pointer passed to decode_value_primitive_variants");
+
     switch (v->which_sum) {
         case com_daml_ledger_api_v2_cb_Value_unit_tag: {
             PRINTF("Decoding unit\n");
@@ -298,15 +315,21 @@ static void decode_value_primitive_variants(cbValue *v) {
             hw_put_byte(&ctx.node_hw, 0x08);
             encode_hex_string(&ctx.node_hw, v->contract_id);
         } break;
+        default: {
+            // Not a primitive variant, nothing to do here.
+        } break;
     }
 }
 
-static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_field_label(pb_istream_t *stream,
+                                                 const pb_field_t *field,
+                                                 void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_field_label");
 
     // Read string from stream
-    char label_buffer[64] = {0};
+    char label_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
     size_t len =
         stream->bytes_left < sizeof(label_buffer) ? stream->bytes_left : sizeof(label_buffer) - 1;
 
@@ -324,12 +347,15 @@ static bool decode_record_field_label(pb_istream_t *stream, const pb_field_t *fi
     return true;
 }
 
-static bool decode_variant_constructor(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_variant_constructor(pb_istream_t *stream,
+                                                  const pb_field_t *field,
+                                                  void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_variant_constructor");
 
     // Read string from stream
-    char constructor_buffer[64] = {0};
+    char constructor_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
     size_t len = stream->bytes_left < sizeof(constructor_buffer) ? stream->bytes_left
                                                                  : sizeof(constructor_buffer) - 1;
 
@@ -345,12 +371,15 @@ static bool decode_variant_constructor(pb_istream_t *stream, const pb_field_t *f
     return true;
 }
 
-static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_textmap_key(pb_istream_t *stream,
+                                          const pb_field_t *field,
+                                          void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_textmap_key");
 
     // Read string from stream
-    char key_buffer[64] = {0};
+    char key_buffer[DEFAULT_DECODE_BUFFER_SIZE] = {0};
     size_t len =
         stream->bytes_left < sizeof(key_buffer) ? stream->bytes_left : sizeof(key_buffer) - 1;
 
@@ -366,9 +395,12 @@ static bool decode_textmap_key(pb_istream_t *stream, const pb_field_t *field, vo
     return true;
 }
 
-static bool decode_node_id_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_node_id_field(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_node_id_field");
 
     PRINTF("Decoding node_id field\n");
 
@@ -399,9 +431,12 @@ static bool decode_node_id_field(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_field(pb_istream_t *stream,
+                                           const pb_field_t *field,
+                                           void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_field");
 
     PRINTF("Decoding Record fields\n");
 
@@ -427,9 +462,10 @@ static bool decode_record_field(pb_istream_t *stream, const pb_field_t *field, v
     return true;
 }
 
-static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_list_elem");
 
     PRINTF("Decoding List elements\n");
     if (!count_value_helper(stream)) {
@@ -452,9 +488,10 @@ static bool decode_list_elem(pb_istream_t *stream, const pb_field_t *field, void
     return true;
 }
 
-static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_value");
 
     PRINTF("Decoding Optional value\n");
     if (!count_value_helper(stream)) {
@@ -478,9 +515,12 @@ static bool decode_value(pb_istream_t *stream, const pb_field_t *field, void **a
     return true;
 }
 
-static bool decode_text_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_text_map_entry(pb_istream_t *stream,
+                                             const pb_field_t *field,
+                                             void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_text_map_entry");
 
     PRINTF("Decoding TextMap entry\n");
 
@@ -506,9 +546,12 @@ static bool decode_text_map_entry(pb_istream_t *stream, const pb_field_t *field,
     return true;
 }
 
-static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_gen_map_entry(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_gen_map_entry");
 
     PRINTF("Decoding GenMap entry\n");
     if (!count_gen_map_helper(stream)) {
@@ -546,9 +589,10 @@ static bool decode_gen_map_entry(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool decode_enum(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_enum(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_enum");
 
     PRINTF("Decoding Enum\n");
     cbEnum e = com_daml_ledger_api_v2_cb_Enum_init_zero;
@@ -574,9 +618,12 @@ static bool decode_enum(pb_istream_t *stream, const pb_field_t *field, void **ar
     return true;
 }
 
-static bool decode_identifier(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_identifier(pb_istream_t *stream,
+                                         const pb_field_t *field,
+                                         void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_identifier");
 
     PRINTF("Decoding Identifier\n");
 
@@ -596,9 +643,10 @@ static bool decode_identifier(pb_istream_t *stream, const pb_field_t *field, voi
     return true;
 }
 
-static bool decode_record_id(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_record_id(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_record_id");
 
     PRINTF("Decoding Record ID Identifier\n");
     hw_put_byte(&ctx.node_hw, 0x01);  // encode optional field presence
@@ -612,10 +660,12 @@ static bool decode_record_id(pb_istream_t *stream, const pb_field_t *field, void
     return res;
 }
 
-static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, void **arg) {
-    (void) stream;
-    (void) field;
+MUST_CHECK static bool decode_value_variant(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_value_variant");
+    LEDGER_ASSERT(field != NULL, "NULL field passed to decode_value_variant");
 
     PRINTF("Decoding value variant %d\n", field->tag);
 
@@ -677,7 +727,7 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
         } break;
         case com_daml_ledger_api_v2_cb_Value_enum__tag: {
             hw_put_byte(&ctx.node_hw, 0x0E);
-            decode_enum(stream, field, arg);
+            return decode_enum(stream, field, arg);
         } break;
         default:
             LEDGER_ASSERT(false, "Unknown Value type %d", field->tag);
@@ -690,9 +740,12 @@ static bool decode_value_variant(pb_istream_t *stream, const pb_field_t *field, 
 /*  Callbacks to decode Transaction nodes                                      */
 /* -------------------------------------------------------------------------- */
 
-static bool decode_value_field(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_value_field(pb_istream_t *stream,
+                                          const pb_field_t *field,
+                                          void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_value_field");
 
     PRINTF("Decoding Value field\n");
     if (!count_value_helper(stream)) {
@@ -715,9 +768,10 @@ static bool decode_value_field(pb_istream_t *stream, const pb_field_t *field, vo
     return true;
 }
 
-static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_create");
 
     PRINTF("Decode Create node\n");
 
@@ -776,9 +830,10 @@ static bool decode_create(pb_istream_t *stream, const pb_field_t *field, void **
     return true;
 }
 
-static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_exercise");
 
     PRINTF("Decode Exercise node\n");
 
@@ -846,9 +901,10 @@ static bool decode_exercise(pb_istream_t *stream, const pb_field_t *field, void 
     return true;
 }
 
-static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_fetch");
 
     PRINTF("Decode Fetch node\n");
 
@@ -867,9 +923,10 @@ static bool decode_fetch(pb_istream_t *stream, const pb_field_t *field, void **a
     return true;
 }
 
-static bool decode_rollback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+MUST_CHECK static bool decode_rollback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     (void) field;
     (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to decode_rollback");
 
     PRINTF("Decode Rollback node\n");
 
@@ -888,8 +945,12 @@ static bool decode_rollback(pb_istream_t *stream, const pb_field_t *field, void 
     return true;
 }
 
-static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
-    (void) stream;
+MUST_CHECK static bool node_decode_callback(pb_istream_t *stream,
+                                            const pb_field_t *field,
+                                            void **arg) {
+    (void) arg;
+    LEDGER_ASSERT(stream != NULL, "NULL stream passed to node_decode_callback");
+    LEDGER_ASSERT(field != NULL, "NULL field passed to node_decode_callback");
 
     switch (field->tag) {
         case NODE_V1_EXERCISE_TAG: {
@@ -915,11 +976,12 @@ static bool node_decode_callback(pb_istream_t *stream, const pb_field_t *field, 
     return true;
 }
 
-static bool versioned_node_decode_callback(pb_istream_t *stream,
-                                           const pb_field_t *field,
-                                           void **arg) {
+MUST_CHECK static bool versioned_node_decode_callback(pb_istream_t *stream,
+                                                      const pb_field_t *field,
+                                                      void **arg) {
     (void) stream;
     (void) arg;
+    LEDGER_ASSERT(field != NULL, "NULL field passed to versioned_node_decode_callback");
 
     com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node *node = field->message;
 
@@ -935,6 +997,9 @@ static bool versioned_node_decode_callback(pb_istream_t *stream,
 /* -------------------------------------------------------------------------- */
 
 parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(buf != NULL, "NULL buffer passed to proto_deserialize_node");
+    LEDGER_ASSERT(tx_ctx != NULL, "NULL transaction context passed to proto_deserialize_node");
+
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Node from buffer of size %d bytes\n", buf->size);
@@ -954,12 +1019,13 @@ parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx)
                    com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_Node_fields,
                    &tx_ctx->tx_parts_ctx.node)) {
         PRINTF("Decode failed: %s\n", PB_GET_ERROR(&stream));
+        return VALUE_PARSING_ERROR;
     }
 
-    uint8_t node_hash[32];
+    uint8_t node_hash[SHA256_HASH_LEN];
     hw_finalize(&ctx.node_hw, node_hash);
 
-    PRINTF("Node id %d hash: %.*H\n", ctx.node_id, 32, node_hash);
+    PRINTF("Node id %d hash: %.*H\n", ctx.node_id, SHA256_HASH_LEN, node_hash);
 
     if (ctx.is_root_node) {
         encode_hash(&tx_ctx->hasher, node_hash);
@@ -974,6 +1040,10 @@ parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx)
 }
 
 parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(buf != NULL, "NULL buffer passed to proto_deserialize_input_contract");
+    LEDGER_ASSERT(tx_ctx != NULL,
+                  "NULL transaction context passed to proto_deserialize_input_contract");
+
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Input contract from buffer of size %d bytes\n", buf->size);
@@ -995,11 +1065,11 @@ parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_
         return VALUE_PARSING_ERROR;
     }
 
-    uint8_t node_hash[32];
+    uint8_t node_hash[SHA256_HASH_LEN];
     hw_finalize(&ctx.node_hw, node_hash);
 
     encode_int64(&tx_ctx->hasher, tx_ctx->tx_parts_ctx.input_contract.created_at);
-    PRINTF("Contract hash: %.*H\n", 32, node_hash);
+    PRINTF("Contract hash: %.*H\n", SHA256_HASH_LEN, node_hash);
     encode_hash(&tx_ctx->hasher, node_hash);
 
     pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_InputContract_fields,

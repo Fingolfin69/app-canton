@@ -21,28 +21,17 @@
 /*  Spec constants                                                             */
 /* -------------------------------------------------------------------------- */
 
-static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[4] = {0x00, 0x00, 0x00, 0x30};
+static const uint8_t PREPARED_TRANSACTION_HASH_PURPOSE[UINT32_T_LEN] = {0x00, 0x00, 0x00, 0x30};
 #define HASHING_SCHEME_VERSION ((uint8_t) 2) /* 0x02 */
 #define NODE_ENCODING_VERSION  ((uint8_t) 1) /* 0x01 */
+#define MAX_ERROR_MSG_LEN      32
 
 /* -------------------------------------------------------------------------- */
 /*  Error handling                                                            */
 /* -------------------------------------------------------------------------- */
 
-typedef enum {
-    HASH_OK = 0,
-    HASH_ERROR_BUFFER_OVERFLOW = 1,
-    HASH_ERROR_INVALID_HASH_STRING = 2,
-    HASH_ERROR_UNSUPPORTED_VALUE = 3,
-    HASH_ERROR_UNKNOWN_NODE_VERSION = 4,
-    HASH_ERROR_UNKNOWN_NODE_TYPE = 5,
-    HASH_ERROR_FAILED_TO_STORE_NODE_HASH = 6,
-    HASH_ERROR_FAILED_TO_LOAD_NODE_HASH = 7,
-    HASH_ERROR_MAX_NODE_CHILDREN_EXCEEDED = 8,
-} HashError;
-
 typedef struct {
-    uint8_t err_msg[32];
+    uint8_t err_msg[MAX_ERROR_MSG_LEN];
     int err_code;
 } HashErrorInfo;
 
@@ -56,8 +45,11 @@ static void clear_hash_error() {
     memset(HASH_ERR_INFO.err_msg, 0, sizeof(HASH_ERR_INFO.err_msg));
 }
 
-bool is_hash_error() {
-    return HASH_ERR_INFO.err_code != HASH_OK;
+MUST_CHECK int get_hash_error() {
+    if (HASH_ERR_INFO.err_code != HASH_OK) {
+        PRINTF("Hash error: '%s', code: %d\n", HASH_ERR_INFO.err_msg, HASH_ERR_INFO.err_code);
+    }
+    return HASH_ERR_INFO.err_code;
 }
 
 static void set_hash_error(HashError err, const char *msg) {
@@ -81,7 +73,7 @@ static void set_hash_error(HashError err, const char *msg) {
 
 typedef struct {
     int32_t id;
-    uint8_t hash[32];
+    uint8_t hash[SHA256_HASH_LEN];
 } PrecomputedNodeHash;
 
 static PrecomputedNodeHash G_hashed_nodes_store[MAX_NODE_CHILDREN] = {0};
@@ -94,17 +86,19 @@ static void init_node_hash_store() {
     }
 }
 
-int set_node_hash(int node_id, const uint8_t hash[32]) {
-    memcpy(G_hashed_nodes_store[G_hashed_nodes_store_count].hash, hash, 32);
+void set_node_hash(int node_id, const uint8_t hash[SHA256_HASH_LEN]) {
+    memcpy(G_hashed_nodes_store[G_hashed_nodes_store_count].hash, hash, SHA256_HASH_LEN);
     G_hashed_nodes_store[G_hashed_nodes_store_count].id = node_id;
 
     G_hashed_nodes_store_count++;
     G_hashed_nodes_store_count %= MAX_NODE_CHILDREN;
 
-    return 0;
+    return;
 }
 
-static int get_node_hash(const char *node_id, uint8_t out[32]) {
+static MUST_CHECK int get_node_hash(const char *node_id, uint8_t out[SHA256_HASH_LEN]) {
+    LEDGER_ASSERT(out != NULL, "Null output buffer passed to get_node_hash");
+
     if (node_id == NULL) {
         return -1;  // No node_id provided
     }
@@ -113,7 +107,7 @@ static int get_node_hash(const char *node_id, uint8_t out[32]) {
 
     for (size_t i = 0; i < MAX_NODE_CHILDREN; ++i) {
         if (G_hashed_nodes_store[i].id == node_id_num) {
-            memcpy(out, G_hashed_nodes_store[i].hash, 32);
+            memcpy(out, G_hashed_nodes_store[i].hash, SHA256_HASH_LEN);
             return 0;
         }
     }
@@ -131,10 +125,13 @@ void hw_init(HashWriter *hw) {
 }
 
 void hw_put(HashWriter *hw, const void *p, size_t n) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hw_put");
+    LEDGER_ASSERT(p != NULL, "Null pointer passed to hw_put");
+    LEDGER_ASSERT(n > 0, "Zero length passed to hw_put");
     CX_ASSERT(cx_hash_update((cx_hash_t *) &hw->ctx, p, n));
 }
 
-void hw_finalize(HashWriter *hw, uint8_t out[32]) {
+void hw_finalize(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
     CX_ASSERT(cx_hash_final((cx_hash_t *) &hw->ctx, out));
 }
 
@@ -144,20 +141,23 @@ void hw_put_byte(HashWriter *hw, uint8_t b) {
 
 // Big‑endian helpers
 void hw_put_u32_be(HashWriter *hw, uint32_t v) {
-    uint8_t t[4] = {(uint8_t) (v >> 24), (uint8_t) (v >> 16), (uint8_t) (v >> 8), (uint8_t) v};
-    hw_put(hw, t, 4);
+    uint8_t t[UINT32_T_LEN] = {(uint8_t) (v >> 24),
+                               (uint8_t) (v >> 16),
+                               (uint8_t) (v >> 8),
+                               (uint8_t) v};
+    hw_put(hw, t, UINT32_T_LEN);
 }
 
 void hw_put_u64_be(HashWriter *hw, uint64_t v) {
-    uint8_t t[8] = {(uint8_t) (v >> 56),
-                    (uint8_t) (v >> 48),
-                    (uint8_t) (v >> 40),
-                    (uint8_t) (v >> 32),
-                    (uint8_t) (v >> 24),
-                    (uint8_t) (v >> 16),
-                    (uint8_t) (v >> 8),
-                    (uint8_t) v};
-    hw_put(hw, t, 8);
+    uint8_t t[UINT64_T_LEN] = {(uint8_t) (v >> 56),
+                               (uint8_t) (v >> 48),
+                               (uint8_t) (v >> 40),
+                               (uint8_t) (v >> 32),
+                               (uint8_t) (v >> 24),
+                               (uint8_t) (v >> 16),
+                               (uint8_t) (v >> 8),
+                               (uint8_t) v};
+    hw_put(hw, t, UINT64_T_LEN);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -189,8 +189,8 @@ void encode_string(HashWriter *hw, const char *s) {
     encode_bytes(hw, (const uint8_t *) s, (int32_t) strlen(s));
 }
 
-void encode_hash(HashWriter *hw, const uint8_t h[32]) {
-    hw_put(hw, h, 32);
+void encode_hash(HashWriter *hw, const uint8_t h[SHA256_HASH_LEN]) {
+    hw_put(hw, h, SHA256_HASH_LEN);
 }
 
 // hex‑decode helper
@@ -202,6 +202,7 @@ static uint8_t hex_val(char c) {
 
 void encode_hex_string(HashWriter *hw, const char *hex) {
     size_t len = strlen(hex);
+
     if (len % 2 != 0) {
         set_hash_error(HASH_ERROR_INVALID_HASH_STRING, "Hex string must have even length");
         return;
@@ -267,17 +268,20 @@ static void encode_repeated_node_ids(HashWriter *hw, size_t count, char *const *
     encode_int32(hw, (int32_t) count);
 
     for (size_t i = 0; i < count; ++i) {
-        uint8_t hash[32];
+        uint8_t hash[SHA256_HASH_LEN];
         if (get_node_hash(ids[i], hash) != 0) {
-            LEDGER_ASSERT(false, "Node id hash not found in store");
             set_hash_error(HASH_ERROR_FAILED_TO_LOAD_NODE_HASH, "Node id hash not found in store");
             return;
         };
-        hw_put(hw, hash, 32);
+        hw_put(hw, hash, SHA256_HASH_LEN);
     }
 }
 
 void encode_create_start(HashWriter *hw, const Node_CreateCb *c, const uint8_t *seed) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_create_start");
+    LEDGER_ASSERT(c != NULL, "Null create node passed to encode_create_start");
+    // Seed is optional for create nodes, can be NULL
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, c->lf_version);
     hw_put_byte(hw, 0x00);
@@ -288,11 +292,17 @@ void encode_create_start(HashWriter *hw, const Node_CreateCb *c, const uint8_t *
 }
 
 void encode_create_end(HashWriter *hw, const Node_CreateCb *c) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_create_end");
+    LEDGER_ASSERT(c != NULL, "Null create node passed to encode_create_end");
+
     encode_repeated(hw, c->signatories_count, c->signatories, sizeof(char *), wrap_encode_string);
     encode_repeated(hw, c->stakeholders_count, c->stakeholders, sizeof(char *), wrap_encode_string);
 }
 
 void encode_exercise_start(HashWriter *hw, const Node_ExerciseCb *e, const uint8_t *seed) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_exercise_start");
+    LEDGER_ASSERT(e != NULL, "Null exercise node passed to encode_exercise_start");
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, e->lf_version);
     hw_put_byte(hw, 0x01);
@@ -316,10 +326,16 @@ void encode_exercise_start(HashWriter *hw, const Node_ExerciseCb *e, const uint8
 }
 
 void encode_exercise_middle(HashWriter *hw, const Node_ExerciseCb *e) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_exercise_middle");
+    LEDGER_ASSERT(e != NULL, "Null exercise node passed to encode_exercise_middle");
+
     encode_bool(hw, e->consuming);
 }
 
 void encode_exercise_end(HashWriter *hw, const Node_ExerciseCb *e) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_exercise_end");
+    LEDGER_ASSERT(e != NULL, "Null exercise node passed to encode_exercise_end");
+
     encode_repeated(hw,
                     e->choice_observers_count,
                     e->choice_observers,
@@ -334,6 +350,9 @@ void encode_exercise_end(HashWriter *hw, const Node_ExerciseCb *e) {
 }
 
 void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_fetch");
+    LEDGER_ASSERT(f != NULL, "Null fetch node passed to encode_fetch");
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     encode_string(hw, f->lf_version);
     hw_put_byte(hw, 0x02);
@@ -351,6 +370,9 @@ void encode_fetch(HashWriter *hw, const Node_Fetch *f) {
 }
 
 void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_rollback");
+    LEDGER_ASSERT(r != NULL, "Null rollback node passed to encode_rollback");
+
     hw_put_byte(hw, NODE_ENCODING_VERSION);
     hw_put_byte(hw, 0x03);
     if (r->children_count > MAX_NODE_CHILDREN) {
@@ -361,6 +383,9 @@ void encode_rollback(HashWriter *hw, const Node_Rollback *r) {
 }
 
 static void encode_metadata(HashWriter *hw, const Metadata *m) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to encode_metadata");
+    LEDGER_ASSERT(m != NULL, "Null metadata passed to encode_metadata");
+
     hw_put_byte(hw, 0x01);
     encode_repeated(hw,
                     m->submitter_info.act_as_count,
@@ -384,7 +409,10 @@ static void encode_metadata(HashWriter *hw, const Metadata *m) {
     encode_int32(hw, m->input_contracts_count);
 }
 
-int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
+void hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hash_transaction");
+    LEDGER_ASSERT(tx != NULL, "Null DamlTransaction passed to hash_transaction");
+
     // Reset error state
     clear_hash_error();
     init_node_hash_store();
@@ -395,51 +423,44 @@ int hash_transaction(HashWriter *hw, const DamlTransaction *tx) {
     encode_string(hw, tx->version);
     // Encode nodes count
     encode_int32(hw, (int32_t) tx->roots_count);
-
-    return 0;
 }
 
-int finalize_hash_transaction(HashWriter *hw, uint8_t out[32]) {
+void finalize_hash_transaction(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to finalize_hash_transaction");
+    LEDGER_ASSERT(out != NULL, "Null output buffer passed to finalize_hash_transaction");
+
     hw_finalize(hw, out);
 
     PRINTF("TX hash: %.*H\n", 32, out);
-
-    return 0;
 }
 
-int hash_metadata(HashWriter *hw, const Metadata *md) {
+void hash_metadata(HashWriter *hw, const Metadata *md) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to hash_metadata");
+    LEDGER_ASSERT(md != NULL, "Null Metadata passed to hash_metadata");
+
     hw_init(hw);
-    hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+    hw_put(hw, PREPARED_TRANSACTION_HASH_PURPOSE, UINT32_T_LEN);
     encode_metadata(hw, md);
-
-    if (is_hash_error()) {
-        PRINTF("Error hashing metadata: '%s', code: %d\n",
-               HASH_ERR_INFO.err_msg,
-               HASH_ERR_INFO.err_code);
-        return HASH_ERR_INFO.err_code;
-    }
-
-    return 0;
 }
 
-int finalize_hash_metadata(HashWriter *hw, uint8_t out[32]) {
+void finalize_hash_metadata(HashWriter *hw, uint8_t out[SHA256_HASH_LEN]) {
+    LEDGER_ASSERT(hw != NULL, "Null HashWriter passed to finalize_hash_metadata");
+
     hw_finalize(hw, out);
 
-    PRINTF("Metadata hash: %.*H\n", 32, out);
-
-    return 0;
+    PRINTF("Metadata hash: %.*H\n", SHA256_HASH_LEN, out);
 }
 
-int finalize_hash(const uint8_t tx_hash[32], const uint8_t md_hash[32], uint8_t out[32]) {
+void finalize_hash(const uint8_t tx_hash[SHA256_HASH_LEN],
+                   const uint8_t md_hash[SHA256_HASH_LEN],
+                   uint8_t out[SHA256_HASH_LEN]) {
     HashWriter hw;
 
     hw_init(&hw);
-    hw_put(&hw, PREPARED_TRANSACTION_HASH_PURPOSE, 4);
+    hw_put(&hw, PREPARED_TRANSACTION_HASH_PURPOSE, UINT32_T_LEN);
     hw_put_byte(&hw, HASHING_SCHEME_VERSION);
-    hw_put(&hw, tx_hash, 32);
-    hw_put(&hw, md_hash, 32);
+    hw_put(&hw, tx_hash, SHA256_HASH_LEN);
+    hw_put(&hw, md_hash, SHA256_HASH_LEN);
 
     hw_finalize(&hw, out);
-
-    return 0;
 }

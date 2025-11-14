@@ -17,22 +17,18 @@
 #include "buffer.h"
 
 #include "pb_parser.h"
-#include "utils.h"
 #include "types.h"
 #include "com/daml/ledger/api/v2/interactive/device.pb.h"
 #include "com/digitalasset/canton/version/v1/untyped_versioned_message.pb.h"
 #include "com/digitalasset/canton/protocol/v30/topology.pb.h"
 
 #include "pb_decode.h"
-
-#if defined(TEST) || defined(FUZZ)
-#include "assert.h"
-#define LEDGER_ASSERT(x, y) assert(x)
-#else
 #include "ledger_assert.h"
-#endif
 
-parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+MUST_CHECK parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(buf != NULL, "Null buffer passed to proto_deserialize_daml_tx");
+    LEDGER_ASSERT(tx_ctx != NULL, "Null transaction context passed to proto_deserialize_daml_tx");
+
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Daml transaction from buffer of size %d bytes\n", buf->size);
@@ -47,7 +43,10 @@ parser_status_e proto_deserialize_daml_tx(buffer_t *buf, transaction_ctx_t *tx_c
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+MUST_CHECK parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(buf != NULL, "Null buffer passed to proto_deserialize_metadata");
+    LEDGER_ASSERT(tx_ctx != NULL, "Null transaction context passed to proto_deserialize_metadata");
+
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Metadata from buffer of size %d bytes\n", buf->size);
@@ -62,7 +61,12 @@ parser_status_e proto_deserialize_metadata(buffer_t *buf, transaction_ctx_t *tx_
     return PARSING_OK;
 }
 
-parser_status_e proto_deserialize_topology_transaction(buffer_t *buf, transaction_ctx_t *tx_ctx) {
+MUST_CHECK parser_status_e proto_deserialize_topology_transaction(buffer_t *buf,
+                                                                  transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(buf != NULL, "Null buffer passed to proto_deserialize_topology_transaction");
+    LEDGER_ASSERT(tx_ctx != NULL,
+                  "Null transaction context passed to proto_deserialize_topology_transaction");
+
     pb_istream_t stream = pb_istream_from_buffer(buf->ptr, buf->size);
 
     PRINTF("Decoding Topology Transaction from buffer of size %d bytes\n", buf->size);
@@ -101,16 +105,23 @@ parser_status_e proto_deserialize_topology_transaction(buffer_t *buf, transactio
 }
 
 void release_daml_tx(transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(tx_ctx != NULL, "Null transaction context passed to release_daml_tx");
+
     pb_release(com_daml_ledger_api_v2_interactive_DeviceDamlTransaction_fields,
                &tx_ctx->tx_parts_ctx.daml_transaction);
 }
 
 void release_metadata(transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(tx_ctx != NULL, "Null transaction context passed to release_metadata");
+
     pb_release(com_daml_ledger_api_v2_interactive_DeviceMetadata_fields,
                &tx_ctx->tx_parts_ctx.metadata);
 }
 
 void release_topology_transaction(transaction_ctx_t *tx_ctx) {
+    LEDGER_ASSERT(tx_ctx != NULL,
+                  "Null transaction context passed to release_topology_transaction");
+
     pb_release(com_digitalasset_canton_version_v1_UntypedVersionedMessage_fields,
                &tx_ctx->tx_parts_ctx.untyped_versioned_msg);
     pb_release(com_digitalasset_canton_protocol_v30_TopologyTransaction_fields,

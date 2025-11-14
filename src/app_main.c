@@ -45,7 +45,7 @@ void app_main() {
 
     io_init();
 
-    app_mem_init();
+    LEDGER_ASSERT(app_mem_init() == true, "Failed to initialize memory");
 
     ui_menu_main();
 
@@ -55,8 +55,7 @@ void app_main() {
     // Initialize the NVM data if required
     if (N_storage.initialized != 0x01) {
         internal_storage_t storage;
-        storage.dummy1_allowed = 0x00;
-        storage.dummy2_allowed = 0x00;
+        storage.allow_blind_sign = BlindSignDisabled;
         storage.initialized = 0x01;
         nvm_write((void *) &N_storage, &storage, sizeof(internal_storage_t));
     }

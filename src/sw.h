@@ -61,6 +61,10 @@
  */
 #define SW_SIGNATURE_FAIL 0xB008
 /**
+ * Status word for challenge signature fail.
+ */
+#define SW_CHALLENGE_SIGNATURE_FAIL 0xB009
+/**
  * Status word for swap failure
  */
 #define SW_SWAP_FAIL 0xC000

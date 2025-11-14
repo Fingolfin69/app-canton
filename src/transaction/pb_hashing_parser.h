@@ -1,7 +1,7 @@
 #pragma once
 
 #include "buffer.h"
-
+#include "utils.h"
 #include "types.h"
 
 /**
@@ -15,7 +15,8 @@
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_t *tx_ctx);
+MUST_CHECK parser_status_e proto_deserialize_input_contract(buffer_t *buf,
+                                                            transaction_ctx_t *tx_ctx);
 
 /**
  * Deserialize DamlTransaction.Node protobuf message in structure.
@@ -28,4 +29,4 @@ parser_status_e proto_deserialize_input_contract(buffer_t *buf, transaction_ctx_
  * @return PARSING_OK if success, error status otherwise.
  *
  */
-parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx);
+MUST_CHECK parser_status_e proto_deserialize_node(buffer_t *buf, transaction_ctx_t *tx_ctx);

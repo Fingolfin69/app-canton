@@ -27,7 +27,7 @@
 
 void validate_pubkey(bool choice) {
     if (choice) {
-        helper_send_response_pubkey();
+        LEDGER_ASSERT(helper_send_response_pubkey() >= 0, "Failed to send pubkey response");
     } else {
         io_send_sw(SW_DENY);
     }
@@ -57,6 +57,11 @@ static int crypto_sign_message(void) {
 
     PRINTF("Signature: %.*H\n", sig_len, G_context.tx_info.signature);
 
+    if (sig_len != ED25519_SIG_LEN) {
+        PRINTF("Invalid signature length: %d\n", sig_len);
+        return -1;
+    }
+
     G_context.tx_info.signature_len = sig_len;
     G_context.tx_info.v = (uint8_t) (info & CX_ECCINFO_PARITY_ODD);
 
@@ -71,7 +76,7 @@ void validate_transaction(bool choice) {
             G_context.state = STATE_NONE;
             io_send_sw(SW_SIGNATURE_FAIL);
         } else {
-            helper_send_response_sig();
+            LEDGER_ASSERT(helper_send_response_sig() >= 0, "Failed to send signature response");
         }
     } else {
         G_context.state = STATE_NONE;

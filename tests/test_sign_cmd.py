@@ -1,15 +1,19 @@
+import json
 import os
 from pathlib import Path
 from typing import Optional
+import pytest
 from ragger.backend.interface import BackendInterface
-# from ragger.error import ExceptionRAPDU
+from ragger.error import ExceptionRAPDU
 from ragger.navigator.navigation_scenario import NavigateWithScenario
+from ragger.navigator import NavInsID, Navigator, NavIns
+from ledgered.devices import Device, DeviceType
 
 from application_client.canton_transaction import Transaction
 from application_client.canton_command_sender import (
     CantonCommandSender,
     P1SignType,
-    # Errors,
+    Errors,
 )
 from application_client.canton_response_unpacker import (
     unpack_get_public_key_response,
@@ -27,14 +31,49 @@ VALIDATOR_SEED_1 = b"validator1______________________"
 VALIDATOR_SEED_2 = b"validator2______________________"
 VALIDATOR_SEED_3 = b"validator3______________________"
 
+
+def _nano_enable_blind_signing() -> list[NavInsID]:
+    # initial: go to settings
+    seq = [NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK]
+    # enable
+    seq += [NavInsID.BOTH_CLICK]
+    # go to "back" screen
+    seq += [NavInsID.RIGHT_CLICK]
+    # back to main menu
+    seq += [NavInsID.BOTH_CLICK]
+    # back to home screen
+    seq += [NavInsID.LEFT_CLICK]
+    return seq
+
+def _enable_blind_signing(device: Device, navigator: Navigator, snapshots_name: str) -> None:
+    if device.is_nano:
+        nav = _nano_enable_blind_signing()
+    else:
+        if device.type is DeviceType.APEX_P:
+            coordinates = (263,95)
+        else:
+            coordinates = (348,132)
+        nav = [NavInsID.USE_CASE_HOME_SETTINGS,
+               NavIns(NavInsID.TOUCH, coordinates),
+               NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT]
+    navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH,
+                                   snapshots_name,
+                                   nav,
+                                   screen_change_before_first_instruction=False)
+
+
 def _sign_and_verify_hash(
     backend: BackendInterface,
+    device: Device,
+    navigator: Navigator,
     scenario_navigator: NavigateWithScenario,
     tx_hash: bytes,
     test_name: str,
 ) -> None:
     client = CantonCommandSender(backend)
     path = "m/44'/6767'/0'/0'/0'"
+
+    _enable_blind_signing(device, navigator, f"{test_name}_enable_bs")
 
     rapdu = client.get_public_key(path=path)
     _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
@@ -50,34 +89,73 @@ def _sign_and_verify_hash(
     _, der_sig, _, _, _ = unpack_sign_tx_response(response)
     verify_signature(public_key, tx_hash, der_sig)
 
+def _check_blind_signing_rejection(backend: BackendInterface, serialized_parts: list[bytes]) -> None:
+    path = "m/44'/6767'/0'/0'/0'"
+    client = CantonCommandSender(backend)
+    with pytest.raises(ExceptionRAPDU) as e:
+        with client.sign_tx_in_parts(path, *serialized_parts):
+            pass
+    assert e.value.status == Errors.SW_INCORRECT_DATA
+
+def test_blind_signing_disabled_go_to_settings(backend: BackendInterface, navigator: Navigator, test_name: str) -> None:
+    if backend.device.is_nano:
+        pytest.skip("This feature does not exist on Nano devices")
+    serialized_parts = Transaction.serialize_from_json_into_tx_parts("tests/tx_examples/external_sign_ping.json")
+    _check_blind_signing_rejection(backend, serialized_parts)
+    navigator.navigate_until_text_and_compare(navigate_instruction=NavInsID.USE_CASE_CHOICE_CONFIRM,
+                                                validation_instructions=[NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT],
+                                                text="^Blind signing$",
+                                                path=ROOT_SCREENSHOT_PATH,
+                                                test_case_name=test_name)
+
+def test_blind_signing_disabled_go_to_menu(
+    backend: BackendInterface, navigator: Navigator, test_name: str
+) -> None:
+    serialized_parts = Transaction.serialize_from_json_into_tx_parts("tests/tx_examples/external_sign_ping.json")
+    if backend.device.is_nano:
+        validation_instructions=[NavInsID.BOTH_CLICK]
+        pattern = "Blind signing"
+    else:
+        validation_instructions=[NavInsID.USE_CASE_CHOICE_REJECT]
+        pattern = "Enable blind signing"
+    _check_blind_signing_rejection(backend, serialized_parts)
+    navigator.navigate_until_text_and_compare(navigate_instruction=None,
+                                                validation_instructions=validation_instructions,
+                                                text=pattern,
+                                                path=ROOT_SCREENSHOT_PATH,
+                                                test_case_name=test_name)
+
 
 def test_sign_hash_32(
-    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario, navigator: Navigator, device: Device
 ) -> None:
     tx_hash = Transaction.get_hash_from_json(
         "tests/tx_examples/external_sign_ping.json"
     )
     _sign_and_verify_hash(
-        backend, scenario_navigator, tx_hash, test_name="test_sign_hash_32"
+        backend, device, navigator, scenario_navigator, tx_hash, test_name="test_sign_hash_32"
     )
 
 
 def test_sign_hash_34(
-    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario, navigator: Navigator, device: Device
 ) -> None:
     tx_hash = b"\x00\x01" + Transaction.get_hash_from_json(
         "tests/tx_examples/external_sign_ping.json"
     )
     _sign_and_verify_hash(
-        backend, scenario_navigator, tx_hash, test_name="test_sign_hash_34"
+        backend, device, navigator, scenario_navigator, tx_hash, test_name="test_sign_hash_34"
     )
 
 def _sign_and_verify_prepared_transaction(
     backend: BackendInterface,
     scenario_navigator: NavigateWithScenario,
     tx_json: str,
+    device: Optional[Device] = None,
+    navigator: Optional[Navigator] = None,
+    test_name: Optional[str] = None,
     custom_screen_text: Optional[str] = None,
-    warning: bool = False,
+    blind_sign: bool = False,
     snapshot_check: bool = True,
 ) -> None:
     client = CantonCommandSender(backend)
@@ -90,8 +168,11 @@ def _sign_and_verify_prepared_transaction(
     print(f"Transaction hash: {tx_hash.hex()}")
     print(f"Serialized transaction length: {sum(len(part) for part in serialized_parts)} bytes")
 
+    if blind_sign:
+        _enable_blind_signing(device, navigator, f"{test_name}_enable_bs")
+
     with client.sign_tx_in_parts(path, *serialized_parts) as _:
-        if warning:
+        if blind_sign:
             scenario_navigator.review_approve_with_warning(
                 path=ROOT_SCREENSHOT_PATH, custom_screen_text=custom_screen_text, do_comparison=snapshot_check)
         else:
@@ -102,14 +183,62 @@ def _sign_and_verify_prepared_transaction(
     verify_signature(public_key, tx_hash, der_sig)
 
 def test_sign_ping(
-    backend: BackendInterface, scenario_navigator: NavigateWithScenario
+    backend: BackendInterface,
+    scenario_navigator: NavigateWithScenario,
+    device: Device,
+    navigator: Navigator,
+    test_name: str
 ) -> None:
     _sign_and_verify_prepared_transaction(
         backend,
         scenario_navigator,
+        device=device,
+        navigator=navigator,
         tx_json="tests/tx_examples/external_sign_ping.json",
-        warning=True,
+        blind_sign=True,
+        test_name=test_name,
     )
+
+def test_sign_hex_string_hash_error(backend: BackendInterface) -> None:
+    # Load json
+    with open("tests/tx_examples/external_sign_ping.json", "r", encoding="utf-8") as f:
+        tx_json = f.read()
+    # Load json as data object
+    tx_data = json.loads(tx_json)
+    # Replace contract_id value (odd length hex string)
+    tx_data["prepared_transaction"]["transaction"]["nodes"][0]["v1"]["create"]["contract_id"] = (
+    "004c3409aa2e8f8e22604d58ea6211f667df2bae4abc7984a95d76b3d120b8bd8ff"
+    )
+    tx_json_invalid = json.dumps(tx_data, indent=4)
+    serialized_parts = Transaction.serialize_from_json_into_tx_parts(tx_json_invalid)
+    path = "m/44'/6767'/0'/0'/0'"
+    client = CantonCommandSender(backend)
+    with pytest.raises(ExceptionRAPDU) as e:
+        with client.sign_tx_in_parts(path, *serialized_parts):
+            pass
+    assert e.value.status == Errors.SW_TX_HASH_FAIL
+
+def test_sign_max_nodes_hash_error(backend: BackendInterface) -> None:
+    # Load json
+    with open("tests/tx_examples/token_transfer_32_children.json", "r", encoding="utf-8") as f:
+        tx_json = f.read()
+    # Load json as data object
+    tx_data = json.loads(tx_json)
+    # Replace children value (more than 32 children)
+    tx_data["json"]["transaction"]["nodes"][5]["v1"]["exercise"]["children"] = (
+        ["12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
+         "22", "23", "24", "25", "26", "27", "28", "22", "23", "24",
+         "25", "26", "27", "28", "12", "13", "14", "15", "16", "17",
+         "18", "19", "29"]
+    )
+    tx_json_invalid = json.dumps(tx_data, indent=4)
+    serialized_parts = Transaction.serialize_from_json_into_tx_parts(tx_json_invalid)
+    path = "m/44'/6767'/0'/0'/0'"
+    client = CantonCommandSender(backend)
+    with pytest.raises(ExceptionRAPDU) as e:
+        with client.sign_tx_in_parts(path, *serialized_parts):
+            pass
+    assert e.value.status == Errors.SW_TX_HASH_FAIL
 
 def test_sign_native_transfer(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario

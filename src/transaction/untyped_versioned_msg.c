@@ -18,8 +18,8 @@
 #include <stdint.h>   // uint*_t
 #include <stddef.h>   // size_t
 #include <stdbool.h>  // bool
-#include <string.h>   // memmove
-#include <stdlib.h>   // qsort
+#include <string.h>
+#include <stdlib.h>  // qsort
 
 #include "mem.h"
 #include "os.h"
@@ -40,6 +40,7 @@
 #include "send_response.h"
 #include "party_id.h"
 #include "crypto_data.h"
+#include "constants.h"
 
 #define HASH_LEN                                     34
 #define HEX_LEN                                      (HASH_LEN * 2 + 1)
@@ -70,6 +71,7 @@ typedef struct {
 #define PARTICIPANT_1_FIELD_IDX 1
 #define PARTICIPANT_2_FIELD_IDX 2
 #define PARTICIPANT_3_FIELD_IDX 3
+#define MAX_PARTICIPANTS        3
 #define THRESHOLD_FIELD_IDX     4
 
 // Const configurations (stored in flash)
@@ -109,6 +111,7 @@ static void init_hash_storage(void) {
         app_mem_free(tx_hashes);
     }
     tx_hashes = app_mem_alloc(MAX_HASHES * sizeof(uint8_t[HASH_LEN]));
+    LEDGER_ASSERT(tx_hashes != NULL, "Failed to allocate memory for hash storage");
     hash_count = 0;
 }
 
@@ -140,7 +143,7 @@ static int compare_hashes_hex(const void *a, const void *b) {
     return strcmp(hex_a, hex_b);
 }
 
-static bool read_challenge_and_deadline(buffer_t *cdata) {
+MUST_CHECK static bool read_challenge_and_deadline(buffer_t *cdata) {
     // Check challenge presence
     if (!buffer_can_read(cdata, 1)) {
         return true;  // Challenge not present, not an error
@@ -162,9 +165,14 @@ static bool read_challenge_and_deadline(buffer_t *cdata) {
     return true;
 }
 
-bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
+MUST_CHECK bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
+    LEDGER_ASSERT(cdata != NULL, "Null buffer passed to process_untyped_versioned_msg_tx_init");
+
+    uint8_t chain_code[MAX_CHAINCODE_LEN] = {0};
     init_hash_storage();
-    init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB);
+    LEDGER_ASSERT(
+        init_transaction_pairs(&G_context.tx_info, ONBOARDING_FLOW_DISPLAY_FIELDS_NB) == true,
+        "Failed to initialize transaction pairs");
     G_context.tx_info.pairs_count = 0;
     has_parsed_namespace_delegation = false;
     has_parsed_party_to_participant = false;
@@ -177,7 +185,7 @@ bool process_untyped_versioned_msg_tx_init(buffer_t *cdata) {
     cx_err_t error = derive_public_key(G_context.bip32_path,
                                        G_context.bip32_path_len,
                                        G_context.tx_info.signature,
-                                       NULL);
+                                       chain_code);
 
     LEDGER_ASSERT(error == CX_OK, "Failed to derive public key");
 
@@ -216,7 +224,7 @@ static void compute_multi_hash(void) {
     app_mem_free(concat);
 }
 
-static void sign_challenge(void) {
+static MUST_CHECK int sign_challenge(void) {
     size_t sig_len = sizeof(G_context.tx_info.challenge_signature);
     uint8_t data_to_sign[HASH_LEN + CHALLENGE_AND_DEADLINE_LEN];
     size_t size;
@@ -241,16 +249,21 @@ static void sign_challenge(void) {
     CX_ASSERT(cx_ecdomain_parameters_length(CX_CURVE_Ed25519, &size));
     sig_len = size * 2;  // r and s each of size 'size'
 
+    if (sig_len != ED25519_SIG_LEN) {
+        PRINTF("Invalid challenge signature length: %d\n", sig_len);
+        return -1;
+    }
+
     PRINTF("Challenge signature: %.*H\n", sig_len, G_context.tx_info.challenge_signature);
 
     // Set signature length and flag
     G_context.tx_info.challenge_signature_len = (uint8_t) sig_len;
     G_context.tx_info.has_challenge_signature = true;
 
-    return;
+    return 0;
 }
 
-int process_untyped_versioned_msg_tx(buffer_t *buf) {
+MUST_CHECK int process_untyped_versioned_msg_tx(buffer_t *buf) {
     UNUSED(buf);
     uint8_t h[HASH_LEN] = {0};
 
@@ -268,7 +281,9 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
 
         if (challenge_and_deadline_parsed) {
             // Sign multihash + challenge + deadline
-            sign_challenge();
+            if (sign_challenge() != 0) {
+                return SW_CHALLENGE_SIGNATURE_FAIL;
+            }
         }
 
         if (has_parsed_namespace_delegation && has_parsed_party_to_key_mapping &&
@@ -292,7 +307,12 @@ int process_untyped_versioned_msg_tx(buffer_t *buf) {
 }
 
 // Helper function to set field value
-static bool set_field_value(transaction_ctx_t *tx_info, size_t field_idx, const char *value) {
+MUST_CHECK static bool set_field_value(transaction_ctx_t *tx_info,
+                                       size_t field_idx,
+                                       const char *value) {
+    LEDGER_ASSERT(tx_info != NULL, "Null transaction context passed to set_field_value");
+    LEDGER_ASSERT(value != NULL, "Null value passed to set_field_value");
+
     uint8_t idx = tx_info->pairs_count;
 
     // Input validation
@@ -360,7 +380,7 @@ static int check_party_key_value(const uint8_t *key_to_check_bytes,
     return 0;
 }
 
-static bool check_party_id_value(const char *party_id) {
+MUST_CHECK static bool check_party_id_value(const char *party_id) {
     if (party_id == NULL) {
         return false;
     }
@@ -406,9 +426,12 @@ static int process_namespace_delegation(const NamespaceDelegation *delegation,
 static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
                                         transaction_ctx_t *tx_info) {
     UNUSED(tx_info);
+    LEDGER_ASSERT(!has_parsed_party_to_key_mapping, "Multiple party to key mappings found");
+    LEDGER_ASSERT(mapping != NULL, "NULL party to key mapping");
+
     int ret = 0;
     // Set party to key mapping specific fields
-    if (mapping->party != NULL && !check_party_id_value(mapping->party)) {
+    if (!check_party_id_value(mapping->party)) {
         return SW_TOPOLOGY_PARTY_ID_MISMATCH;
     }
 
@@ -428,20 +451,28 @@ static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
 // Process party to participant mapping
 static int process_party_to_participant(const PartyToParticipant *mapping,
                                         transaction_ctx_t *tx_info) {
+    LEDGER_ASSERT(!has_parsed_party_to_participant, "Multiple party to participant mappings found");
+    LEDGER_ASSERT(tx_info != NULL,
+                  "NULL transaction context passed to process_party_to_participant");
+
     // Set party to participant specific fields
     if (mapping->party != NULL) {
-        set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party);
+        LEDGER_ASSERT(set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party) == true,
+                      "Failed to set party field");
     } else {
         return SW_TOPOLOGY_MISSING_PARTY;
     }
 
     if (mapping->participants_count > 0 && mapping->participants[0].participant_uid != NULL) {
-        for (size_t i = 0; i < mapping->participants_count && i < 3; i++) {
+        for (size_t i = 0; i < mapping->participants_count && i < MAX_PARTICIPANTS; i++) {
             size_t field_idx = PARTICIPANT_1_FIELD_IDX + i;
             if (field_idx >= ONBOARDING_FLOW_DISPLAY_FIELDS_NB - 1) {
                 break;  // Prevent overflow
             }
-            set_field_value(tx_info, field_idx, mapping->participants[i].participant_uid);
+            LEDGER_ASSERT(
+                set_field_value(tx_info, field_idx, mapping->participants[i].participant_uid) ==
+                    true,
+                "Failed to set participant field");
         }
     } else {
         return SW_TOPOLOGY_NO_PARTICIPANTS;
@@ -449,14 +480,15 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
 
     // If participants_count > 1, display threshold, otherwise skip it (it's always 1)
     if (mapping->participants_count > 1) {
-        char threshold_str[16];
+        char threshold_str[DEFAULT_DECODE_BUFFER_SIZE] = {0};
         // Set threshold as ratio threshold/participants_count
         SNPRINTF(threshold_str,
                  sizeof(threshold_str),
                  "%u out of %u",
                  mapping->threshold,
                  mapping->participants_count);
-        set_field_value(tx_info, THRESHOLD_FIELD_IDX, threshold_str);
+        LEDGER_ASSERT(set_field_value(tx_info, THRESHOLD_FIELD_IDX, threshold_str) == true,
+                      "Failed to set threshold field");
     }
 
     has_parsed_party_to_participant = true;
@@ -464,6 +496,8 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
 }
 
 static int parse_topology_transaction_for_display(buffer_t *buf) {
+    LEDGER_ASSERT(buf != NULL, "NULL buffer passed to parse_topology_transaction_for_display");
+
     int32_t ret = 0;
     parser_status_e status = proto_deserialize_topology_transaction(buf, &G_context.tx_info);
 

@@ -30,13 +30,14 @@
 #include "constants.h"
 #include "globals.h"
 #include "sw.h"
-// #include "address.h"
 #include "validate.h"
 #include "tx_types.h"
 #include "menu.h"
 #include "utils.h"
 
-static nbgl_contentTagValue_t pairs[1];
+#define BLIND_SIGN_PAIR_LIST_NB 1
+
+static nbgl_contentTagValue_t pairs[BLIND_SIGN_PAIR_LIST_NB];
 static nbgl_contentTagValueList_t pairList;
 
 // called when long press button on 3rd page is long-touched or when reject footer is touched
@@ -55,7 +56,7 @@ static void review_choice(bool confirm) {
 // - Format the amount and address strings in g_amount and g_address buffers
 // - Display the first screen of the transaction review
 // - Display a warning if the transaction is blind-signed
-int ui_display_transaction_bs_choice(bool is_blind_signed) {
+MUST_CHECK int ui_display_transaction_bs_choice(bool is_blind_signed) {
     if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
@@ -76,7 +77,7 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
 
         // Setup list
         pairList.nbMaxLinesForValue = 0;
-        pairList.nbPairs = 1;
+        pairList.nbPairs = BLIND_SIGN_PAIR_LIST_NB;
         pairList.pairs = pairs;
 
         // Start blind-signing review flow
@@ -117,11 +118,11 @@ int ui_display_transaction_bs_choice(bool is_blind_signed) {
 }
 
 // Flow used to display a blind-signed transaction
-int ui_display_blind_signed_transaction(void) {
+MUST_CHECK int ui_display_blind_signed_transaction(void) {
     return ui_display_transaction_bs_choice(true);
 }
 
 // Flow used to display a clear-signed transaction
-int ui_display_transaction() {
+MUST_CHECK int ui_display_transaction() {
     return ui_display_transaction_bs_choice(false);
 }

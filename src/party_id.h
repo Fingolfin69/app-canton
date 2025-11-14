@@ -3,6 +3,8 @@
 #include <stdint.h>   // uint*_t
 #include <stddef.h>   // size_t
 #include <stdbool.h>  // bool
+#include "utils.h"
+#include "constants.h"
 
 /**
  * Convert public key to party id. Party id is defined as:
@@ -27,4 +29,6 @@
  * @return true if success, false otherwise.
  *
  */
-bool party_id_from_pubkey(const uint8_t public_key[static 32], uint8_t *out, size_t out_len);
+MUST_CHECK bool party_id_from_pubkey(const uint8_t public_key[ED25519_RAW_PUBLIC_KEY_LEN],
+                                     uint8_t *out,
+                                     size_t out_len);
