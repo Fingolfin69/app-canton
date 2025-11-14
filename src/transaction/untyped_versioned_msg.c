@@ -224,7 +224,7 @@ static void compute_multi_hash(void) {
     app_mem_free(concat);
 }
 
-static void sign_challenge(void) {
+static MUST_CHECK int sign_challenge(void) {
     size_t sig_len = sizeof(G_context.tx_info.challenge_signature);
     uint8_t data_to_sign[HASH_LEN + CHALLENGE_AND_DEADLINE_LEN];
     size_t size;
@@ -249,13 +249,18 @@ static void sign_challenge(void) {
     CX_ASSERT(cx_ecdomain_parameters_length(CX_CURVE_Ed25519, &size));
     sig_len = size * 2;  // r and s each of size 'size'
 
+    if (sig_len != ED25519_SIG_LEN) {
+        PRINTF("Invalid challenge signature length: %d\n", sig_len);
+        return -1;
+    }
+
     PRINTF("Challenge signature: %.*H\n", sig_len, G_context.tx_info.challenge_signature);
 
     // Set signature length and flag
     G_context.tx_info.challenge_signature_len = (uint8_t) sig_len;
     G_context.tx_info.has_challenge_signature = true;
 
-    return;
+    return 0;
 }
 
 MUST_CHECK int process_untyped_versioned_msg_tx(buffer_t *buf) {
@@ -276,7 +281,9 @@ MUST_CHECK int process_untyped_versioned_msg_tx(buffer_t *buf) {
 
         if (challenge_and_deadline_parsed) {
             // Sign multihash + challenge + deadline
-            sign_challenge();
+            if (sign_challenge() != 0) {
+                return SW_CHALLENGE_SIGNATURE_FAIL;
+            }
         }
 
         if (has_parsed_namespace_delegation && has_parsed_party_to_key_mapping &&

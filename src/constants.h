@@ -31,9 +31,9 @@
 #define MAX_NODE_CHILDREN 32
 
 /**
- * Maximum signature length (bytes).
+ * ED25519 signature length (bytes).
  */
-#define MAX_DER_SIG_LEN 72
+#define ED25519_SIG_LEN 64
 
 /**
  * Exponent used to convert mBOL to BOL unit (N BOL = N * 10^3 mBOL).

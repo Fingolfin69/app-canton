@@ -57,6 +57,11 @@ static int crypto_sign_message(void) {
 
     PRINTF("Signature: %.*H\n", sig_len, G_context.tx_info.signature);
 
+    if (sig_len != ED25519_SIG_LEN) {
+        PRINTF("Invalid signature length: %d\n", sig_len);
+        return -1;
+    }
+
     G_context.tx_info.signature_len = sig_len;
     G_context.tx_info.v = (uint8_t) (info & CX_ECCINFO_PARITY_ODD);
 

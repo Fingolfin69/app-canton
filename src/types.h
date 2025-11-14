@@ -67,9 +67,9 @@ typedef struct {
 
     uint8_t m_hash[CANTON_HASH_LEN];  /// message hash digest (can either be SHA-256 or Canton hash)
     uint8_t m_hash_len;               /// length of message hash digest
-    uint8_t signature[MAX_DER_SIG_LEN];            /// transaction signature encoded in DER
+    uint8_t signature[ED25519_SIG_LEN];            /// transaction signature (ED25519)
     uint8_t signature_len;                         /// length of transaction signature
-    uint8_t challenge_signature[MAX_DER_SIG_LEN];  /// challenge signature (r,s) raw format
+    uint8_t challenge_signature[ED25519_SIG_LEN];  /// challenge signature (ED25519)
     uint8_t challenge_signature_len;               /// length of challenge signature
     bool has_challenge_signature;                  /// whether challenge signature is present
 

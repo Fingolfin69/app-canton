@@ -41,8 +41,11 @@ MUST_CHECK int helper_send_response_pubkey() {
 }
 
 MUST_CHECK int helper_send_response_sig() {
-    uint8_t resp[1 + MAX_DER_SIG_LEN + 1 + 1 + MAX_DER_SIG_LEN] = {0};
+    uint8_t resp[1 + ED25519_SIG_LEN + 1 + 1 + ED25519_SIG_LEN] = {0};
     size_t offset = 0;
+
+    LEDGER_ASSERT(G_context.tx_info.signature_len == ED25519_SIG_LEN,
+                  "Invalid signature length in helper_send_response_sig");
 
     resp[offset++] = G_context.tx_info.signature_len;
     memmove(resp + offset, G_context.tx_info.signature, G_context.tx_info.signature_len);
@@ -51,8 +54,8 @@ MUST_CHECK int helper_send_response_sig() {
     if (G_context.tx_info.has_challenge_signature) {
         PRINTF("Also sending challenge signature\n");
         resp[offset++] = G_context.tx_info.challenge_signature_len;
-        LEDGER_ASSERT(offset + G_context.tx_info.challenge_signature_len <= sizeof(resp),
-                      "Buffer overflow in helper_send_response_sig");
+        LEDGER_ASSERT(G_context.tx_info.challenge_signature_len == ED25519_SIG_LEN,
+                      "Invalid challenge signature length in helper_send_response_sig");
         memmove(resp + offset,
                 G_context.tx_info.challenge_signature,
                 G_context.tx_info.challenge_signature_len);
