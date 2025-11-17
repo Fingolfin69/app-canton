@@ -22,7 +22,7 @@ def test_app_mainmenu(device: Device, navigator: Navigator, test_name: str) -> N
             NavInsID.BOTH_CLICK,
             NavInsID.RIGHT_CLICK,
         ]
-    elif device.type in [DeviceType.STAX, DeviceType.FLEX]:
+    elif device.type in [DeviceType.STAX, DeviceType.FLEX, DeviceType.APEX_P]:
         instructions += [
             NavInsID.USE_CASE_HOME_SETTINGS,
             NavInsID.USE_CASE_SETTINGS_NEXT,
