@@ -28,9 +28,9 @@ include $(BOLOS_SDK)/Makefile.target
 APPNAME = "Canton"
 
 # Application version
-APPVERSION_M = 2
-APPVERSION_N = 9
-APPVERSION_P = 5
+APPVERSION_M = 3
+APPVERSION_N = 0
+APPVERSION_P = 0
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
 # Application source files
@@ -42,6 +42,7 @@ ICON_NANOX = icons/app_canton_14px.gif
 ICON_NANOSP = icons/app_canton_14px.gif
 ICON_STAX = icons/app_canton_32px.gif
 ICON_FLEX = icons/app_canton_40px.gif
+ICON_APEX_P = icons/app_canton_32px_apex.png
 
 # With the Nano NBGL Design, the Home Screen icon is the reverse of the App icon:
 # It should be on white background, with rounded corners.
