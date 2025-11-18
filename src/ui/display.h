@@ -11,7 +11,7 @@
 #elif defined(TARGET_STAX) || defined(TARGET_FLEX)
 #define ICON_APP_CANTON  C_app_canton_64px
 #define ICON_APP_HOME    ICON_APP_CANTON
-#define ICON_APP_WARNING C_Warning_64px
+#define ICON_APP_WARNING LARGE_WARNING_ICON
 #elif defined(TARGET_APEX_P)
 #define ICON_APP_CANTON  C_app_canton_48px
 #define ICON_APP_HOME    ICON_APP_CANTON
