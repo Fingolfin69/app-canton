@@ -35,7 +35,7 @@ or rejects the transaction
 
 - **Identifier**: `Splice.Api.Token.TransferInstructionV1.TransferFactory_Transfer`
 
-#### Native Coin Transfers  
+#### Native Coin Transfers
 
 - **Identifier**: `Splice.ExternalPartyAmuletRules.ExternalPartyAmuletRules_CreateTransferCommand`
 
@@ -79,7 +79,7 @@ The following fields are extracted from transactions and displayed to users for 
 
 - **From**: `transfer.sender` (mandatory) - Shows sender's party ID
 - **Amount**: `transfer.amount` (mandatory, with ticker if recognized) - Shows transfer amount with currency symbol
-- **To**: `transfer.receiver` (mandatory) - Shows recipient's party ID  
+- **To**: `transfer.receiver` (mandatory) - Shows recipient's party ID
 - **Token**: `transfer.instrumentId.id` (mandatory, hidden if ticker shown) - Shows token identifier
 - **Memo**: `transfer.meta.values.splice\.lfdecentralizedtrust\.org/reason` (optional) - Shows transaction description
 
@@ -140,7 +140,7 @@ attestation key
 - Validates target key matches derived public key
 - Establishes namespace authority
 
-#### Party-to-Key Mapping  
+#### Party-to-Key Mapping
 
 - Validates party ID derivation from public key
 - Confirms signing key ownership
@@ -160,7 +160,7 @@ The following account setup information is displayed to users for confirmation:
 
 - **Add account**: Party ID (mandatory) - Shows the party ID being created
 - **Associate to validator 1**: First participant UID (mandatory) - Shows primary validator
-- **Associate to validator 2**: Second participant UID (optional) - Shows secondary validator  
+- **Associate to validator 2**: Second participant UID (optional) - Shows secondary validator
 - **Associate to validator 3**: Third participant UID (optional) - Shows tertiary validator
 - **Validators threshold**: "X out of Y" format (optional, shown if >1 participant) - Shows signing threshold
 
