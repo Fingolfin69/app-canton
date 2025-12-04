@@ -35,6 +35,7 @@
 #include "menu.h"
 #include "utils.h"
 
+#define BLIND_SIGN_PAIR_LIST_NB 1
 static nbgl_contentTagValueList_t pairList;
 
 // called when long press button on 3rd page is long-touched or when reject footer is touched
@@ -69,6 +70,7 @@ MUST_CHECK int ui_display_transaction_bs_choice(bool is_blind_signed) {
         memset(G_context.tx_info.pairs, 0, sizeof(nbgl_contentTagValue_t));
         G_context.tx_info.pairs[0].item = "Transaction hash";
         G_context.tx_info.pairs[0].value = (char *) app_mem_alloc(hex_hash_length);
+        G_context.tx_info.pairs_count = BLIND_SIGN_PAIR_LIST_NB;
         LEDGER_ASSERT(G_context.tx_info.pairs[0].value != NULL, "Memory full");
         SNPRINTF((char *) G_context.tx_info.pairs[0].value,
                  hex_hash_length,

@@ -77,7 +77,6 @@ typedef struct {
     nbgl_contentTagValue_t* pairs;  // dynamically allocated array for display
     size_t pairs_count;
     bool clear_signing_available;  /// whether clearing signing data is allowed
-    char** display_items_strings;  /// allocated strings for display
     const char* review_title;      /// dynamically allocated review title
     const char* review_finish;
 

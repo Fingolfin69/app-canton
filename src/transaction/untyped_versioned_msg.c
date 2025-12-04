@@ -324,14 +324,13 @@ MUST_CHECK static bool set_field_value(transaction_ctx_t *tx_info,
     size_t value_len = strlen(value) + 1;
 
     // Allocate and set value
-    tx_info->display_items_strings[idx] = (char *) app_mem_alloc(value_len);
-    if (tx_info->display_items_strings[idx] == NULL) {
+    tx_info->pairs[idx].value = (char *) app_mem_alloc(value_len);
+    if (tx_info->pairs[idx].value == NULL) {
         return false;  // Memory allocation failed
     }
 
-    memcpy(tx_info->display_items_strings[idx], value, value_len);
+    memcpy((void*)tx_info->pairs[idx].value, value, value_len);
     tx_info->pairs[idx].item = (char *) PIC(field_states[field_idx].config->item_name);
-    tx_info->pairs[idx].value = tx_info->display_items_strings[idx];
     tx_info->pairs_count++;
 
     // Mark field as found
