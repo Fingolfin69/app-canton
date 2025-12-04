@@ -329,7 +329,7 @@ MUST_CHECK static bool set_field_value(transaction_ctx_t *tx_info,
         return false;  // Memory allocation failed
     }
 
-    memcpy((void*)tx_info->pairs[idx].value, value, value_len);
+    memcpy((void *) tx_info->pairs[idx].value, value, value_len);
     tx_info->pairs[idx].item = (char *) PIC(field_states[field_idx].config->item_name);
     tx_info->pairs_count++;
 
