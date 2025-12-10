@@ -35,24 +35,14 @@ MUST_CHECK bool app_mem_init(void) {
 
 MUST_CHECK void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line) {
     void *new_ptr;
-    if (ptr != NULL) {
-        // Reallocate memory
-        new_ptr = mem_alloc(mem_ctx, size);
-
-        if (new_ptr != NULL) {
-            memcpy(new_ptr, ptr, size);
-            mem_free(mem_ctx, ptr);
-        }
-
-    } else {
-        new_ptr = mem_alloc(mem_ctx, size);
-    }
+    new_ptr = mem_realloc(mem_ctx, ptr, size);
 
 #ifdef HAVE_MEMORY_PROFILING
-    if (ptr != NULL) {
-        PRINTF(MP_LOG_PREFIX "free;0x%p;%s:%u\n", ptr, file, line);
-        PRINTF(MP_LOG_PREFIX "alloc;%u;0x%p;%s:%u\n", size, new_ptr, file, line);
-    } else {
+    if (new_ptr != NULL) {
+        // Log the realloc event (ptr might be different now)
+        if (ptr != NULL && ptr != new_ptr) {
+            PRINTF(MP_LOG_PREFIX "free;0x%p;%s:%u\n", ptr, file, line);
+        }
         PRINTF(MP_LOG_PREFIX "alloc;%u;0x%p;%s:%u\n", size, new_ptr, file, line);
     }
 #else
