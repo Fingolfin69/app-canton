@@ -33,7 +33,7 @@ jobs:
     uses: LedgerHQ/ledger-app-workflows/.github/workflows/reusable_build.yml@v1
     with:
       upload_app_binaries_artifact: "compiled_app_binaries"
-      sdk_reference: "feat/agr/realloc"
+      sdk_reference: "api25/feat/agr/realloc"
 
   ragger_tests:
     name: Run ragger tests using the reusable workflow
