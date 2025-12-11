@@ -73,9 +73,8 @@ const instrument_to_ticker_mapping_t INSTRUMENT_TO_TICKER_MAPPINGS[] = {
               "375d1049a8546a3b262",  // Mainnet
      .id = "CBTC",
      .ticker = "CBTC"},
-    {.admin = "party-1dd50b62-222b-4e37-8518-19c8184ec153::"
-              "1220eb67a9251b4793d96a80d5887c76d0f5d49c52fa5f074"
-              "c868e999b5d678971c2",  // Mainnet
+    {.admin = "party-28dc4516-b5ca-44ff-86c7-2107e90a6807::"
+              "1220b8301e18aa8a401d6e34e6c20f8b0243183c514373bca8f1b6b9270246341a9e",  // Mainnet
      .id = "f29bdd7a-1469-498a-ba2a-796bf5387b31",
      .ticker = "SBC"}};
 
