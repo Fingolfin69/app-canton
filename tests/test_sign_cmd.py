@@ -343,6 +343,18 @@ def test_sign_transfer_accept_with_empty_strings(
         custom_screen_text="Sign transaction to",
     )
 
+def test_sign_token_transfer_withdraw_sbc(
+    backend: BackendInterface, scenario_navigator: NavigateWithScenario, device: Device, navigator: Navigator
+) -> None:
+    _sign_and_verify_prepared_transaction(
+        backend,
+        scenario_navigator,
+        navigator=navigator,
+        device=device,
+        tx_json="tests/tx_examples/token_transfer_withdraw_sbc.json",
+        custom_screen_text="Sign transaction to",
+    )
+
 def test_sign_token_transfer_reject(
     backend: BackendInterface, scenario_navigator: NavigateWithScenario
 ) -> None:
