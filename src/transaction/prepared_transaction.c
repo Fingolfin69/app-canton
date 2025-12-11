@@ -73,6 +73,7 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
             int res = get_hash_error();
             if (res != HASH_OK) {
                 PRINTF("Failed to hash DAML Node. Hash error code : %d\n", res);
+                release_daml_tx(&G_context.tx_info);
                 return SW_TX_HASH_FAIL;
             }
 
@@ -80,6 +81,7 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
             res = parse_node_for_display(buf);
             if (res != 0) {
                 PRINTF("Failed to parse DAML Node for display: %d\n", res);
+                release_daml_tx(&G_context.tx_info);
                 return SW_TX_PARSING_FAIL;
             }
 
@@ -101,6 +103,7 @@ MUST_CHECK int process_prepared_tx_part(buffer_t *buf) {
 
             if (status != PARSING_OK) {
                 PRINTF("Failed to parse Metadata part: %d\n", status);
+                release_metadata(&G_context.tx_info);
                 return SW_TX_PARSING_FAIL;
             }
 

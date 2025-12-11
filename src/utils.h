@@ -63,3 +63,10 @@ MUST_CHECK bool is_digit(char c);
  * @return The integer value, or 0 on error.
  */
 MUST_CHECK int atoint(const char *str);
+
+/**
+ * @brief Clean up the global context.
+ *        Frees any allocated display items and resets the context.
+ *
+ */
+void clean_context(void);

@@ -24,6 +24,7 @@
 #include "sw.h"
 #include "globals.h"
 #include "send_response.h"
+#include "pb_node_display_parser.h"
 
 void validate_pubkey(bool choice) {
     if (choice) {
@@ -82,4 +83,6 @@ void validate_transaction(bool choice) {
         G_context.state = STATE_NONE;
         io_send_sw(SW_DENY);
     }
+    // Frees any remaining allocated memory for display items
+    cleanup_display_items();
 }

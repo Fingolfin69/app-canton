@@ -36,6 +36,7 @@
 #include "prepared_transaction.h"
 #include "untyped_versioned_msg.h"
 #include "mem.h"
+#include "utils.h"
 
 static int process_tx_chunk(buffer_t *cdata,
                             signing_type_e type,
@@ -110,12 +111,7 @@ static int process_tx_chunk(buffer_t *cdata,
                             bool msg_end) {
     LEDGER_ASSERT(cdata != NULL, "cdata is NULL");
     if (first) {  // first APDU, parse BIP32 path
-        // Quick fix for memory leaks between transactions :
-        // Reset all allocated memory.
-        // TODO : release memory more gracefully
-        LEDGER_ASSERT(app_mem_init() == true, "Failed to initialize memory");
-
-        explicit_bzero(&G_context, sizeof(G_context));
+        clean_context();
         PRINTF("Processing first chunk of transaction\n");
         G_context.req_type = CONFIRM_TRANSACTION;
         G_context.signing_type = type;

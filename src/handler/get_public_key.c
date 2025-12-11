@@ -32,6 +32,7 @@
 #include "sw.h"
 #include "display.h"
 #include "send_response.h"
+#include "utils.h"
 
 #define PRIVKEY_LEN 32
 
@@ -71,7 +72,7 @@ MUST_CHECK cx_err_t derive_public_key(uint32_t *bip32_path,
 
 MUST_CHECK int handler_get_public_key(buffer_t *cdata, bool display) {
     LEDGER_ASSERT(cdata != NULL, "cdata is NULL");
-    explicit_bzero(&G_context, sizeof(G_context));
+    clean_context();
     G_context.req_type = CONFIRM_ADDRESS;
     G_context.state = STATE_NONE;
 

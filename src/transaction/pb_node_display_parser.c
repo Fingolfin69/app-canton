@@ -253,39 +253,34 @@ MUST_CHECK static tx_field_t *find_field_by_path(pb_callback_context_t *ctx, con
     return NULL;
 }
 
-// Helper function to initialize transaction pairs used for display
-MUST_CHECK bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
-    LEDGER_ASSERT(tx_info != NULL, "NULL transaction context passed to init_transaction_pairs");
-
-    // Free existing pairs if any
-    if (tx_info->pairs != NULL) {
-        app_mem_free(tx_info->pairs);
-    }
-
-    // Free existing allocated items strings if any
-    if (tx_info->display_items_strings != NULL) {
-        // Free individual strings first
-        for (size_t i = 0; i < tx_info->pairs_count; i++) {
-            if (tx_info->display_items_strings[i] != NULL) {
-                app_mem_free(tx_info->display_items_strings[i]);
+// Helper function to clean-up transaction pairs used for display
+void cleanup_display_items(void) {
+    if (G_context.tx_info.pairs != NULL) {
+        for (size_t i = 0; i < G_context.tx_info.pairs_count; i++) {
+            if (G_context.tx_info.pairs[i].value != NULL) {
+                app_mem_free((void *) G_context.tx_info.pairs[i].value);
+                G_context.tx_info.pairs[i].value = NULL;
             }
         }
-        app_mem_free(tx_info->display_items_strings);
+        app_mem_free(G_context.tx_info.pairs);
+        G_context.tx_info.pairs = NULL;
     }
+    G_context.tx_info.pairs_count = 0;
+}
 
+// Helper function to initialize transaction pairs used for display
+MUST_CHECK bool init_transaction_pairs(transaction_ctx_t *tx_info, size_t count) {
     // Allocate new arrays
     tx_info->pairs_count = 0;
     tx_info->pairs =
         (nbgl_contentTagValue_t *) app_mem_alloc(count * sizeof(nbgl_contentTagValue_t));
-    tx_info->display_items_strings = (char **) app_mem_alloc(count * sizeof(char *));
+    memset(tx_info->pairs, 0, count * sizeof(nbgl_contentTagValue_t));
 
-    if (tx_info->pairs == NULL || tx_info->display_items_strings == NULL) {
+    if (tx_info->pairs == NULL) {
         return false;
     }
 
     memset(tx_info->pairs, 0, count * sizeof(nbgl_contentTagValue_t));
-    memset(tx_info->display_items_strings, 0, count * sizeof(char *));
-
     return true;
 }
 
@@ -823,7 +818,8 @@ MUST_CHECK int format_and_populate_display_items(pb_callback_context_t *ctx) {
         if (ctx->unknown_token) {
             PRINTF("Unknown token detected, aborting display population\n");
             G_context.tx_info.clear_signing_available = false;
-            return 0;
+            cleanup_display_items();
+            goto cleanup;
         }
     }
 
@@ -833,20 +829,12 @@ MUST_CHECK int format_and_populate_display_items(pb_callback_context_t *ctx) {
     for (size_t i = 0; i < ctx->nb_fields; i++) {
         tx_field_t *state = &ctx->tx_fields[i];
         if (state->found && state->display && state->value_len > 0) {
-            char *dst = app_mem_alloc(state->value_len);
-            if (dst != NULL) {
-                memcpy(dst, state->value, state->value_len);
-
-                ctx->tx_info->display_items_strings[idx] = dst;
+            ctx->tx_info->pairs[idx].value = app_mem_alloc(state->value_len);
+            if (ctx->tx_info->pairs[idx].value != NULL) {
+                memcpy((void *) ctx->tx_info->pairs[idx].value, state->value, state->value_len);
                 ctx->tx_info->pairs[idx].item = (char *) PIC(state->config->item_name);
-                ctx->tx_info->pairs[idx].value = dst;
-
-                idx++;
                 ctx->tx_info->pairs_count++;
-
-                app_mem_free(state->value);
-                state->value = NULL;
-                state->value_len = 0;
+                idx++;
             }
         }
     }
@@ -854,6 +842,17 @@ MUST_CHECK int format_and_populate_display_items(pb_callback_context_t *ctx) {
     G_context.tx_info.clear_signing_available = true;
     global_tx_metadata_contract_identifiers = NULL;
     global_tx_metadata_display_conf = NULL;
+cleanup:
+    for (size_t j = 0; j < ctx->nb_fields; j++) {
+        tx_field_t *field = &ctx->tx_fields[j];
+        // Free any allocated value
+        if (field->value != NULL) {
+            app_mem_free(field->value);
+            field->value = NULL;
+            field->value_len = 0;
+        }
+    }
+
     return 0;
 }
 

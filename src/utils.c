@@ -24,6 +24,8 @@
 
 #include "os.h"
 #include "cx.h"
+#include "globals.h"
+#include "pb_node_display_parser.h"
 
 #define SHA256_ALGO_PREFIX ((uint8_t) 0x12)
 #define SHA256_ALGO_LENGTH ((uint8_t) 0x20)
@@ -70,4 +72,12 @@ MUST_CHECK int atoint(const char *str) {
     }
 
     return res;
+}
+
+void clean_context(void) {
+    // Free any allocated display items
+    // before resetting the context
+    cleanup_display_items();
+    // Reset the global context
+    explicit_bzero(&G_context, sizeof(G_context));
 }
