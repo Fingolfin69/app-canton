@@ -67,12 +67,24 @@ typedef struct {
     bool found;                    // Mutable state
 } field_state_t;
 
-#define PARTY_FIELD_IDX         0
-#define PARTICIPANT_1_FIELD_IDX 1
-#define PARTICIPANT_2_FIELD_IDX 2
-#define PARTICIPANT_3_FIELD_IDX 3
-#define MAX_PARTICIPANTS        3
-#define THRESHOLD_FIELD_IDX     4
+typedef struct {
+    const char *participant_id;
+    const char *participant_name;
+} participant_id_to_name_mapping_t;
+
+#define PARTY_FIELD_IDX           0
+#define PARTICIPANT_1_FIELD_IDX   1
+#define PARTICIPANT_2_FIELD_IDX   2
+#define MANDATORY_PARTICIPANTS_NB 2
+#define THRESHOLD_FIELD_IDX       4
+
+const participant_id_to_name_mapping_t VALID_PARTICIPANTS[MANDATORY_PARTICIPANTS_NB] = {
+    {"ledger-ledgerops-2::12207a4859ad414f4f47c2d773ddf4ea88de8c3a1aab19abaa197e504acdbf679d3c",
+     "Ledger Validator"},
+    {"meria-ledgerops-1::1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     "Meria Validator"},  // <= TODO : PLACEHOLDER ID, REPLACE WITH ACTUAL PRODUCTION MERIA
+                          // VALIDATOR ID
+};
 
 // Const configurations (stored in flash)
 const field_config_t PARTY_FIELD_CONFIG = {"Add account", true};
@@ -448,47 +460,86 @@ static int process_party_to_key_mapping(const PartyToKeyMapping *mapping,
 }
 
 // Process party to participant mapping
+// Process party to participant mapping
 static int process_party_to_participant(const PartyToParticipant *mapping,
                                         transaction_ctx_t *tx_info) {
     LEDGER_ASSERT(!has_parsed_party_to_participant, "Multiple party to participant mappings found");
     LEDGER_ASSERT(tx_info != NULL,
                   "NULL transaction context passed to process_party_to_participant");
 
-    // Set party to participant specific fields
-    if (mapping->party != NULL) {
-        LEDGER_ASSERT(set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party) == true,
-                      "Failed to set party field");
-    } else {
+    // Pre-checks and mandatory count checks
+    if (mapping->party == NULL) {
         return SW_TOPOLOGY_MISSING_PARTY;
     }
 
-    if (mapping->participants_count > 0 && mapping->participants[0].participant_uid != NULL) {
-        for (size_t i = 0; i < mapping->participants_count && i < MAX_PARTICIPANTS; i++) {
-            size_t field_idx = PARTICIPANT_1_FIELD_IDX + i;
-            if (field_idx >= ONBOARDING_FLOW_DISPLAY_FIELDS_NB - 1) {
-                break;  // Prevent overflow
-            }
-            LEDGER_ASSERT(
-                set_field_value(tx_info, field_idx, mapping->participants[i].participant_uid) ==
-                    true,
-                "Failed to set participant field");
-        }
-    } else {
-        return SW_TOPOLOGY_NO_PARTICIPANTS;
+    if (!check_party_id_value(mapping->party)) {
+        return SW_TOPOLOGY_PARTY_ID_MISMATCH;
     }
 
-    // If participants_count > 1, display threshold, otherwise skip it (it's always 1)
-    if (mapping->participants_count > 1) {
-        char threshold_str[DEFAULT_DECODE_BUFFER_SIZE] = {0};
-        // Set threshold as ratio threshold/participants_count
-        SNPRINTF(threshold_str,
-                 sizeof(threshold_str),
-                 "%u out of %u",
-                 mapping->threshold,
-                 mapping->participants_count);
-        LEDGER_ASSERT(set_field_value(tx_info, THRESHOLD_FIELD_IDX, threshold_str) == true,
-                      "Failed to set threshold field");
+    if (mapping->participants_count != MANDATORY_PARTICIPANTS_NB) {
+        return SW_TOPOLOGY_UNEXPECTED_NUMBER_OF_PARTICIPANTS;
     }
+
+    if (mapping->threshold != mapping->participants_count) {
+        return SW_TOPOLOGY_UNEXPECTED_THRESHOLD_VALUE;
+    }
+
+    if (mapping->participants_count > 0 && mapping->participants == NULL) {
+        return SW_TOPOLOGY_MISSING_PARTICIPANT_DATA;
+    }
+
+    // Set party field
+    LEDGER_ASSERT(set_field_value(tx_info, PARTY_FIELD_IDX, mapping->party) == true,
+                  "Failed to set party field");
+
+    // Participants validation and field setting
+    uint8_t found_valid = 0;
+    bool found_participants[MANDATORY_PARTICIPANTS_NB] = {false};
+
+    for (size_t i = 0; i < mapping->participants_count; i++) {
+        const char *uid = (const char *) PIC(mapping->participants[i].participant_uid);
+        char *participant_name = (char *) uid;
+
+        if (uid == NULL || *uid == '\0') {
+            return SW_TOPOLOGY_MISSING_PARTICIPANT_DATA;
+        }
+
+        for (size_t j = 0; j < MANDATORY_PARTICIPANTS_NB; j++) {
+            // PRINTF("Comparing with valid participant ID : %s\n",
+            // VALID_PARTICIPANTS[j].participant_id);
+            const char *valid_id = (const char *) PIC(VALID_PARTICIPANTS[j].participant_id);
+            const char *valid_name = (const char *) PIC(VALID_PARTICIPANTS[j].participant_name);
+            if (strcmp(uid, valid_id) == 0) {
+                if (found_participants[j]) {
+                    return SW_TOPOLOGY_UNEXPECTED_DUPLICATE_PARTICIPANT;
+                }
+                found_participants[j] = true;
+                found_valid++;
+                participant_name = (char *) valid_name;
+                break;
+            }
+        }
+
+        LEDGER_ASSERT(
+            set_field_value(tx_info, PARTICIPANT_1_FIELD_IDX + i, participant_name) == true,
+            "Failed to set participant field");
+    }
+
+    // Final check for missing mandatory participants
+    if (found_valid != MANDATORY_PARTICIPANTS_NB) {
+        return SW_TOPOLOGY_UNEXPECTED_PARTICIPANT_ID;
+    }
+
+    // Set threshold field
+    char threshold_str[DEFAULT_DECODE_BUFFER_SIZE];
+    SNPRINTF(threshold_str,
+             sizeof(threshold_str),
+             "%u out of %u",
+             mapping->threshold,
+             mapping->participants_count);
+
+    LEDGER_ASSERT(set_field_value(tx_info, THRESHOLD_FIELD_IDX, threshold_str) == true,
+                  "Failed to set threshold field");
 
     has_parsed_party_to_participant = true;
     return 0;
