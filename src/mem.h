@@ -1,26 +1,11 @@
 #pragma once
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include "utils.h"
+#include "app_mem_utils.h"
 
-#ifdef HAVE_MEMORY_PROFILING
-#define MP_FILE __FILE__
-#define MP_LINE __LINE__
-#else
-#define MP_FILE NULL
-#define MP_LINE 0
-#endif
-
-#define app_mem_alloc(size) app_mem_alloc_impl(size, MP_FILE, MP_LINE)
-#define app_mem_free(ptr)   app_mem_free_impl(ptr, MP_FILE, MP_LINE)
-
-#define pb_realloc(ptr, size) app_mem_realloc_impl(ptr, size, MP_FILE, MP_LINE)
-#define pb_free(ptr)          app_mem_free_impl(ptr, MP_FILE, MP_LINE)
+#define app_mem_alloc(size)   APP_MEM_ALLOC(size)
+#define pb_realloc(ptr, size) APP_MEM_REALLOC(ptr, size)
+#define pb_free(ptr)          app_mem_free(ptr)
 
 MUST_CHECK bool app_mem_init(void);
-MUST_CHECK void *app_mem_alloc_impl(size_t size, const char *file, int line);
-MUST_CHECK void *app_mem_realloc_impl(void *ptr, size_t size, const char *file, int line);
-void app_mem_free_impl(void *ptr, const char *file, int line);
-void app_mem_stat();
+void app_mem_free(void *ptr);
