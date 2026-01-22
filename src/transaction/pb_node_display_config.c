@@ -76,7 +76,19 @@ const instrument_to_ticker_mapping_t INSTRUMENT_TO_TICKER_MAPPINGS[] = {
     {.admin = "party-28dc4516-b5ca-44ff-86c7-2107e90a6807::"
               "1220b8301e18aa8a401d6e34e6c20f8b0243183c514373bca8f1b6b9270246341a9e",  // Mainnet
      .id = "f29bdd7a-1469-498a-ba2a-796bf5387b31",
-     .ticker = "SBC"}};
+     .ticker = "SBC"},
+    {.admin = "decentralized-usdc-interchain-rep::"
+              "122049e2af8a725bd19759320fc83c638e7718973eac189d8f201309c512d1ffec61",  // Testnet
+     .id = "USDCx",
+     .ticker = "USDCx"},
+    {.admin = "decentralized-usdc-interchain-rep::"
+              "12208115f1e168dd7e792320be9c4ca720c751a02a3053c7606e1c1cd3dad9bf60ef",  // Mainnet
+     .id = "USDCx",
+     .ticker = "USDCx"},
+    {.admin = "party-28dc4516-b5ca-44ff-86c7-2107e90a6807::"
+              "1220b8301e18aa8a401d6e34e6c20f8b0243183c514373bca8f1b6b9270246341a9e",  // Mainnet
+     .id = "481871d4-ca56-42a8-b2d3-4b7d28742946",
+     .ticker = "CUSD"}};
 
 const size_t INSTRUMENT_TO_TICKER_MAPPING_NB =
     sizeof(INSTRUMENT_TO_TICKER_MAPPINGS) / sizeof(instrument_to_ticker_mapping_t);
