@@ -30,7 +30,7 @@ ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 VALIDATOR_PARTY_ID_1 = \
     "ledger-ledgerops-2::12207a4859ad414f4f47c2d773ddf4ea88de8c3a1aab19abaa197e504acdbf679d3c"
 VALIDATOR_PARTY_ID_2 = \
-    "meria-ledgerops-1::1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" # Placeholder ID
+    "kiln-ledgerops-1::1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" # Placeholder ID
 
 
 def _nano_enable_blind_signing() -> list[NavInsID]:

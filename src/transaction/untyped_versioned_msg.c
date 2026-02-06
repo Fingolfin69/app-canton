@@ -47,7 +47,7 @@
 #define MAX_HASHES                                   3  // Adjust as needed
 #define PURPOSE_TOPOLOGY_TRANSACTION_SIGNATURE       ((uint8_t) 11)
 #define PURPOSE_MULTI_TOPOLOGY_TRANSACTION_SIGNATURE ((uint8_t) 55)
-#define ONBOARDING_FLOW_DISPLAY_FIELDS_NB            5  // Max number of display fields for onboarding flow
+#define ONBOARDING_FLOW_DISPLAY_FIELDS_NB            4  // Max number of display fields for onboarding flow
 #define CHALLENGE_AND_DEADLINE_LEN                   24  // 16 bytes challenge + 8 bytes deadline
 #define ED25519_RAW_KEY_LEN                          32
 #define ED25519_DER_KEY_LEN                          44
@@ -76,21 +76,20 @@ typedef struct {
 #define PARTICIPANT_1_FIELD_IDX   1
 #define PARTICIPANT_2_FIELD_IDX   2
 #define MANDATORY_PARTICIPANTS_NB 2
-#define THRESHOLD_FIELD_IDX       4
+#define THRESHOLD_FIELD_IDX       3
 
 const participant_id_to_name_mapping_t VALID_PARTICIPANTS[MANDATORY_PARTICIPANTS_NB] = {
     {"ledger-ledgerops-2::12207a4859ad414f4f47c2d773ddf4ea88de8c3a1aab19abaa197e504acdbf679d3c",
      "Ledger Validator"},
-    {"meria-ledgerops-1::1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-     "Meria Validator"},  // <= TODO : PLACEHOLDER ID, REPLACE WITH ACTUAL PRODUCTION MERIA
-                          // VALIDATOR ID
+    {"kiln-ledgerops-1::1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     "Kiln Validator"},  // <= TODO : PLACEHOLDER ID, REPLACE WITH ACTUAL PRODUCTION KILN
+                         // VALIDATOR ID
 };
 
 // Const configurations (stored in flash)
 const field_config_t PARTY_FIELD_CONFIG = {"Add account", true};
 const field_config_t PARTICIPANT_1_UID_FIELD_CONFIG = {"Associate to validator 1", true};
 const field_config_t PARTICIPANT_2_UID_FIELD_CONFIG = {"Associate to validator 2", false};
-const field_config_t PARTICIPANT_3_UID_FIELD_CONFIG = {"Associate to validator 3", false};
 const field_config_t THRESHOLD_FIELD_CONFIG = {"Validators threshold", false};
 
 static const field_config_t
@@ -98,8 +97,8 @@ static const field_config_t
         &PARTY_FIELD_CONFIG,
         &PARTICIPANT_1_UID_FIELD_CONFIG,
         &PARTICIPANT_2_UID_FIELD_CONFIG,
-        &PARTICIPANT_3_UID_FIELD_CONFIG,
-        &THRESHOLD_FIELD_CONFIG};
+        &THRESHOLD_FIELD_CONFIG,
+};
 
 // Mutable state array (stored in RAM)
 static field_state_t field_states[ONBOARDING_FLOW_DISPLAY_FIELDS_NB];
@@ -505,7 +504,6 @@ static int process_party_to_participant(const PartyToParticipant *mapping,
         }
 
         for (size_t j = 0; j < MANDATORY_PARTICIPANTS_NB; j++) {
-            // PRINTF("Comparing with valid participant ID : %s\n",
             // VALID_PARTICIPANTS[j].participant_id);
             const char *valid_id = (const char *) PIC(VALID_PARTICIPANTS[j].participant_id);
             const char *valid_name = (const char *) PIC(VALID_PARTICIPANTS[j].participant_name);
