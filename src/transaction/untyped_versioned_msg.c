@@ -81,9 +81,8 @@ typedef struct {
 const participant_id_to_name_mapping_t VALID_PARTICIPANTS[MANDATORY_PARTICIPANTS_NB] = {
     {"ledger-ledgerops-2::12207a4859ad414f4f47c2d773ddf4ea88de8c3a1aab19abaa197e504acdbf679d3c",
      "Ledger Validator"},
-    {"kiln-ledgerops-1::1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-     "Kiln Validator"},  // <= TODO : PLACEHOLDER ID, REPLACE WITH ACTUAL PRODUCTION KILN
-                         // VALIDATOR ID
+    {"Ledger-Kiln-1::12200386019c89269f5541595286cf5ebf24fe7884d8c6b05ce042c999f9161cb9d0",
+     "Kiln Validator"},
 };
 
 // Const configurations (stored in flash)
